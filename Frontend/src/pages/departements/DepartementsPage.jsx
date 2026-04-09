@@ -11,38 +11,43 @@ import PageHeader from '../../components/ui/PageHeader'
 import { StatusBadge } from '../../components/ui/Badge'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
+import Pagination from '../../components/ui/Pagination'
 
 const emptyForm = { NomDepartement: '', description: '', status: 1, Hospital_id: '' }
 
 export default function DepartementsPage() {
-  const [data, setData]           = useState([])
-  const [hospitals, setHospitals] = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [search, setSearch]       = useState('')
-  const [filterHospital, setFilterHospital] = useState('')
-  const [modal, setModal]         = useState(false)
-  const [editing, setEditing]     = useState(null)
-  const [form, setForm]           = useState(emptyForm)
-  const [saving, setSaving]       = useState(false)
-  const [confirm, setConfirm]     = useState(null)
+  const [data, setData]                       = useState([])
+  const [paginationMeta, setPaginationMeta]   = useState(null)
+  const [page, setPage]                       = useState(1)
+  const [perPage, setPerPage]                 = useState(15)
+  const [hospitals, setHospitals]             = useState([])
+  const [loading, setLoading]                 = useState(true)
+  const [search, setSearch]                   = useState('')
+  const [filterHospital, setFilterHospital]   = useState('')
+  const [modal, setModal]                     = useState(false)
+  const [editing, setEditing]                 = useState(null)
+  const [form, setForm]                       = useState(emptyForm)
+  const [saving, setSaving]                   = useState(false)
+  const [confirm, setConfirm]                 = useState(null)
 
-  const load = () => {
+  const load = (p = page, pp = perPage) => {
     setLoading(true)
+    const params = { page: p, per_page: pp }
+    if (filterHospital) params.Hospital_id = filterHospital
+    if (search)         params.search = search
     Promise.all([
-      departementApi.liste(filterHospital ? { Hospital_id: filterHospital } : {}),
+      departementApi.liste(params),
       hospitalApi.liste(),
     ]).then(([d, h]) => {
-      setData(d.data.data || [])
-      setHospitals(h.data.data || [])
+      const result = d.data.data
+      setData(result?.data || [])
+      setPaginationMeta(result?.last_page ? result : null)
+      const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
+      setHospitals(toArr(h.data.data))
     }).finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [filterHospital])
-
-  const filtered = data.filter(d =>
-    (d.NomDepartement || '').toLowerCase().includes(search.toLowerCase()) ||
-    (d.description || '').toLowerCase().includes(search.toLowerCase())
-  )
+  useEffect(() => { setPage(1); load(1, perPage) }, [filterHospital, search])
 
   const hospitalOptions = hospitals.map(h => ({ value: String(h.Hospital_id), label: h.hospital_name }))
 
@@ -118,11 +123,22 @@ export default function DepartementsPage() {
           options={hospitalOptions} placeholder="Tous les hôpitaux"
           style={{ minWidth: 220, marginBottom: 0 }}
         />
-        <div style={{ color: colors.gray500, fontSize: 13 }}>{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</div>
+        <div style={{ color: colors.gray500, fontSize: 13 }}>
+          {paginationMeta ? paginationMeta.total : data.length} résultat{(paginationMeta?.total ?? data.length) !== 1 ? 's' : ''}
+        </div>
       </div>
 
       <div style={{ background: colors.white, borderRadius: radius.md, boxShadow: shadows.sm, overflow: 'hidden' }}>
-        {loading ? <FullPageSpinner /> : <Table columns={columns} data={filtered} emptyText="Aucun département enregistré." />}
+        {loading ? <FullPageSpinner /> : (
+          <>
+            <Table columns={columns} data={data} emptyText="Aucun département enregistré." />
+            <Pagination
+              meta={paginationMeta}
+              onPageChange={p => { setPage(p); load(p, perPage) }}
+              onPerPageChange={pp => { setPerPage(pp); setPage(1); load(1, pp) }}
+            />
+          </>
+        )}
       </div>
 
       <Modal

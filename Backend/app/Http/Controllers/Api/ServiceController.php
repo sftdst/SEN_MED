@@ -21,9 +21,18 @@ class ServiceController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('short_name', 'ilike', "%{$s}%")
+                  ->orWhere('id_gen_mst_service', 'ilike', "%{$s}%")
+                  ->orWhere('code_local', 'ilike', "%{$s}%");
+            });
+        }
+
         return response()->json([
             'success' => true,
-            'data'    => $query->get(),
+            'data'    => $query->paginate($request->get('per_page', 15)),
         ]);
     }
 

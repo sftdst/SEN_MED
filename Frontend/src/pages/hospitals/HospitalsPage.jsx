@@ -11,6 +11,7 @@ import PageHeader from '../../components/ui/PageHeader'
 import { StatusBadge } from '../../components/ui/Badge'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
+import Pagination from '../../components/ui/Pagination'
 
 const emptyForm = {
   hospital_name: '', short_name: '', adress: '', postal_code: '',
@@ -19,26 +20,31 @@ const emptyForm = {
 }
 
 export default function HospitalsPage() {
-  const [data, setData]         = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
-  const [modal, setModal]       = useState(false)
-  const [editing, setEditing]   = useState(null)
-  const [form, setForm]         = useState(emptyForm)
-  const [saving, setSaving]     = useState(false)
-  const [confirm, setConfirm]   = useState(null)
+  const [data, setData]                       = useState([])
+  const [paginationMeta, setPaginationMeta]   = useState(null)
+  const [page, setPage]                       = useState(1)
+  const [perPage, setPerPage]                 = useState(15)
+  const [loading, setLoading]                 = useState(true)
+  const [search, setSearch]                   = useState('')
+  const [modal, setModal]                     = useState(false)
+  const [editing, setEditing]                 = useState(null)
+  const [form, setForm]                       = useState(emptyForm)
+  const [saving, setSaving]                   = useState(false)
+  const [confirm, setConfirm]                 = useState(null)
 
-  const load = () => {
+  const load = (p = page, pp = perPage) => {
     setLoading(true)
-    hospitalApi.liste().then(r => setData(r.data.data || [])).finally(() => setLoading(false))
+    const params = { page: p, per_page: pp }
+    if (search) params.search = search
+    hospitalApi.liste(params).then(r => {
+      const result = r.data.data
+      setData(result?.data || [])
+      setPaginationMeta(result?.last_page ? result : null)
+    }).finally(() => setLoading(false))
   }
 
+  useEffect(() => { setPage(1); load(1, perPage) }, [search])
   useEffect(() => { load() }, [])
-
-  const filtered = data.filter(h =>
-    (h.hospital_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (h.short_name || '').toLowerCase().includes(search.toLowerCase())
-  )
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setModal(true) }
   const openEdit   = (row) => { setEditing(row); setForm({ ...emptyForm, ...row }); setModal(true) }
@@ -119,13 +125,22 @@ export default function HospitalsPage() {
           style={{ flex: 1, maxWidth: 340, marginBottom: 0 }}
         />
         <div style={{ marginLeft: 'auto', color: colors.gray500, fontSize: 13 }}>
-          {filtered.length} résultat{filtered.length !== 1 ? 's' : ''}
+          {paginationMeta ? paginationMeta.total : data.length} résultat{(paginationMeta?.total ?? data.length) !== 1 ? 's' : ''}
         </div>
       </div>
 
       {/* Table */}
       <div style={{ background: colors.white, borderRadius: radius.md, boxShadow: shadows.sm, overflow: 'hidden' }}>
-        {loading ? <FullPageSpinner /> : <Table columns={columns} data={filtered} emptyText="Aucun hôpital enregistré." />}
+        {loading ? <FullPageSpinner /> : (
+          <>
+            <Table columns={columns} data={data} emptyText="Aucun hôpital enregistré." />
+            <Pagination
+              meta={paginationMeta}
+              onPageChange={p => { setPage(p); load(p, perPage) }}
+              onPerPageChange={pp => { setPerPage(pp); setPage(1); load(1, pp) }}
+            />
+          </>
+        )}
       </div>
 
       {/* Modal Create/Edit */}

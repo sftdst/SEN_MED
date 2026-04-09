@@ -10,13 +10,21 @@ use Illuminate\Validation\ValidationException;
 
 class HospitalController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $hospitals = Hospital::with('departements')->get();
+        $query = Hospital::with('departements');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('hospital_name', 'ilike', "%{$s}%")
+                  ->orWhere('short_name', 'ilike', "%{$s}%");
+            });
+        }
 
         return response()->json([
             'success' => true,
-            'data'    => $hospitals,
+            'data'    => $query->paginate($request->get('per_page', 15)),
         ]);
     }
 

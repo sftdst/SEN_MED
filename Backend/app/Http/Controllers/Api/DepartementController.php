@@ -17,9 +17,17 @@ class DepartementController extends Controller
             $query->where('Hospital_id', $request->Hospital_id);
         }
 
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('NomDepartement', 'ilike', "%{$s}%")
+                  ->orWhere('description', 'ilike', "%{$s}%");
+            });
+        }
+
         return response()->json([
             'success' => true,
-            'data'    => $query->get(),
+            'data'    => $query->paginate($request->get('per_page', 15)),
         ]);
     }
 

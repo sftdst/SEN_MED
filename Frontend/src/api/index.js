@@ -2,7 +2,7 @@ import api from './axios'
 
 // ── Hôpitaux ──────────────────────────────────────────────
 export const hospitalApi = {
-  liste:      ()       => api.get('/hospitals'),
+  liste:      (params) => api.get('/hospitals', { params }),
   detail:     (id)     => api.get(`/hospitals/${id}`),
   creer:      (data)   => api.post('/hospitals', data),
   modifier:   (id, data) => api.put(`/hospitals/${id}`, data),

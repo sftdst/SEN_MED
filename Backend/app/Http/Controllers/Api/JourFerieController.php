@@ -20,7 +20,7 @@ class JourFerieController extends Controller
             $query->where('Statut', $request->Statut);
         }
 
-        $jours = $query->orderBy('DateFerie')->get();
+        $jours = $query->orderBy('DateFerie')->paginate($request->get('per_page', 15));
 
         return response()->json(['success' => true, 'data' => $jours]);
     }

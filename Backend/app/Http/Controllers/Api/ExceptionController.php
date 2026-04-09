@@ -25,7 +25,7 @@ class ExceptionController extends Controller
             $query->where('DateDebut', '<=', $request->DateFin);
         }
 
-        $exceptions = $query->orderBy('DateDebut', 'desc')->get();
+        $exceptions = $query->orderBy('DateDebut', 'desc')->paginate($request->get('per_page', 15));
 
         return response()->json([
             'success' => true,

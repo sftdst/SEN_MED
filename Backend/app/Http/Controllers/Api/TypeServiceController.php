@@ -17,9 +17,13 @@ class TypeServiceController extends Controller
             $query->where('IDgen_mst_Departement', $request->IDgen_mst_Departement);
         }
 
+        if ($request->filled('search')) {
+            $query->where('NomType', 'ilike', "%{$request->search}%");
+        }
+
         return response()->json([
             'success' => true,
-            'data'    => $query->get(),
+            'data'    => $query->paginate($request->get('per_page', 15)),
         ]);
     }
 

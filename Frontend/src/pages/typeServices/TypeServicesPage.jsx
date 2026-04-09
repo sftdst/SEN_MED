@@ -11,37 +11,43 @@ import PageHeader from '../../components/ui/PageHeader'
 import { StatusBadge } from '../../components/ui/Badge'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
+import Pagination from '../../components/ui/Pagination'
 
 const emptyForm = { NomType: '', description: '', status: 1, IDgen_mst_Departement: '' }
 
 export default function TypeServicesPage() {
-  const [data, setData]             = useState([])
-  const [departements, setDeps]     = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [search, setSearch]         = useState('')
-  const [filterDep, setFilterDep]   = useState('')
-  const [modal, setModal]           = useState(false)
-  const [editing, setEditing]       = useState(null)
-  const [form, setForm]             = useState(emptyForm)
-  const [saving, setSaving]         = useState(false)
-  const [confirm, setConfirm]       = useState(null)
+  const [data, setData]                       = useState([])
+  const [paginationMeta, setPaginationMeta]   = useState(null)
+  const [page, setPage]                       = useState(1)
+  const [perPage, setPerPage]                 = useState(15)
+  const [departements, setDeps]               = useState([])
+  const [loading, setLoading]                 = useState(true)
+  const [search, setSearch]                   = useState('')
+  const [filterDep, setFilterDep]             = useState('')
+  const [modal, setModal]                     = useState(false)
+  const [editing, setEditing]                 = useState(null)
+  const [form, setForm]                       = useState(emptyForm)
+  const [saving, setSaving]                   = useState(false)
+  const [confirm, setConfirm]                 = useState(null)
 
-  const load = () => {
+  const load = (p = page, pp = perPage) => {
     setLoading(true)
+    const params = { page: p, per_page: pp }
+    if (filterDep) params.IDgen_mst_Departement = filterDep
+    if (search)    params.search = search
     Promise.all([
-      typeServiceApi.liste(filterDep ? { IDgen_mst_Departement: filterDep } : {}),
+      typeServiceApi.liste(params),
       departementApi.liste(),
     ]).then(([t, d]) => {
-      setData(t.data.data || [])
-      setDeps(d.data.data || [])
+      const result = t.data.data
+      setData(result?.data || [])
+      setPaginationMeta(result?.last_page ? result : null)
+      const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
+      setDeps(toArr(d.data.data))
     }).finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [filterDep])
-
-  const filtered = data.filter(t =>
-    (t.NomType || '').toLowerCase().includes(search.toLowerCase())
-  )
+  useEffect(() => { setPage(1); load(1, perPage) }, [filterDep, search])
 
   const depOptions = departements.map(d => ({ value: String(d.IDgen_mst_Departement), label: d.NomDepartement }))
 
@@ -115,11 +121,22 @@ export default function TypeServicesPage() {
         <Select name="filterDep" value={filterDep} onChange={e => setFilterDep(e.target.value)}
           options={depOptions} placeholder="Tous les départements" style={{ minWidth: 220, marginBottom: 0 }}
         />
-        <div style={{ color: colors.gray500, fontSize: 13 }}>{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</div>
+        <div style={{ color: colors.gray500, fontSize: 13 }}>
+          {paginationMeta ? paginationMeta.total : data.length} résultat{(paginationMeta?.total ?? data.length) !== 1 ? 's' : ''}
+        </div>
       </div>
 
       <div style={{ background: colors.white, borderRadius: radius.md, boxShadow: shadows.sm, overflow: 'hidden' }}>
-        {loading ? <FullPageSpinner /> : <Table columns={columns} data={filtered} emptyText="Aucun type de service enregistré." />}
+        {loading ? <FullPageSpinner /> : (
+          <>
+            <Table columns={columns} data={data} emptyText="Aucun type de service enregistré." />
+            <Pagination
+              meta={paginationMeta}
+              onPageChange={p => { setPage(p); load(p, perPage) }}
+              onPerPageChange={pp => { setPerPage(pp); setPage(1); load(1, pp) }}
+            />
+          </>
+        )}
       </div>
 
       <Modal

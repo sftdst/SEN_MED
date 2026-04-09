@@ -146,10 +146,11 @@ function VueGrilleSemaine({ medecins }) {
         jourFerieApi.liste({ annee: weekStart.getFullYear() }),
         ferieDispoApi.liste(params),
       ])
-      setHoraires(h.data.data   || [])
-      setExceptions(e.data.data || [])
-      setFeries(f.data.data     || [])
-      setDispos(d.data.data     || [])
+      const toArray = (v) => Array.isArray(v) ? v : (v?.data ?? [])
+      setHoraires(toArray(h.data.data))
+      setExceptions(toArray(e.data.data))
+      setFeries(toArray(f.data.data))
+      setDispos(toArray(d.data.data))
     } catch { showToast('Erreur chargement planning.', 'error') }
     finally  { setLoading(false) }
   }
@@ -500,10 +501,11 @@ function VueCalendrierMois({ medecins }) {
         jourFerieApi.liste({ annee: new Date().getFullYear() }),
         ferieDispoApi.liste(params),
       ])
-      const horaires   = h.data.data || []
-      const exceptions = e.data.data || []
-      const feries     = f.data.data || []
-      const dispos     = d.data.data || []
+      const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
+      const horaires   = toArr(h.data.data)
+      const exceptions = toArr(e.data.data)
+      const feries     = toArr(f.data.data)
+      const dispos     = toArr(d.data.data)
       const evts       = []
 
       // Horaires → projection 12 semaines
@@ -649,8 +651,9 @@ function VueDashboard({ medecins }) {
         horaireApi.liste({}), exceptionApi.liste({}),
         jourFerieApi.liste({ annee: new Date().getFullYear() }), ferieDispoApi.liste({}),
       ])
-      const horaires = h.data.data || [], exceptions = e.data.data || []
-      const feries   = f.data.data || [], dispos     = d.data.data || []
+      const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
+      const horaires = toArr(h.data.data), exceptions = toArr(e.data.data)
+      const feries   = toArr(f.data.data), dispos     = toArr(d.data.data)
 
       // Activité par jour de semaine
       const parJour = JOURS.map(j => ({
@@ -874,7 +877,7 @@ function PlanningHebdomadaire({ medecins }) {
   const load = () => {
     setLoading(true)
     horaireApi.liste(filterMed ? { IDMedecin: filterMed } : {})
-      .then(r => setData(r.data.data || []))
+      .then(r => setData(Array.isArray(r.data.data) ? r.data.data : (r.data.data?.data ?? [])))
       .finally(() => setLoading(false))
   }
   useEffect(() => { load() }, [filterMed])
@@ -992,7 +995,7 @@ function Exceptions({ medecins }) {
 
   const load = () => {
     setLoading(true)
-    exceptionApi.liste(filterMed ? { IDMedecin: filterMed } : {}).then(r => setData(r.data.data || [])).finally(() => setLoading(false))
+    exceptionApi.liste(filterMed ? { IDMedecin: filterMed } : {}).then(r => setData(Array.isArray(r.data.data) ? r.data.data : (r.data.data?.data ?? []))).finally(() => setLoading(false))
   }
   useEffect(() => { load() }, [filterMed])
 
@@ -1072,7 +1075,7 @@ function JoursFeries() {
 
   const load = () => {
     setLoading(true)
-    jourFerieApi.liste({ annee }).then(r => setData(r.data.data || [])).finally(() => setLoading(false))
+    jourFerieApi.liste({ annee }).then(r => setData(Array.isArray(r.data.data) ? r.data.data : (r.data.data?.data ?? []))).finally(() => setLoading(false))
   }
   useEffect(() => { load() }, [annee])
 
@@ -1156,7 +1159,10 @@ function FerieDisponibilites({ medecins }) {
     Promise.all([
       ferieDispoApi.liste(filterMed ? { IDMedecin: filterMed } : {}),
       jourFerieApi.liste({ annee: new Date().getFullYear() }),
-    ]).then(([d, f]) => { setData(d.data.data || []); setFeries(f.data.data || []) }).finally(() => setLoading(false))
+    ]).then(([d, f]) => {
+      const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
+      setData(toArr(d.data.data)); setFeries(toArr(f.data.data))
+    }).finally(() => setLoading(false))
   }
   useEffect(() => { load() }, [filterMed])
 

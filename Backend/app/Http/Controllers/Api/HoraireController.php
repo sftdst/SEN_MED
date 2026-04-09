@@ -23,18 +23,19 @@ class HoraireController extends Controller
         if ($request->filled('JourSemaine')) $query->where('JourSemaine', $request->JourSemaine);
         if ($request->filled('Statut'))      $query->where('Statut', $request->Statut);
 
-        $horaires = $query->orderBy('IDMedecin')->orderBy('JourSemaine')->orderBy('HeureDebut')->get();
+        $paginated = $query->orderBy('IDMedecin')->orderBy('JourSemaine')->orderBy('HeureDebut')->paginate($request->get('per_page', 15));
+        $items = $paginated->items();
 
-        // Grouper par médecin pour la vue planning
+        // Grouper par médecin pour la vue planning (sur la page courante)
         $grouped = [];
-        foreach ($horaires as $h) {
+        foreach ($items as $h) {
             $grouped[$h->IDMedecin]['medecin'] = $h->medecin;
             $grouped[$h->IDMedecin]['horaires'][] = $h;
         }
 
         return response()->json([
             'success' => true,
-            'data'    => $horaires,
+            'data'    => $paginated,
             'grouped' => array_values($grouped),
             'jours'   => MedecinHoraire::JOURS,
         ]);

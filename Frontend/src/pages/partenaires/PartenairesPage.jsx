@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { partenaireApi } from '../../api'
+import Pagination from '../../components/ui/Pagination'
 import { colors, radius, shadows, typography, spacing } from '../../theme'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
@@ -387,7 +388,8 @@ function CouvertureTable({ partenaire, couvertures, setCouvertures, budget, setB
 
   const reload = async () => {
     const r = await partenaireApi.couvertures(partenaire.id_Rep)
-    setCouvertures(r.data.data || [])
+    const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
+    setCouvertures(toArr(r.data.data))
     setBudget({
       totalAlloue: r.data.total_alloue    || 0,
       maximum:     r.data.maximum_credit  || 0,
@@ -725,14 +727,17 @@ function CouvertureTable({ partenaire, couvertures, setCouvertures, budget, setB
 // PAGE PRINCIPALE
 // ══════════════════════════════════════════════════════════
 export default function PartenairesPage() {
-  const [partenaires, setPartenaires] = useState([])
-  const [selected,    setSelected]    = useState(null)
-  const [couvertures, setCouvertures] = useState([])
-  const [budget,      setBudget]      = useState({ totalAlloue: 0, maximum: 0, solde: 0 })
-  const [loadingList, setLoadingList] = useState(true)
-  const [loadingCov,  setLoadingCov]  = useState(false)
-  const [search,      setSearch]      = useState('')
-  const [filterType,  setFilterType]  = useState('')
+  const [partenaires, setPartenaires]         = useState([])
+  const [paginationMeta, setPaginationMeta]   = useState(null)
+  const [page, setPage]                       = useState(1)
+  const [perPage, setPerPage]                 = useState(15)
+  const [selected,    setSelected]            = useState(null)
+  const [couvertures, setCouvertures]         = useState([])
+  const [budget,      setBudget]              = useState({ totalAlloue: 0, maximum: 0, solde: 0 })
+  const [loadingList, setLoadingList]         = useState(true)
+  const [loadingCov,  setLoadingCov]          = useState(false)
+  const [search,      setSearch]              = useState('')
+  const [filterType,  setFilterType]          = useState('')
   const [form,        setForm]        = useState(EMPTY_HEADER)
   const [formErrors,  setFormErrors]  = useState({})
   const [saving,      setSaving]      = useState(false)
@@ -742,19 +747,23 @@ export default function PartenairesPage() {
   const [modalEdit,   setModalEdit]   = useState(false)
   const timer = useRef(null)
 
-  const loadPartenaires = () => {
+  const loadPartenaires = (p = page, pp = perPage) => {
     setLoadingList(true)
-    const params = {}
-    if (search)           params.search   = search
+    const params = { page: p, per_page: pp }
+    if (search)            params.search   = search
     if (filterType !== '') params.TypePart = filterType
     partenaireApi.liste(params)
-      .then(r => setPartenaires(r.data.data || []))
+      .then(r => {
+        const result = r.data.data
+        setPartenaires(result?.data || [])
+        setPaginationMeta(result?.last_page ? result : null)
+      })
       .finally(() => setLoadingList(false))
   }
 
   useEffect(() => {
     clearTimeout(timer.current)
-    timer.current = setTimeout(loadPartenaires, 300)
+    timer.current = setTimeout(() => { setPage(1); loadPartenaires(1, perPage) }, 300)
     return () => clearTimeout(timer.current)
   }, [search, filterType])
 
@@ -762,7 +771,8 @@ export default function PartenairesPage() {
     setLoadingCov(true)
     try {
       const r = await partenaireApi.couvertures(part.id_Rep)
-      setCouvertures(r.data.data || [])
+      const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
+      setCouvertures(toArr(r.data.data))
       setBudget({
         totalAlloue: r.data.total_alloue      || 0,
         maximum:     r.data.maximum_credit    || 0,
@@ -1031,9 +1041,11 @@ export default function PartenairesPage() {
                   })}
                 </tbody>
               </table>
-              <div style={{ padding: `${spacing.sm} ${spacing.lg}`, borderTop: `1px solid ${colors.gray100}`, background: colors.gray50, fontSize: '11px', color: colors.gray500 }}>
-                {partenaires.length} partenaire{partenaires.length > 1 ? 's' : ''} affiché{partenaires.length > 1 ? 's' : ''}
-              </div>
+              <Pagination
+                meta={paginationMeta}
+                onPageChange={p => { setPage(p); loadPartenaires(p, perPage) }}
+                onPerPageChange={pp => { setPerPage(pp); setPage(1); loadPartenaires(1, pp) }}
+              />
             </div>
           )}
         </div>

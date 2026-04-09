@@ -35,7 +35,7 @@ class PartenaireController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $query->orderBy('Nom')->get(),
+            'data'    => $query->orderBy('Nom')->paginate($request->get('per_page', 15)),
         ]);
     }
 

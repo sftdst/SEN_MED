@@ -11,6 +11,7 @@ import PageHeader from '../../components/ui/PageHeader'
 import { StatusBadge } from '../../components/ui/Badge'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
+import Pagination from '../../components/ui/Pagination'
 
 const emptyForm = {
   id_gen_mst_service: '', n_ordre: '', short_name: '', tri_name: '',
@@ -20,34 +21,38 @@ const emptyForm = {
 }
 
 export default function ServicesPage() {
-  const [data, setData]           = useState([])
-  const [typeServices, setTypes]  = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [search, setSearch]       = useState('')
-  const [filterType, setFilterType] = useState('')
-  const [modal, setModal]         = useState(false)
-  const [editing, setEditing]     = useState(null)
-  const [form, setForm]           = useState(emptyForm)
-  const [saving, setSaving]       = useState(false)
-  const [confirm, setConfirm]     = useState(null)
+  const [data, setData]                       = useState([])
+  const [paginationMeta, setPaginationMeta]   = useState(null)
+  const [page, setPage]                       = useState(1)
+  const [perPage, setPerPage]                 = useState(15)
+  const [typeServices, setTypes]              = useState([])
+  const [loading, setLoading]                 = useState(true)
+  const [search, setSearch]                   = useState('')
+  const [filterType, setFilterType]           = useState('')
+  const [modal, setModal]                     = useState(false)
+  const [editing, setEditing]                 = useState(null)
+  const [form, setForm]                       = useState(emptyForm)
+  const [saving, setSaving]                   = useState(false)
+  const [confirm, setConfirm]                 = useState(null)
 
-  const load = () => {
+  const load = (p = page, pp = perPage) => {
     setLoading(true)
+    const params = { page: p, per_page: pp }
+    if (filterType) params.IDgen_mst_Type_Service = filterType
+    if (search)     params.search = search
     Promise.all([
-      serviceApi.liste(filterType ? { IDgen_mst_Type_Service: filterType } : {}),
+      serviceApi.liste(params),
       typeServiceApi.liste(),
     ]).then(([s, t]) => {
-      setData(s.data.data || [])
-      setTypes(t.data.data || [])
+      const result = s.data.data
+      setData(result?.data || [])
+      setPaginationMeta(result?.last_page ? result : null)
+      const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
+      setTypes(toArr(t.data.data))
     }).finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [filterType])
-
-  const filtered = data.filter(s =>
-    (s.short_name || s.id_gen_mst_service || '').toLowerCase().includes(search.toLowerCase()) ||
-    (s.code_local || '').toLowerCase().includes(search.toLowerCase())
-  )
+  useEffect(() => { setPage(1); load(1, perPage) }, [filterType, search])
 
   const typeOptions = typeServices.map(t => ({ value: String(t.IDgen_mst_Type_Service), label: t.NomType }))
 
@@ -118,11 +123,22 @@ export default function ServicesPage() {
         <Select name="filterType" value={filterType} onChange={e => setFilterType(e.target.value)}
           options={typeOptions} placeholder="Tous les types" style={{ minWidth: 220, marginBottom: 0 }}
         />
-        <div style={{ color: colors.gray500, fontSize: 13 }}>{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</div>
+        <div style={{ color: colors.gray500, fontSize: 13 }}>
+          {paginationMeta ? paginationMeta.total : data.length} résultat{(paginationMeta?.total ?? data.length) !== 1 ? 's' : ''}
+        </div>
       </div>
 
       <div style={{ background: colors.white, borderRadius: radius.md, boxShadow: shadows.sm, overflow: 'hidden' }}>
-        {loading ? <FullPageSpinner /> : <Table columns={columns} data={filtered} emptyText="Aucun service enregistré." />}
+        {loading ? <FullPageSpinner /> : (
+          <>
+            <Table columns={columns} data={data} emptyText="Aucun service enregistré." />
+            <Pagination
+              meta={paginationMeta}
+              onPageChange={p => { setPage(p); load(p, perPage) }}
+              onPerPageChange={pp => { setPerPage(pp); setPage(1); load(1, pp) }}
+            />
+          </>
+        )}
       </div>
 
       <Modal

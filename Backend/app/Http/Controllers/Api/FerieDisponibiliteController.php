@@ -21,7 +21,7 @@ class FerieDisponibiliteController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $query->orderBy('DateFerie')->orderBy('HeureDebut')->get(),
+            'data'    => $query->orderBy('DateFerie')->orderBy('HeureDebut')->paginate($request->get('per_page', 15)),
         ]);
     }
 
