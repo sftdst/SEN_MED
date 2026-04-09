@@ -722,24 +722,300 @@ function CouvertureTable({ partenaire, couvertures, setCouvertures, budget, setB
 }
 
 // ══════════════════════════════════════════════════════════
+// TABLE DE COUVERTURES LOCALE (pour la création)
+// ══════════════════════════════════════════════════════════
+function CouvertureLocalTable({ rows, setRows, maximumCredit }) {
+  const [editIdx, setEditIdx] = useState(null)
+  const [newRow,  setNewRow]  = useState(null)
+
+  const totalAlloue = rows.reduce((s, r) => s + (+r.Maximum_Credit || 0), 0)
+  const solde       = (+maximumCredit || 0) - totalAlloue
+  const hasBudget   = (+maximumCredit || 0) > 0
+
+  const onNewChange = (field, val) => setNewRow(r => {
+    const u = { ...r, [field]: val }
+    if (field === 'contributionCompagny') u.contributionPatient  = Math.max(0, 100 - +val)
+    if (field === 'contributionPatient')  u.contributionCompagny = Math.max(0, 100 - +val)
+    return u
+  })
+
+  const onEditChange = (field, val) => setEditIdx(idx => {
+    // update rows inline
+    return idx
+  }) || setRows(rs => rs.map((r, i) => {
+    if (i !== editIdx) return r
+    const u = { ...r, [field]: val }
+    if (field === 'contributionCompagny') u.contributionPatient  = Math.max(0, 100 - +val)
+    if (field === 'contributionPatient')  u.contributionCompagny = Math.max(0, 100 - +val)
+    return u
+  }))
+
+  const handleAjouter = () => {
+    if (!newRow?.Nom?.trim()) { showToast('Le nom est obligatoire.', 'error'); return }
+    const total = (+newRow.contributionCompagny || 0) + (+newRow.contributionPatient || 0)
+    if (total !== 100) { showToast(`Part Compagnie + Part Patient = ${total}% (doit être 100%).`, 'error'); return }
+    const montant = +newRow.Maximum_Credit || 0
+    if (hasBudget && montant > solde) {
+      showToast(`Dépassement du plafond. Disponible : ${fmtN(solde)} FCFA.`, 'error'); return
+    }
+    setRows(rs => [...rs, { ...newRow, _tempId: Date.now() }])
+    setNewRow(null)
+  }
+
+  const handleSupprimerLigne = (idx) => {
+    setRows(rs => rs.filter((_, i) => i !== idx))
+    if (editIdx === idx) setEditIdx(null)
+  }
+
+  const tHead = {
+    padding: '9px 12px', fontSize: '11px', fontWeight: 700,
+    color: colors.white, background: colors.bleu,
+    textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.4px',
+    whiteSpace: 'nowrap',
+  }
+  const tCell = {
+    padding: '8px 10px', fontSize: '13px',
+    borderBottom: `1px solid ${colors.gray100}`, verticalAlign: 'middle',
+  }
+  const inpCell = {
+    width: '100%', boxSizing: 'border-box',
+    border: `1.5px solid ${colors.bleu}`, borderRadius: radius.sm,
+    padding: '5px 8px', fontSize: '12px', outline: 'none',
+  }
+
+  return (
+    <div style={{
+      background: colors.white,
+      border: `1px solid ${colors.gray200}`,
+      borderRadius: radius.md,
+      boxShadow: shadows.sm,
+      overflow: 'hidden',
+    }}>
+      {/* Barre titre */}
+      <div style={{
+        background: `linear-gradient(135deg, ${colors.bleu} 0%, #004080 100%)`,
+        padding: '9px 14px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: colors.white }}>
+            Types de couverture
+          </span>
+          {rows.length > 0 && (
+            <span style={{
+              background: 'rgba(255,255,255,0.2)', color: colors.white,
+              borderRadius: radius.full, padding: '1px 8px', fontSize: '11px', fontWeight: 700,
+            }}>
+              {rows.length}
+            </span>
+          )}
+          {hasBudget && (
+            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.75)', marginLeft: 4 }}>
+              · Disponible : {fmtN(solde)} FCFA
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: spacing.sm }}>
+          {newRow ? (
+            <>
+              <BtnBar onClick={() => setNewRow(null)}>Annuler</BtnBar>
+              <BtnBar onClick={handleAjouter} variant="primary">✓ Ajouter</BtnBar>
+            </>
+          ) : (
+            <BtnBar
+              onClick={() => { setNewRow({ ...EMPTY_COV }); setEditIdx(null) }}
+              variant="primary"
+            >
+              + Ajouter une couverture
+            </BtnBar>
+          )}
+        </div>
+      </div>
+
+      {/* Budget bar mini */}
+      {hasBudget && rows.length > 0 && (() => {
+        const pct   = Math.min(100, Math.round((totalAlloue / (+maximumCredit)) * 100))
+        const color = pct >= 90 ? colors.danger : pct >= 70 ? colors.warning : colors.success
+        return (
+          <div style={{ padding: '6px 14px', background: colors.gray50, borderBottom: `1px solid ${colors.gray100}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: 4 }}>
+              <span style={{ color, fontWeight: 600 }}>{pct}% alloué</span>
+              <span style={{ color: solde >= 0 ? colors.success : colors.danger, fontWeight: 600 }}>
+                Restant : {fmtN(solde)} FCFA
+              </span>
+            </div>
+            <div style={{ height: 5, background: colors.gray200, borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3 }} />
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Table */}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ ...tHead, width: 36, textAlign: 'center' }}>#</th>
+              <th style={tHead}>Désignation</th>
+              <th style={tHead}>Service</th>
+              <th style={{ ...tHead, textAlign: 'right', width: 150 }}>Plafond (FCFA)</th>
+              <th style={{ ...tHead, textAlign: 'center', width: 110 }}>Part Cie %</th>
+              <th style={{ ...tHead, textAlign: 'center', width: 110 }}>Part Patient %</th>
+              <th style={{ ...tHead, width: 40 }} />
+            </tr>
+          </thead>
+          <tbody>
+            {/* Ligne d'ajout */}
+            {newRow && (
+              <tr style={{ background: `${colors.bleu}08` }}>
+                <td style={{ ...tCell, textAlign: 'center', color: colors.gray400 }}>—</td>
+                <td style={tCell}>
+                  <input style={inpCell} value={newRow.Nom} autoFocus placeholder="Nom *"
+                    onChange={e => onNewChange('Nom', e.target.value)} />
+                </td>
+                <td style={tCell}>
+                  <input style={inpCell} value={newRow.service} placeholder="Service"
+                    onChange={e => onNewChange('service', e.target.value)} />
+                </td>
+                <td style={tCell}>
+                  <input
+                    style={{ ...inpCell, textAlign: 'right', borderColor: hasBudget && (+newRow.Maximum_Credit || 0) > solde ? colors.danger : colors.bleu }}
+                    type="number" min="0" value={newRow.Maximum_Credit}
+                    onChange={e => onNewChange('Maximum_Credit', e.target.value)}
+                  />
+                  {hasBudget && (
+                    <div style={{ fontSize: '10px', marginTop: 2, color: (solde - (+newRow.Maximum_Credit || 0)) >= 0 ? colors.success : colors.danger, fontWeight: 600 }}>
+                      Restant après : {fmtN(solde - (+newRow.Maximum_Credit || 0))} FCFA
+                    </div>
+                  )}
+                </td>
+                <td style={{ ...tCell, textAlign: 'center' }}>
+                  <input style={{ ...inpCell, textAlign: 'center' }} type="number" min="0" max="100"
+                    value={newRow.contributionCompagny} onChange={e => onNewChange('contributionCompagny', e.target.value)} />
+                </td>
+                <td style={{ ...tCell, textAlign: 'center' }}>
+                  <input style={{ ...inpCell, textAlign: 'center' }} type="number" min="0" max="100"
+                    value={newRow.contributionPatient} onChange={e => onNewChange('contributionPatient', e.target.value)} />
+                </td>
+                <td style={tCell} />
+              </tr>
+            )}
+
+            {/* Lignes existantes */}
+            {rows.length === 0 && !newRow ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', padding: 28, color: colors.gray400 }}>
+                  <div style={{ fontSize: 22, marginBottom: 6 }}>📋</div>
+                  <div style={{ fontSize: '12px', fontStyle: 'italic' }}>
+                    Aucune couverture. Cliquez sur <strong>+ Ajouter une couverture</strong>.
+                  </div>
+                </td>
+              </tr>
+            ) : rows.map((row, i) => {
+              const isEdit = editIdx === i
+              return (
+                <tr key={row._tempId || i} style={{ background: isEdit ? `${colors.bleu}08` : i % 2 === 0 ? colors.white : colors.gray50 }}>
+                  <td style={{ ...tCell, textAlign: 'center', fontWeight: 700, color: colors.gray500, fontSize: '12px' }}>{i + 1}</td>
+                  <td style={tCell}>
+                    {isEdit
+                      ? <input style={inpCell} value={row.Nom} autoFocus onChange={e => onEditChange('Nom', e.target.value)} />
+                      : <span style={{ fontWeight: 600, color: colors.bleu }}>{row.Nom}</span>}
+                  </td>
+                  <td style={{ ...tCell, color: colors.gray600 }}>
+                    {isEdit
+                      ? <input style={inpCell} value={row.service || ''} onChange={e => onEditChange('service', e.target.value)} />
+                      : row.service || <span style={{ color: colors.gray400, fontStyle: 'italic' }}>—</span>}
+                  </td>
+                  <td style={{ ...tCell, textAlign: 'right' }}>
+                    {isEdit
+                      ? <input style={{ ...inpCell, textAlign: 'right' }} type="number" min="0" value={row.Maximum_Credit}
+                          onChange={e => onEditChange('Maximum_Credit', e.target.value)} />
+                      : <span style={{ fontWeight: 700 }}>{fmtN(row.Maximum_Credit)}</span>}
+                  </td>
+                  <td style={{ ...tCell, textAlign: 'center' }}>
+                    {isEdit
+                      ? <input style={{ ...inpCell, textAlign: 'center' }} type="number" min="0" max="100"
+                          value={row.contributionCompagny} onChange={e => onEditChange('contributionCompagny', e.target.value)} />
+                      : <PctBadge value={row.contributionCompagny} color={colors.bleu} />}
+                  </td>
+                  <td style={{ ...tCell, textAlign: 'center' }}>
+                    {isEdit
+                      ? <input style={{ ...inpCell, textAlign: 'center' }} type="number" min="0" max="100"
+                          value={row.contributionPatient} onChange={e => onEditChange('contributionPatient', e.target.value)} />
+                      : <PctBadge value={row.contributionPatient} color={colors.orange} />}
+                  </td>
+                  <td style={{ ...tCell, textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                      <button
+                        onClick={() => setEditIdx(isEdit ? null : i)}
+                        title={isEdit ? 'Fermer' : 'Modifier'}
+                        style={{
+                          border: `1px solid ${colors.bleu}30`, borderRadius: radius.sm,
+                          background: isEdit ? `${colors.bleu}15` : 'transparent',
+                          color: colors.bleu, padding: '3px 7px', cursor: 'pointer', fontSize: '12px',
+                        }}
+                      >
+                        {isEdit ? '✓' : '✏'}
+                      </button>
+                      <button
+                        onClick={() => handleSupprimerLigne(i)}
+                        title="Supprimer"
+                        style={{
+                          border: `1px solid ${colors.danger}30`, borderRadius: radius.sm,
+                          background: 'transparent', color: colors.danger,
+                          padding: '3px 7px', cursor: 'pointer', fontSize: '12px',
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+
+          {/* Pied totaux */}
+          {rows.length > 0 && !newRow && (
+            <tfoot>
+              <tr style={{ background: colors.gray50, borderTop: `2px solid ${colors.gray200}` }}>
+                <td colSpan={3} style={{ padding: '7px 10px', fontSize: '12px', fontWeight: 700, color: colors.gray700 }}>
+                  Total — {rows.length} couverture{rows.length > 1 ? 's' : ''}
+                </td>
+                <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: colors.bleu, fontSize: '13px' }}>
+                  {fmtN(totalAlloue)} FCFA
+                </td>
+                <td colSpan={3} />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
 // PAGE PRINCIPALE
 // ══════════════════════════════════════════════════════════
 export default function PartenairesPage() {
-  const [partenaires, setPartenaires] = useState([])
-  const [selected,    setSelected]    = useState(null)
-  const [couvertures, setCouvertures] = useState([])
-  const [budget,      setBudget]      = useState({ totalAlloue: 0, maximum: 0, solde: 0 })
-  const [loadingList, setLoadingList] = useState(true)
-  const [loadingCov,  setLoadingCov]  = useState(false)
-  const [search,      setSearch]      = useState('')
-  const [filterType,  setFilterType]  = useState('')
-  const [form,        setForm]        = useState(EMPTY_HEADER)
-  const [formErrors,  setFormErrors]  = useState({})
-  const [saving,      setSaving]      = useState(false)
-  const [confirmDel,  setConfirmDel]  = useState(false)
-  const [modalNew,    setModalNew]    = useState(false)
-  const [modalView,   setModalView]   = useState(false)
-  const [modalEdit,   setModalEdit]   = useState(false)
+  const [partenaires,    setPartenaires]    = useState([])
+  const [selected,       setSelected]       = useState(null)
+  const [couvertures,    setCouvertures]    = useState([])
+  const [budget,         setBudget]         = useState({ totalAlloue: 0, maximum: 0, solde: 0 })
+  const [loadingList,    setLoadingList]    = useState(true)
+  const [loadingCov,     setLoadingCov]     = useState(false)
+  const [search,         setSearch]         = useState('')
+  const [filterType,     setFilterType]     = useState('')
+  const [form,           setForm]           = useState(EMPTY_HEADER)
+  const [formErrors,     setFormErrors]     = useState({})
+  const [saving,         setSaving]         = useState(false)
+  const [confirmDel,     setConfirmDel]     = useState(false)
+  const [modalNew,       setModalNew]       = useState(false)
+  const [modalView,      setModalView]      = useState(false)
+  const [modalEdit,      setModalEdit]      = useState(false)
+  const [newCouvertures, setNewCouvertures] = useState([])   // ← couvertures locales pour la création
   const timer = useRef(null)
 
   const loadPartenaires = () => {
@@ -786,6 +1062,7 @@ export default function PartenairesPage() {
     setModalView(false); setModalEdit(false); setModalNew(false)
     setSelected(null); setCouvertures([])
     setForm(EMPTY_HEADER); setBudget({ totalAlloue: 0, maximum: 0, solde: 0 })
+    setNewCouvertures([])
   }
 
   const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
@@ -797,7 +1074,7 @@ export default function PartenairesPage() {
         await partenaireApi.modifier(selected.id_Rep, form)
         showToast('Partenaire mis à jour avec succès.')
       } else {
-        await partenaireApi.creer(form)
+        await partenaireApi.creer({ ...form, couvertures: newCouvertures })
         showToast('Nouveau partenaire créé.')
       }
       closeModals(); loadPartenaires()
@@ -820,7 +1097,7 @@ export default function PartenairesPage() {
         title="Partenaires & Couvertures"
         subtitle="Gestion des assurances, mutuelles et entreprises partenaires"
         actions={
-          <Button onClick={() => { setModalNew(true); setForm(EMPTY_HEADER); setFormErrors({}) }} icon="➕">
+          <Button onClick={() => { setModalNew(true); setForm(EMPTY_HEADER); setFormErrors({}); setNewCouvertures([]) }} icon="➕">
             Nouveau partenaire
           </Button>
         }
@@ -1042,19 +1319,22 @@ export default function PartenairesPage() {
       {/* ── MODAL NOUVEAU PARTENAIRE ─────────────────────── */}
       <Modal
         open={modalNew}
-        onClose={() => setModalNew(false)}
+        onClose={closeModals}
         title="Nouveau partenaire"
         width={800}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setModalNew(false)}>Annuler</Button>
+            <Button variant="ghost" onClick={closeModals}>Annuler</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? 'Création en cours...' : 'Créer le partenaire'}
             </Button>
           </>
         }
       >
-        <EnteteForm form={form} onChange={handleChange} errors={formErrors} />
+        <div style={{ display: 'grid', gap: spacing.lg }}>
+          <EnteteForm form={form} onChange={handleChange} errors={formErrors} />
+          <CouvertureLocalTable rows={newCouvertures} setRows={setNewCouvertures} maximumCredit={form.maximum_credit} />
+        </div>
       </Modal>
 
       {/* ── MODAL DÉTAILS ───────────────────────────────── */}

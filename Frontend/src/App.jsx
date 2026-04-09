@@ -8,6 +8,7 @@ import ServicesPage from './pages/services/ServicesPage'
 import PersonnelsPage from './pages/personnels/PersonnelsPage'
 import PlanningPage from './pages/planning/PlanningPage'
 import PartenairesPage from './pages/partenaires/PartenairesPage'
+import PatientsPage from './pages/patients/PatientsPage'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="personnels"    element={<PersonnelsPage />} />
           <Route path="planning"      element={<PlanningPage />} />
           <Route path="partenaires"   element={<PartenairesPage />} />
+          <Route path="patients"      element={<PatientsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

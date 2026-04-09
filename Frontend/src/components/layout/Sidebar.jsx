@@ -11,7 +11,8 @@ const navItems = [
   { group: 'RESSOURCES HUMAINES' },
   { to: '/personnels',     icon: '👤', label: 'Personnel'         },
   { to: '/planning',       icon: '📅', label: 'Emplois du temps'  },
-  { group: 'FINANCES & PARTENAIRES' },
+  { group: 'PATIENTS & PARTENAIRES' },
+  { to: '/patients',       icon: '👥', label: 'Patients'          },
   { to: '/partenaires',    icon: '🤝', label: 'Partenaires'       },
 ]
 

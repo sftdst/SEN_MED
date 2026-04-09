@@ -101,3 +101,15 @@ export const personnelApi = {
   supprimer:      (id)     => api.delete(`/personnels/${id}`),
   metadata:       ()       => api.get('/personnels/metadata'),
 }
+
+// ── Patients ──────────────────────────────────────────────
+export const patientApi = {
+  liste:              (params)       => api.get('/patients', { params }),
+  detail:             (id)           => api.get(`/patients/${id}`),
+  creer:              (data)         => api.post('/patients', data),
+  creerRapide:        (data)         => api.post('/patients/creation-rapide', data),
+  modifier:           (id, data)     => api.put(`/patients/${id}`, data),
+  supprimer:          (id)           => api.delete(`/patients/${id}`),
+  metadata:           ()             => api.get('/patients/metadata'),
+  typesCouverture:    (partenaireId) => api.get(`/patients/partenaire/${partenaireId}/couvertures`),
+}
