@@ -19,6 +19,12 @@ const variants = {
     border: 'none',
     hover: '#b71c1c',
   },
+  warning: {
+    background: colors.warning,
+    color: colors.white,
+    border: 'none',
+    hover: colors.orangeDark,
+  },
   ghost: {
     background: 'transparent',
     color: colors.gray600,
@@ -77,7 +83,7 @@ export default function Button({
         justifyContent: 'center',
         whiteSpace: 'nowrap',
         letterSpacing: '0.01em',
-        boxShadow: variant === 'primary' ? shadows.sm : 'none',
+        boxShadow: (variant === 'primary' || variant === 'warning') ? shadows.sm : 'none',
         ...style,
       }}
       onMouseEnter={e => {

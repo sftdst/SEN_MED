@@ -7,6 +7,7 @@ use App\Models\PartenaireHeader;
 use App\Models\PartenaireDtl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PartenaireController extends Controller
@@ -57,12 +58,51 @@ class PartenaireController extends Controller
             'code_societe'   => 'nullable|string|max:50|unique:gen_mst_partenaire_header,code_societe',
             'status'         => 'nullable|boolean',
             'TypePart'       => 'nullable|integer|in:0,1,2,3,4',
+            'couvertures'    => 'nullable|array',
+            'couvertures.*.Nom'                  => 'required_with:couvertures|string|max:50',
+            'couvertures.*.service'              => 'nullable|string|max:50',
+            'couvertures.*.contributionCompagny' => 'required_with:couvertures|integer|min:0|max:100',
+            'couvertures.*.contributionPatient'  => 'required_with:couvertures|integer|min:0|max:100',
+            'couvertures.*.Maximum_Credit'       => 'nullable|integer|min:0',
         ]);
+
+        $couvertures = $validated['couvertures'] ?? [];
+        unset($validated['couvertures']);
+
+        if (!empty($couvertures)) {
+            foreach ($couvertures as $index => $cov) {
+                $totalPct = ($cov['contributionCompagny'] ?? 0) + ($cov['contributionPatient'] ?? 0);
+                if ($totalPct !== 100) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Le type de couverture #" . ($index + 1) . " doit totaliser 100% entre la compagnie et le patient.",
+                        'errors'  => ['couvertures' => ["Couverture #" . ($index + 1) . " : Part Compagnie + Part Patient doit être égale à 100%."]],
+                    ], 422);
+                }
+            }
+
+            $sumCredit = array_sum(array_map(fn($cov) => (int) ($cov['Maximum_Credit'] ?? 0), $couvertures));
+            if (isset($validated['maximum_credit']) && $validated['maximum_credit'] > 0 && $sumCredit > $validated['maximum_credit']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Le total des plafonds de couverture ({$this->fmt($sumCredit)} FCFA) dépasse le plafond du partenaire ({$this->fmt($validated['maximum_credit'])} FCFA).",
+                    'errors'  => ['maximum_credit' => ["Plafond minimum : {$this->fmt($sumCredit)} FCFA"]],
+                ], 422);
+            }
+        }
 
         $validated['id_gen_partenaire'] = $this->genererIdPartenaire();
         $validated['date_created']      = $validated['date_created'] ?? now()->toDateString();
 
-        $partenaire = PartenaireHeader::create($validated);
+        $partenaire = null;
+        DB::transaction(function () use (&$partenaire, $validated, $couvertures) {
+            $partenaire = PartenaireHeader::create($validated);
+            foreach ($couvertures as $cov) {
+                $cov['Id_gen_partenaire'] = $partenaire->id_gen_partenaire;
+                $cov['id_partenaire_dtl'] = $this->genererIdDtl();
+                PartenaireDtl::create($cov);
+            }
+        });
 
         return response()->json([
             'success' => true,

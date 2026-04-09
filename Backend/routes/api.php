@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\JourFerieController;
 use App\Http\Controllers\Api\FerieDisponibiliteController;
 use App\Http\Controllers\Api\CreneauxController;
 use App\Http\Controllers\Api\PartenaireController;
+use App\Http\Controllers\Api\PatientController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -105,5 +106,23 @@ Route::prefix('v1')->group(function () {
     // CRUD partenaires (header)
     Route::apiResource('partenaires', PartenaireController::class)
         ->parameters(['partenaires' => 'partenaire']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Patients
+    |--------------------------------------------------------------------------
+    */
+    // Métadonnées (genres, statuts matrimoniaux, nationalités...)
+    Route::get('patients/metadata', [PatientController::class, 'metadata']);
+
+    // Création rapide (accueil/réception)
+    Route::post('patients/creation-rapide', [PatientController::class, 'storeRapide']);
+
+    // Types de couverture pour un partenaire
+    Route::get('patients/partenaire/{partenaire}/couvertures', [PatientController::class, 'typesCouverturePartenaire']);
+
+    // CRUD complet patients
+    Route::apiResource('patients', PatientController::class)
+        ->parameters(['patients' => 'patient']);
 
 });

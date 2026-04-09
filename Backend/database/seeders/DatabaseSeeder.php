@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             ServiceSeeder::class,
             PersonnelSeeder::class,
             PartenaireHeaderSeeder::class,
+            PatientSeeder::class,
         ]);
     }
 }
