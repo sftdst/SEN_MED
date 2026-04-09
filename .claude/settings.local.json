@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php --version)",
+      "Bash(composer --version)",
+      "Bash(npm --version)",
+      "Bash(psql --version)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(php artisan:*)",
+      "Bash(composer dump-autoload:*)",
+      "Bash(composer install:*)",
+      "Bash(php -r ':*)",
+      "Bash(npm run:*)",
+      "Bash(npx vite:*)"
+    ]
+  }
+}
