@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { patientApi, partenaireApi } from '../../api'
+import CreerVisiteModal from '../visites/CreerVisiteModal'
 import { colors, radius, shadows, typography, spacing } from '../../theme'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
@@ -154,6 +155,7 @@ export default function PatientsPage() {
   const [formErrors,      setFormErrors]     = useState({})
   const [saving,          setSaving]         = useState(false)
   const [confirmDel,      setConfirmDel]     = useState(false)
+  const [patientVisite,   setPatientVisite]  = useState(null)  // patient pour ouvrir visite après création rapide
 
   const timer = useRef(null)
 
@@ -281,6 +283,46 @@ export default function PatientsPage() {
     }
   }
 
+  // Créer patient rapide puis ouvrir directement la création de visite
+  const handleSaveRapideEtVisite = async () => {
+    setSaving(true)
+    setFormErrors({})
+    try {
+      const res = await patientApi.creerRapide(formRapide)
+      const nouveauPatient = res.data?.data
+      showToast('Patient créé — ouverture de la visite.')
+      setModalRapide(false)
+      setFormRapide(EMPTY_RAPIDE)
+      setFormErrors({})
+      setPatientVisite(nouveauPatient)
+      setSelected(nouveauPatient)
+      setModalConsult(true)
+      loadPatients()
+    } catch (err) {
+      setFormErrors(err.response?.data?.errors || {})
+      showToast(err.response?.data?.message || 'Erreur de validation.', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Basculer vers la fiche complète en pré-remplissant avec les données rapides
+  const handleSwitchToComplete = () => {
+    setFormComplet(f => ({
+      ...f,
+      first_name:     formRapide.first_name,
+      last_name:      formRapide.last_name,
+      dob:            formRapide.dob,
+      gender_id:      formRapide.gender_id,
+      mobile_number:  formRapide.mobile_number,
+      company_id:     formRapide.company_id,
+      type_couverture: formRapide.type_couverture,
+    }))
+    setModalRapide(false)
+    setModalComplet(true)
+    if (formRapide.company_id) loadTypesCouverture(formRapide.company_id)
+  }
+
   const handleSaveComplet = async () => {
     setSaving(true)
     setFormErrors({})
@@ -311,6 +353,38 @@ export default function PatientsPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  // Enregistrer les modifications puis ouvrir directement la création de visite
+  const handleSaveEditEtVisite = async () => {
+    setSaving(true)
+    setFormErrors({})
+    try {
+      const res = await patientApi.modifier(selected.id_Rep, form)
+      const patientMaj = res.data?.data ?? selected
+      showToast('Patient modifié — ouverture de la visite.')
+      setModalEdit(false)
+      setForm({})
+      setFormErrors({})
+      setPatientVisite(patientMaj)
+      setSelected(patientMaj)
+      setModalConsult(true)
+      loadPatients()
+    } catch (err) {
+      setFormErrors(err.response?.data?.errors || {})
+      showToast(err.response?.data?.message || 'Erreur.', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Ouvrir la visite directement sans sauvegarder les modifications en cours
+  const handleVisiteDepuisEdit = () => {
+    setModalEdit(false)
+    setForm({})
+    setFormErrors({})
+    setPatientVisite(selected)
+    setModalConsult(true)
   }
 
   const handleDelete = async () => {
@@ -346,7 +420,16 @@ export default function PatientsPage() {
           <div style={{ display: 'flex', gap: spacing.sm, flexWrap: 'wrap' }}>
             <Button onClick={() => setModalHistorique(true)} variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>Historique Visite</Button>
             <Button onClick={() => setModalRdv(true)} variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>Historique Rendez-vous</Button>
-            <Button onClick={() => setModalConsult(true)} variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>Créer consultation</Button>
+            <Button
+              onClick={() => {
+                if (!selected) { showToast('Sélectionnez d\'abord un patient dans la liste', 'error'); return }
+                setModalConsult(true)
+              }}
+              variant="warning" size="lg"
+              style={{ flex: '1 1 0', minWidth: '140px', opacity: selected ? 1 : 0.65 }}
+            >
+              🏥 Consultation{selected ? ` — ${selected.first_name}` : ''}
+            </Button>
             <Button onClick={() => setModalDevis(true)} variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>Devis</Button>
             <Button onClick={() => { setModalRapide(true); setFormRapide(EMPTY_RAPIDE); setFormErrors({}) }} icon="⚡" variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>
               Création rapide
@@ -470,15 +553,26 @@ export default function PatientsPage() {
                 <tbody>
                   {patients.map((p, i) => {
                     const isActive = selected?.id_Rep === p.id_Rep
-                    const rowBg = isActive ? `${colors.bleu}06` : i % 2 === 0 ? colors.white : colors.gray50
+                    const rowBg = isActive ? `${colors.bleu}12` : i % 2 === 0 ? colors.white : colors.gray50
 
                     return (
                       <tr
                         key={p.id_Rep}
-                        style={{ background: rowBg, borderBottom: `1px solid ${colors.gray100}` }}
+                        onClick={() => setSelected(prev => prev?.id_Rep === p.id_Rep ? null : p)}
+                        style={{
+                          background: rowBg,
+                          borderBottom: `1px solid ${colors.gray100}`,
+                          cursor: 'pointer',
+                          outline: isActive ? `2px solid ${colors.bleu}` : 'none',
+                          outlineOffset: '-2px',
+                          transition: 'background 0.12s',
+                        }}
                       >
-                        <td style={{ padding: spacing.md, textAlign: 'center', fontWeight: 600, color: colors.gray500, fontSize: '12px', width: 44 }}>
-                          {i + 1}
+                        <td style={{ padding: spacing.md, textAlign: 'center', fontWeight: 600, fontSize: '12px', width: 44 }}>
+                          {isActive
+                            ? <span style={{ color: colors.bleu, fontSize: 16 }}>✔</span>
+                            : <span style={{ color: colors.gray400 }}>{i + 1}</span>
+                          }
                         </td>
                         <td style={{ padding: spacing.md }}>
                           <div>
@@ -502,8 +596,8 @@ export default function PatientsPage() {
                         <td style={{ padding: spacing.md, fontSize: '12px' }}>
                           {p.type_couverture ? <Badge variant="success">{p.type_couverture}</Badge> : <span style={{ color: colors.gray400 }}>—</span>}
                         </td>
-                        <td style={{ padding: spacing.md, textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: spacing.xs, justifyContent: 'flex-end' }}>
+                        <td style={{ padding: spacing.md, textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                          <div style={{ display: 'flex', gap: spacing.xs, justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
                             <button style={{ background: 'none', border: 'none', color: colors.bleu, cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
                               onClick={() => { setSelected(p); setModalView(true) }}>
                               👁 Voir
@@ -540,12 +634,20 @@ export default function PatientsPage() {
         title="Création rapide - Patient"
         width={600}
         footer={
-          <>
+          <div style={{ display: 'flex', gap: spacing.sm, justifyContent: 'space-between', width: '100%' }}>
             <Button variant="ghost" onClick={closeModals}>Annuler</Button>
-            <Button onClick={handleSaveRapide} disabled={saving}>
-              {saving ? 'Création...' : 'Créer'}
-            </Button>
-          </>
+            <div style={{ display: 'flex', gap: spacing.sm }}>
+              <Button variant="secondary" onClick={handleSwitchToComplete} disabled={saving}>
+                📋 Fiche complète
+              </Button>
+              <Button variant="warning" onClick={handleSaveRapideEtVisite} disabled={saving}>
+                {saving ? '...' : '🏥 Créer + Visite'}
+              </Button>
+              <Button onClick={handleSaveRapide} disabled={saving}>
+                {saving ? 'Création...' : '✔ Créer'}
+              </Button>
+            </div>
+          </div>
         }
       >
         <div style={{ display: 'grid', gap: spacing.lg }}>
@@ -662,12 +764,20 @@ export default function PatientsPage() {
         title={`Éditer - ${selected?.patient_name}`}
         width={900}
         footer={
-          <>
+          <div style={{ display: 'flex', gap: spacing.sm, justifyContent: 'space-between', width: '100%' }}>
             <Button variant="ghost" onClick={closeModals}>Annuler</Button>
-            <Button onClick={handleSaveEdit} disabled={saving}>
-              {saving ? 'Modification...' : 'Enregistrer'}
-            </Button>
-          </>
+            <div style={{ display: 'flex', gap: spacing.sm }}>
+              <Button variant="warning" onClick={handleVisiteDepuisEdit} disabled={saving}>
+                🏥 Visite
+              </Button>
+              <Button variant="secondary" onClick={handleSaveEditEtVisite} disabled={saving}>
+                {saving ? '...' : '💾 Enregistrer + Visite'}
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={saving}>
+                {saving ? 'Modification...' : '✔ Enregistrer'}
+              </Button>
+            </div>
+          </div>
         }
       >
         <div style={{ display: 'grid', gap: spacing.lg, maxHeight: '70vh', overflowY: 'auto', paddingRight: spacing.sm }}>
@@ -817,17 +927,17 @@ export default function PatientsPage() {
       </Modal>
 
       {/* ── MODAL CRÉER CONSULTATION ───────────────────────── */}
-      <Modal
-        open={modalConsult}
-        onClose={() => setModalConsult(false)}
-        title="Créer une Consultation"
-        width={700}
-      >
-        <div style={{ padding: spacing.md, textAlign: 'center', color: colors.gray500 }}>
-          <p>Sélectionnez un patient pour créer une consultation.</p>
-          <p style={{ fontSize: '12px' }}>(Fonctionnalité en cours de développement)</p>
-        </div>
-      </Modal>
+      {modalConsult && (selected || patientVisite) && (
+        <CreerVisiteModal
+          patient={patientVisite ?? selected}
+          onClose={() => { setModalConsult(false); setPatientVisite(null) }}
+          onSaved={() => {
+            setModalConsult(false)
+            setPatientVisite(null)
+            showToast('Visite créée avec succès')
+          }}
+        />
+      )}
 
       {/* ── MODAL DEVIS ────────────────────────────────────── */}
       <Modal
