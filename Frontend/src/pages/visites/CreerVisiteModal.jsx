@@ -401,9 +401,12 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
     return Object.keys(errs).length === 0
   }
 
-  const handleSave = async () => {
-    if (!validate()) { showToast('Corrigez les erreurs avant de sauvegarder', 'error'); return }
-
+  // Sauvegarde la visite et retourne l'objet visite créé (ou null si erreur)
+  const sauvegarderVisite = async () => {
+    if (!validate()) {
+      showToast('Corrigez les erreurs avant de continuer', 'error')
+      return null
+    }
     setSaving(true)
     try {
       const payload = {
@@ -424,15 +427,28 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
       showToast(`Visite créée — ${visite.bill_no}`, 'success')
       setVisiteCreee(visite)
       onSaved?.(visite)
+      return visite
     } catch (err) {
       const msg = err.response?.data?.message ?? 'Erreur serveur'
       showToast(msg, 'error')
-      if (err.response?.data?.errors) {
-        setErrors(err.response.data.errors)
-      }
+      if (err.response?.data?.errors) setErrors(err.response.data.errors)
+      return null
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleSave = () => sauvegarderVisite()
+
+  const handlePaiement = async () => {
+    // Si visite déjà créée → passer directement au paiement
+    if (visiteCreee) {
+      onPaiement?.(visiteCreee)
+      return
+    }
+    // Sinon sauvegarder d'abord puis ouvrir paiement
+    const visite = await sauvegarderVisite()
+    if (visite) onPaiement?.(visite)
   }
 
   const medecinOpts = medecins.map(m => ({
@@ -475,15 +491,32 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
             Création Visite
           </span>
           <div style={{ display: 'flex', gap: 10 }}>
-            {visiteCreee ? (
+            {!visiteCreee && (
               <ActionBtn
-                label="💳 Paiement"
-                onClick={() => onPaiement?.(visiteCreee)}
-                color={colors.warning}
+                label={saving ? '...' : '💾 Sauvegarder'}
+                onClick={handleSave}
+                disabled={saving}
+                color={colors.success}
               />
-            ) : (
-              <ActionBtn label="💾 Sauvegarder" onClick={handleSave} disabled={saving} color={colors.success} />
             )}
+            {visiteCreee && (
+              <span style={{
+                fontSize: 12, fontWeight: 600,
+                background: `${colors.success}30`,
+                color: colors.success,
+                borderRadius: radius.sm,
+                padding: '6px 12px',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                ✔ Enregistrée
+              </span>
+            )}
+            <ActionBtn
+              label={saving ? '...' : '💳 Paiement'}
+              onClick={handlePaiement}
+              disabled={saving}
+              color={colors.warning}
+            />
             <ActionBtn label="Fermer" onClick={onClose} color={colors.gray600} />
           </div>
         </div>
