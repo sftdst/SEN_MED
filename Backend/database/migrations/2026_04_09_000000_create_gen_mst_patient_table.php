@@ -48,7 +48,7 @@ return new class extends Migration
             $table->string('mobile_number', 15)->nullable();
             $table->string('email_adress', 200)->nullable();
             $table->string('emergency_contact_name', 200)->nullable();
-            $table->string('emergency_contact_number', 50)->default('0');
+            $table->string('emergency_contact_number', 50)->nullable();
             
             // Famille
             $table->string('pere_name', 50)->nullable();
@@ -88,6 +88,8 @@ return new class extends Migration
             $table->integer('status_id')->nullable()->default(1);
             $table->string('habitual_ide', 50)->nullable();
             $table->string('sama_numero', 50)->nullable();
+            $table->string('photo', 500)->nullable();
+            $table->string('carte_numero', 50)->nullable();
             
             // Audit
             $table->string('created_user_id', 20)->nullable();

@@ -161,7 +161,7 @@ function SectionCard({ title, icon, accent = colors.bleu, children, style = {} }
       <div style={{ padding: spacing.lg }}>
         {children}
       </div>
-    </div>
+    </div> 
   )
 }
 
@@ -172,7 +172,7 @@ function BudgetBar({ totalAlloue, maximum, solde }) {
   const color  = pct >= 90 ? colors.danger : pct >= 70 ? colors.warning : colors.success
 
   if (maximum === 0) return null
-
+ 
   return (
     <div style={{
       background: `linear-gradient(135deg, ${colors.gray50} 0%, ${colors.white} 100%)`,

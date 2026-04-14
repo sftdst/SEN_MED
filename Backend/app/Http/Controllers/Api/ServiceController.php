@@ -24,9 +24,9 @@ class ServiceController extends Controller
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
-                $q->where('short_name', 'ilike', "%{$s}%")
-                  ->orWhere('id_gen_mst_service', 'ilike', "%{$s}%")
-                  ->orWhere('code_local', 'ilike', "%{$s}%");
+                $q->where('short_name', 'like', "%{$s}%")
+                  ->orWhere('id_gen_mst_service', 'like', "%{$s}%")
+                  ->orWhere('code_local', 'like', "%{$s}%");
             });
         }
 

@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('medecin_exception', function (Blueprint $table) {
             $table->bigIncrements('IDmedecin_exception');
             $table->unsignedBigInteger('IDMedecin');
-            $table->timestamp('DateDebut');
-            $table->timestamp('DateFin');
+            $table->timestamp('DateDebut')->nullable();
+            $table->timestamp('DateFin')->nullable();
             $table->string('Type', 50)->nullable();   // congé, maladie, mission, formation
             $table->text('Description')->nullable();
             $table->timestamps();

@@ -86,10 +86,10 @@ class PersonnelController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('staff_name', 'ilike', "%{$search}%")
-                  ->orWhere('first_name', 'ilike', "%{$search}%")
-                  ->orWhere('last_name', 'ilike', "%{$search}%")
-                  ->orWhere('user_id', 'ilike', "%{$search}%");
+                $q->where('staff_name', 'like', "%{$search}%")
+                  ->orWhere('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('user_id', 'like', "%{$search}%");
             });
         }
 

@@ -17,8 +17,8 @@ class HospitalController extends Controller
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
-                $q->where('hospital_name', 'ilike', "%{$s}%")
-                  ->orWhere('short_name', 'ilike', "%{$s}%");
+                $q->where('hospital_name', 'like', "%{$s}%")
+                  ->orWhere('short_name', 'like', "%{$s}%");
             });
         }
 

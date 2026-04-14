@@ -20,8 +20,8 @@ class DepartementController extends Controller
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
-                $q->where('NomDepartement', 'ilike', "%{$s}%")
-                  ->orWhere('description', 'ilike', "%{$s}%");
+                $q->where('NomDepartement', 'like', "%{$s}%")
+                  ->orWhere('description', 'like', "%{$s}%");
             });
         }
 

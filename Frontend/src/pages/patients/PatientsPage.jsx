@@ -9,13 +9,9 @@ import Badge, { StatusBadge } from '../../components/ui/Badge'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
+import PatientCardModal from '../../components/patients/PatientCardModal'
 
 // ── Constantes ──────────────────────────────────────────────
-const EMPTY_RAPIDE = {
-  first_name: '', last_name: '', dob: '', gender_id: '', mobile_number: '',
-  company_id: '', type_couverture: '',
-}
-
 const EMPTY_COMPLET = {
   first_name: '', second_name: '', last_name: '', gender_id: '',
   dob: '', lieu_naissance: '', marital_status_id: '', nationality_id: '',
@@ -25,6 +21,11 @@ const EMPTY_COMPLET = {
   pere_name: '', mere_name: '', profession: '', emplos: '',
   socite: '', lieu_travail: '', company_id: '', type_couverture: '',
   num_police: '', validate: '', family_doctor: '', ssn_no: '',
+}
+
+const EMPTY_RAPIDE = {
+  first_name: '', last_name: '', dob: '', gender_id: '', mobile_number: '',
+  company_id: '', type_couverture: '', emergency_contact_number: '',
 }
 
 // ── Formatage ────────────────────────────────────────────────
@@ -147,6 +148,7 @@ export default function PatientsPage() {
   const [modalRdv,        setModalRdv]       = useState(false)
   const [modalConsult,    setModalConsult]    = useState(false)
   const [modalDevis,      setModalDevis]     = useState(false)
+  const [modalCard,       setModalCard]      = useState(false)
 
   const [formRapide,      setFormRapide]     = useState(EMPTY_RAPIDE)
   const [formComplet,     setFormComplet]    = useState(EMPTY_COMPLET)
@@ -208,7 +210,12 @@ export default function PatientsPage() {
         } else if (payload) {
           list = [payload]
         }
-        setPatients(list)
+        const sorted = [...list].sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+          return dateB - dateA
+        })
+        setPatients(sorted)
       })
       .catch(() => showToast('Erreur de chargement.', 'error'))
       .finally(() => setLoadingList(false))
@@ -508,6 +515,10 @@ export default function PatientsPage() {
                               onClick={() => { setSelected(p); setModalView(true) }}>
                               👁 Voir
                             </button>
+                            <button style={{ background: 'none', border: 'none', color: colors.success, cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                              onClick={() => { setSelected(p); setModalCard(true) }}>
+                              🪪 Carte
+                            </button>
                             <button style={{ background: 'none', border: 'none', color: colors.warning, cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
                               onClick={() => openEditModal(p)}>
                               ✏ Éditer
@@ -560,7 +571,10 @@ export default function PatientsPage() {
           </div>
 
           <SectionTitle icon="📱">Contact</SectionTitle>
-          <Inp label="Mobile" name="mobile_number" value={formRapide.mobile_number} onChange={e => setFormRapide(f => ({ ...f, mobile_number: e.target.value }))} placeholder="+221 7X XXX XX XX" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+            <Inp label="Mobile" name="mobile_number" value={formRapide.mobile_number} onChange={e => setFormRapide(f => ({ ...f, mobile_number: e.target.value }))} placeholder="+221 7X XXX XX XX" />
+            <Inp label="Contact d'urgence" name="emergency_contact_number" value={formRapide.emergency_contact_number} onChange={e => setFormRapide(f => ({ ...f, emergency_contact_number: e.target.value }))} placeholder="+221 7X XXX XX XX" />
+          </div>
 
           <SectionTitle icon="🛡️">Partenaire & Couverture</SectionTitle>
           <Sel label="Partenaire (Assureur)" name="company_id" value={formRapide.company_id} onChange={e => handleChangePartenaire(e, true)} options={partenaires.map(p => ({ value: p.id_Rep, label: p.Nom }))} placeholder="Sélectionner..." />
@@ -841,6 +855,13 @@ export default function PatientsPage() {
           <p style={{ fontSize: '12px' }}>(Fonctionnalité en cours de développement)</p>
         </div>
       </Modal>
+
+      {/* ── MODAL CARTE PATIENT ─────────────────────────────── */}
+      <PatientCardModal
+        open={modalCard}
+        onClose={() => setModalCard(false)}
+        patient={selected}
+      />
 
       {/* ── CONFIRMATION SUPPRESSION ─────────────────────── */}
       <ConfirmDialog

@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 
 class PatientController extends Controller
 {
@@ -46,13 +48,14 @@ class PatientController extends Controller
     public function storeRapide(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'first_name'       => 'required|string|max:100',
-            'last_name'        => 'required|string|max:100',
-            'dob'              => 'required|date|before:today',
-            'gender_id'        => 'nullable|string|max:20',
-            'mobile_number'    => 'nullable|string|max:15',
-            'company_id'       => 'nullable|exists:gen_mst_partenaire_header,id_Rep',
-            'type_couverture'  => 'nullable|string|max:50',
+            'first_name'               => 'required|string|max:100',
+            'last_name'                => 'required|string|max:100',
+            'dob'                      => 'required|date|before:today',
+            'gender_id'                => 'nullable|string|max:20',
+            'mobile_number'            => 'nullable|string|max:15',
+            'emergency_contact_number' => 'nullable|string|max:50',
+            'company_id'               => 'nullable|exists:gen_mst_partenaire_header,id_Rep',
+            'type_couverture'          => 'nullable|string|max:50',
         ]);
 
         // Vérifier que le type de couverture existe pour ce partenaire (si fourni)
@@ -343,5 +346,66 @@ class PatientController extends Controller
         while (Patient::where('patient_code', $code)->exists());
 
         return $code;
+    }
+
+    public function genererCarte(Patient $patient): JsonResponse
+    {
+        $carteNumero = $patient->carte_numero ?? $this->genererCarteNumero($patient);
+        
+        if (!$patient->carte_numero) {
+            $patient->update(['carte_numero' => $carteNumero]);
+        }
+
+        $qrData = json_encode([
+            'carte_numero' => $carteNumero,
+            'patient_id' => $patient->patient_id,
+            'nom' => $patient->patient_name,
+            'dob' => $patient->dob?->format('Y-m-d'),
+            'genre' => $patient->gender_id,
+            'telephone' => $patient->mobile_number,
+            'assurance' => $patient->partenaire?->Nom,
+            'couverture' => $patient->type_couverture,
+            'num_police' => $patient->num_police,
+        ], JSON_UNESCAPED_UNICODE);
+
+        $qrCodeBase64 = null;
+        if (extension_loaded('gd')) {
+            $qrCode = new QrCode($qrData);
+            $writer = new PngWriter();
+            $result = $writer->write($qrCode);
+            $qrCodeBase64 = 'data:image/png;base64,' . base64_encode($result->getString());
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'carte_numero' => $carteNumero,
+                'patient_id' => $patient->patient_id,
+                'nom' => $patient->patient_name,
+                'prenom' => $patient->first_name,
+                'nom_famille' => $patient->last_name,
+                'date_naissance' => $patient->dob?->format('d/m/Y'),
+                'age' => $patient->age_patient,
+                'genre' => $patient->gender_id,
+                'telephone' => $patient->mobile_number,
+                'email' => $patient->email_adress,
+                'adresse' => $patient->address,
+                'ville' => $patient->city,
+                'photo' => $patient->photo,
+                'assurance' => $patient->partenaire?->Nom,
+                'couverture' => $patient->type_couverture,
+                'num_police' => $patient->num_police,
+                'validite' => $patient->validate?->format('d/m/Y'),
+                'qr_code' => $qrCodeBase64,
+            ],
+        ]);
+    }
+
+    private function genererCarteNumero(Patient $patient): string
+    {
+        $prefix = 'SM';
+        $year = now()->format('Y');
+        $uniqueId = str_pad($patient->id_Rep, 6, '0', STR_PAD_LEFT);
+        return $prefix . $year . $uniqueId;
     }
 }

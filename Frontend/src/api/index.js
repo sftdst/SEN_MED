@@ -112,4 +112,5 @@ export const patientApi = {
   supprimer:          (id)           => api.delete(`/patients/${id}`),
   metadata:           ()             => api.get('/patients/metadata'),
   typesCouverture:    (partenaireId) => api.get(`/patients/partenaire/${partenaireId}/couvertures`),
+  genererCarte:       (id)           => api.get(`/patients/${id}/carte`),
 }

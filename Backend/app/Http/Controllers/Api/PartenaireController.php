@@ -24,9 +24,9 @@ class PartenaireController extends Controller
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
-                $q->where('Nom', 'ilike', "%{$s}%")
-                  ->orWhere('id_gen_partenaire', 'ilike', "%{$s}%")
-                  ->orWhere('code_societe', 'ilike', "%{$s}%");
+                $q->where('Nom', 'like', "%{$s}%")
+                  ->orWhere('id_gen_partenaire', 'like', "%{$s}%")
+                  ->orWhere('code_societe', 'like', "%{$s}%");
             });
         }
 

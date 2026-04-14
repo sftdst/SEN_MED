@@ -18,7 +18,7 @@ class TypeServiceController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('NomType', 'ilike', "%{$request->search}%");
+            $query->where('NomType', 'like', "%{$request->search}%");
         }
 
         return response()->json([

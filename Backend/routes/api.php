@@ -121,6 +121,9 @@ Route::prefix('v1')->group(function () {
     // Types de couverture pour un partenaire
     Route::get('patients/partenaire/{partenaire}/couvertures', [PatientController::class, 'typesCouverturePartenaire']);
 
+    // Générer carte patient (QR code)
+    Route::get('patients/{patient}/carte', [PatientController::class, 'genererCarte']);
+
     // CRUD complet patients
     Route::apiResource('patients', PatientController::class)
         ->parameters(['patients' => 'patient']);

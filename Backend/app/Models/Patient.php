@@ -73,6 +73,8 @@ class Patient extends Model
         'created_dttm',
         'modified_dttm',
         'phone_adop',
+        'photo',
+        'carte_numero',
     ];
 
     protected $casts = [
@@ -128,12 +130,12 @@ class Patient extends Model
         if (!$search) return $query;
         
         return $query->where(function ($q) use ($search) {
-            $q->where('patient_name', 'ilike', "%{$search}%")
-              ->orWhere('patient_id', 'ilike', "%{$search}%")
-              ->orWhere('patient_code', 'ilike', "%{$search}%")
-              ->orWhere('mobile_number', 'ilike', "%{$search}%")
-              ->orWhere('contact_number', 'ilike', "%{$search}%")
-              ->orWhere('ssn_no', 'ilike', "%{$search}%");
+            $q->where('patient_name', 'like', "%{$search}%")
+              ->orWhere('patient_id', 'like', "%{$search}%")
+              ->orWhere('patient_code', 'like', "%{$search}%")
+              ->orWhere('mobile_number', 'like', "%{$search}%")
+              ->orWhere('contact_number', 'like', "%{$search}%")
+              ->orWhere('ssn_no', 'like', "%{$search}%");
         });
     }
 }
