@@ -33,7 +33,7 @@ class PatientController extends Controller
             $query->where('status_id', $request->status);
         }
 
-        $patients = $query->orderBy('patient_name')->paginate($request->get('per_page', 50));
+        $patients = $query->orderBy('created_dttm', 'desc')->paginate($request->get('per_page', 50));
 
         return response()->json([
             'success' => true,

@@ -3,62 +3,34 @@
 namespace Database\Seeders;
 
 use App\Models\Personnel;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Seeder;
 
 class PersonnelSeeder extends Seeder
 {
     public function run(): void
     {
-        Personnel::create([
-            'user_id' => '1',
-            'staff_name' => 'Dr. Amadou Diallo',
-            'status_id' => 1,
-            'gender_id' => 'masculin',
-            'created_user_id' => 'admin',
-            'created_dttm' => now(),
-            'user_name' => 'amadou.diallo',
-            'email_adress' => 'amadou.diallo@example.com',
-            'date_of_birth' => '1980-05-15',
-            'staff_type' => 'medecin',
-            'contact_number' => '771234567',
-            'specialization' => 'Médecine Interne',
-            'first_name' => 'Amadou',
-            'last_name' => 'Diallo',
-            'nationality_id' => 1,
-            'address' => 'Rue 1, Dakar',
-            'phone_number' => '771234567',
-            'Joining_date' => '2020-01-01',
-            'city' => 'Dakar',
-            'groupe_sanguin' => 'O+',
-            'personnel' => 1,
-            'consult' => 1,
-            'IDgen_mst_Departement' => 1,
-        ]);
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        Personnel::truncate();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
-        Personnel::create([
-            'user_id' => '2',
-            'staff_name' => 'Infirmière Fatou Ndiaye',
-            'status_id' => 1,
-            'gender_id' => 'feminin',
-            'created_user_id' => 'admin',
-            'created_dttm' => now(),
-            'user_name' => 'fatou.ndiaye',
-            'email_adress' => 'fatou.ndiaye@example.com',
-            'date_of_birth' => '1985-08-20',
-            'staff_type' => 'infirmier',
-            'contact_number' => '779876543',
-            'specialization' => 'Soins Intensifs',
-            'first_name' => 'Fatou',
-            'last_name' => 'Ndiaye',
-            'nationality_id' => 1,
-            'address' => 'Rue 2, Dakar',
-            'phone_number' => '779876543',
-            'Joining_date' => '2019-03-15',
-            'city' => 'Dakar',
-            'groupe_sanguin' => 'A+',
-            'personnel' => 1,
-            'consult' => 0,
-            'IDgen_mst_Departement' => 2,
-        ]);
+        $personnels = [
+            ['staff_name' => 'Dr. Amadou Diallo', 'status_id' => 1, 'gender_id' => 'masculin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'amadou.diallo', 'email_adress' => 'amadou.diallo@senmed.sn', 'date_of_birth' => '1980-05-15', 'staff_type' => 'medecin', 'contact_number' => '771234567', 'specialization' => 'Médecine Interne', 'first_name' => 'Amadou', 'last_name' => 'Diallo', 'nationality_id' => 1, 'address' => 'Point E, Dakar', 'phone_number' => '771234567', 'Joining_date' => '2020-01-15', 'city' => 'Dakar', 'groupe_sanguin' => 'O+', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Departement' => 1],
+            ['staff_name' => 'Inf. Fatou Ndiaye', 'status_id' => 1, 'gender_id' => 'feminin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'fatou.ndiaye', 'email_adress' => 'fatou.ndiaye@senmed.sn', 'date_of_birth' => '1985-08-20', 'staff_type' => 'infirmier', 'contact_number' => '779876543', 'specialization' => 'Soins Intensifs', 'first_name' => 'Fatou', 'last_name' => 'Ndiaye', 'nationality_id' => 1, 'address' => 'Fann, Dakar', 'phone_number' => '779876543', 'Joining_date' => '2019-03-10', 'city' => 'Dakar', 'groupe_sanguin' => 'A+', 'personnel' => 1, 'consult' => 0, 'IDgen_mst_Departement' => 2],
+            ['staff_name' => 'Dr. Mariama Sarr', 'status_id' => 1, 'gender_id' => 'feminin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'mariama.sarr', 'email_adress' => 'mariama.sarr@senmed.sn', 'date_of_birth' => '1978-03-22', 'staff_type' => 'medecin', 'contact_number' => '771112233', 'specialization' => 'Pédiatrie', 'first_name' => 'Mariama', 'last_name' => 'Sarr', 'nationality_id' => 1, 'address' => 'Mermoz, Dakar', 'phone_number' => '771112233', 'Joining_date' => '2018-06-01', 'city' => 'Dakar', 'groupe_sanguin' => 'B+', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Departement' => 3],
+            ['staff_name' => 'Dr. Cheikh Bassirou', 'status_id' => 1, 'gender_id' => 'masculin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'cheikh.bassirou', 'email_adress' => 'cheikh.bassirou@senmed.sn', 'date_of_birth' => '1982-11-08', 'staff_type' => 'medecin', 'contact_number' => '774455667', 'specialization' => 'Chirurgie Générale', 'first_name' => 'Cheikh', 'last_name' => 'Bassirou', 'nationality_id' => 1, 'address' => 'Ouakam, Dakar', 'phone_number' => '774455667', 'Joining_date' => '2017-09-15', 'city' => 'Dakar', 'groupe_sanguin' => 'AB+', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Deppartement' => 2],
+            ['staff_name' => 'Inf. Oumar Faye', 'status_id' => 1, 'gender_id' => 'masculin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'oumar.faye', 'email_adress' => 'oumar.faye@senmed.sn', 'date_of_birth' => '1990-07-14', 'staff_type' => 'infirmier', 'contact_number' => '776654321', 'specialization' => 'Bloc Opératoire', 'first_name' => 'Oumar', 'last_name' => 'Faye', 'nationality_id' => 1, 'address' => 'HLM, Dakar', 'phone_number' => '776654321', 'Joining_date' => '2021-02-01', 'city' => 'Dakar', 'groupe_sanguin' => 'O-', 'personnel' => 1, 'consult' => 0, 'IDgen_mst_Departement' => 2],
+            ['staff_name' => 'Dr. Aïda Mbaye', 'status_id' => 1, 'gender_id' => 'feminin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'aida.mbay', 'email_adress' => 'aida.mbay@senmed.sn', 'date_of_birth' => '1984-04-30', 'staff_type' => 'medecin', 'contact_number' => '778899001', 'specialization' => 'Gynécologie', 'first_name' => 'Aïda', 'last_name' => 'Mbaye', 'nationality_id' => 1, 'address' => 'Cité Keur Gorgui', 'phone_number' => '778899001', 'Joining_date' => '2019-08-20', 'city' => 'Dakar', 'groupe_sanguin' => 'A-', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Departement' => 4],
+            ['staff_name' => 'Dr. Babacar Seck', 'status_id' => 1, 'gender_id' => 'masculin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'babacar.seck', 'email_adress' => 'babacar.seck@senmed.sn', 'date_of_birth' => '1975-12-25', 'staff_type' => 'medecin', 'contact_number' => '772233445', 'specialization' => 'Cardiologie', 'first_name' => 'Babacar', 'last_name' => 'Seck', 'nationality_id' => 1, 'address' => 'Ngor, Dakar', 'phone_number' => '772233445', 'Joining_date' => '2016-01-10', 'city' => 'Dakar', 'groupe_sanguin' => 'B-', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Departement' => 5],
+            ['staff_name' => 'Inf. Astou Diop', 'status_id' => 1, 'gender_id' => 'feminin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'astou.diop', 'email_adress' => 'astou.diop@senmed.sn', 'date_of_birth' => '1992-09-18', 'staff_type' => 'infirmier', 'contact_number' => '775566778', 'specialization' => 'Urgences', 'first_name' => 'Astou', 'last_name' => 'Diop', 'nationality_id' => 1, 'address' => 'Yoff, Dakar', 'phone_number' => '775566778', 'Joining_date' => '2022-04-05', 'city' => 'Dakar', 'groupe_sanguin' => 'O+', 'personnel' => 1, 'consult' => 0, 'IDgen_mst_Deppartement' => 1],
+            ['staff_name' => 'Dr. Ibrahima Touré', 'status_id' => 1, 'gender_id' => 'masculin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'ibrahima.toure', 'email_adress' => 'ibrahima.toure@senmed.sn', 'date_of_birth' => '1981-06-12', 'staff_type' => 'medecin', 'contact_number' => '773344556', 'specialization' => 'Neurologie', 'first_name' => 'Ibrahima', 'last_name' => 'Touré', 'nationality_id' => 1, 'address' => 'Liberté 6, Dakar', 'phone_number' => '773344556', 'Joining_date' => '2018-11-01', 'city' => 'Dakar', 'groupe_sanguin' => 'AB+', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Deppartement' => 6],
+            ['staff_name' => 'Dr. Khadija Mendy', 'status_id' => 1, 'gender_id' => 'feminin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'khadija.mendy', 'email_adress' => 'khadija.mendy@senmed.sn', 'date_of_birth' => '1987-02-28', 'staff_type' => 'medecin', 'contact_number' => '771122334', 'specialization' => 'Ophtalmologie', 'first_name' => 'Khadija', 'last_name' => 'Mendy', 'nationality_id' => 1, 'address' => 'Sicap, Dakar', 'phone_number' => '771122334', 'Joining_date' => '2020-07-15', 'city' => 'Dakar', 'groupe_sanguin' => 'A+', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Deppartement' => 7],
+            ['staff_name' => 'Inf. Moussa Fall', 'status_id' => 1, 'gender_id' => 'masculin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'moussa.fall', 'email_adress' => 'moussa.fall@senmed.sn', 'date_of_birth' => '1988-10-05', 'staff_type' => 'infirmier', 'contact_number' => '776677889', 'specialization' => 'Radiologie', 'first_name' => 'Moussa', 'last_name' => 'Fall', 'nationality_id' => 1, 'address' => 'Grand Dakar', 'phone_number' => '776677889', 'Joining_date' => '2021-09-01', 'city' => 'Dakar', 'groupe_sanguin' => 'B+', 'personnel' => 1, 'consult' => 0, 'IDgen_mst_Deppartement' => 12],
+            ['staff_name' => 'Dr. Papa Demba', 'status_id' => 1, 'gender_id' => 'masculin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'papa.demba', 'email_adress' => 'papa.demba@senmed.sn', 'date_of_birth' => '1979-08-17', 'staff_type' => 'medecin', 'contact_number' => '772345678', 'specialization' => 'Orthopédie', 'first_name' => 'Papa', 'last_name' => 'Demba', 'nationality_id' => 1, 'address' => 'Almadies, Dakar', 'phone_number' => '772345678', 'Joining_date' => '2017-03-20', 'city' => 'Dakar', 'groupe_sanguin' => 'O-', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Deppartement' => 8],
+        ];
+
+        foreach ($personnels as $p) {
+            Personnel::create($p);
+        }
     }
 }
