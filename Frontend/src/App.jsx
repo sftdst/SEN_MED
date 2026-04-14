@@ -12,6 +12,7 @@ import PatientsPage from './pages/patients/PatientsPage'
 import VisitesPage from './pages/visites/VisitesPage'
 import SalleAttentePage from './pages/salleAttente/SalleAttentePage'
 import PharmaciePage from './pages/pharmacie/PharmaciePage'
+import ConfigSanitairePage from './pages/configSanitaire/ConfigSanitairePage'
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="visites"       element={<VisitesPage />} />
           <Route path="salle-attente" element={<SalleAttentePage />} />
           <Route path="pharmacie"     element={<PharmaciePage />} />
+          <Route path="config-sanitaire" element={<ConfigSanitairePage />} />
         </Route>
       </Routes>
     </BrowserRouter>
