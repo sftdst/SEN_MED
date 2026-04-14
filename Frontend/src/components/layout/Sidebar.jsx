@@ -141,7 +141,6 @@ export default function Sidebar({ collapsed = false }) {
       overflow: 'hidden', zIndex: 100,
       boxShadow: '2px 0 12px rgba(0,0,0,0.12)',
     }}>
-      {/* Logo */}
       <div style={{
         padding: collapsed ? '20px 0' : '22px 24px',
         borderBottom: '1px solid rgba(255,255,255,0.1)',
@@ -165,14 +164,12 @@ export default function Sidebar({ collapsed = false }) {
         )}
       </div>
 
-      {/* Navigation */}
       <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
         {navItems.map((item, idx) => (
           <NavItem key={idx} item={item} collapsed={collapsed} />
         ))}
       </nav>
 
-      {/* Footer */}
       <div style={{
         padding: collapsed ? '16px 0' : '16px 20px',
         borderTop: '1px solid rgba(255,255,255,0.1)',
