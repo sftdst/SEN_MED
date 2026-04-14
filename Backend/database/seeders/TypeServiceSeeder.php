@@ -22,7 +22,7 @@ class TypeServiceSeeder extends Seeder
             ['NomType' => 'Pharmacie', 'description' => 'Services pharmaceutiques', 'status' => 1, 'IDgen_mst_Departement' => 1],
             ['NomType' => 'Hospitalisation', 'description' => 'Services d\'hospitalisation', 'status' => 1, 'IDgen_mst_Departement' => 1],
             ['NomType' => 'Urgence', 'description' => 'Services d\'urgences', 'status' => 1, 'IDgen_mst_Departement' => 1],
-            ['NomType' => 'Bloc Opératoire', 'description' => 'Bloc opératoire et salles de soins', 'status' => 1, 'IDgen_mst_Deppartement' => 2],
+            ['NomType' => 'Bloc Opératoire', 'description' => 'Bloc opératoire et salles de soins', 'status' => 1, 'IDgen_mst_Departement' => 2],
         ];
 
         foreach ($types as $t) {
