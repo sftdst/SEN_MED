@@ -114,3 +114,11 @@ export const patientApi = {
   typesCouverture:    (partenaireId) => api.get(`/patients/partenaire/${partenaireId}/couvertures`),
   genererCarte:       (id)           => api.get(`/patients/${id}/carte`),
 }
+
+// ── Visites ───────────────────────────────────────────────
+export const visiteApi = {
+  liste:    (params) => api.get('/visites', { params }),
+  detail:   (id)     => api.get(`/visites/${id}`),
+  creer:    (data)   => api.post('/visites', data),
+  metadata: ()       => api.get('/visites/metadata'),
+}

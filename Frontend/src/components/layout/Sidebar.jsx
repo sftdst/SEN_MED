@@ -14,6 +14,8 @@ const navItems = [
   { group: 'PATIENTS & PARTENAIRES' },
   { to: '/patients',       icon: '👥', label: 'Patients'          },
   { to: '/partenaires',    icon: '🤝', label: 'Partenaires'       },
+  { group: 'CONSULTATIONS' },
+  { to: '/visites',        icon: '🏥', label: 'Visites'           },
 ]
 
 export default function Sidebar({ collapsed = false }) {

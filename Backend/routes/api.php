@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\FerieDisponibiliteController;
 use App\Http\Controllers\Api\CreneauxController;
 use App\Http\Controllers\Api\PartenaireController;
 use App\Http\Controllers\Api\PatientController;
+use App\Http\Controllers\Api\VisiteController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -127,5 +128,18 @@ Route::prefix('v1')->group(function () {
     // CRUD complet patients
     Route::apiResource('patients', PatientController::class)
         ->parameters(['patients' => 'patient']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Visites
+    |--------------------------------------------------------------------------
+    */
+    // Métadonnées (lieux RDV, types visite, liens de parenté)
+    Route::get('visites/metadata', [VisiteController::class, 'metadata']);
+
+    // CRUD visites
+    Route::apiResource('visites', VisiteController::class)
+        ->parameters(['visites' => 'visite'])
+        ->only(['index', 'store', 'show']);
 
 });
