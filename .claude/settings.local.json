@@ -12,7 +12,12 @@
       "Bash(composer install:*)",
       "Bash(php -r ':*)",
       "Bash(npm run:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(tasklist /fi \"PID eq 4876\")",
+      "Bash(cmd /c \"taskkill /F /PID 4876\")",
+      "Bash(powershell -Command \"Stop-Process -Id 4876 -Force\")",
+      "Bash(netstat -ano)",
+      "Bash(powershell -Command \"Get-Process -Id \\(Get-NetTCPConnection -LocalPort 8000\\).OwningProcess | Select-Object Id,ProcessName,Path\")"
     ]
   }
 }
