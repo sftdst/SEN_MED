@@ -137,6 +137,10 @@ Route::prefix('v1')->group(function () {
     // Métadonnées (lieux RDV, types visite, liens de parenté)
     Route::get('visites/metadata', [VisiteController::class, 'metadata']);
 
+    // Salle d'attente
+    Route::get('salle-attente', [VisiteController::class, 'salleAttente']);
+    Route::patch('salle-attente/{visite}/marquer-vu', [VisiteController::class, 'marquerVu']);
+
     // CRUD visites
     Route::apiResource('visites', VisiteController::class)
         ->parameters(['visites' => 'visite'])

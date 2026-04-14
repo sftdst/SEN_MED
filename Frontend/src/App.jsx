@@ -10,6 +10,7 @@ import PlanningPage from './pages/planning/PlanningPage'
 import PartenairesPage from './pages/partenaires/PartenairesPage'
 import PatientsPage from './pages/patients/PatientsPage'
 import VisitesPage from './pages/visites/VisitesPage'
+import SalleAttentePage from './pages/salleAttente/SalleAttentePage'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="partenaires"   element={<PartenairesPage />} />
           <Route path="patients"      element={<PatientsPage />} />
           <Route path="visites"       element={<VisitesPage />} />
+          <Route path="salle-attente" element={<SalleAttentePage />} />
         </Route>
       </Routes>
     </BrowserRouter>

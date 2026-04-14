@@ -16,6 +16,7 @@ const navItems = [
   { to: '/partenaires',    icon: '🤝', label: 'Partenaires'       },
   { group: 'CONSULTATIONS' },
   { to: '/visites',        icon: '🏥', label: 'Visites'           },
+  { to: '/salle-attente',  icon: '🪑', label: "Salle d'Attente"  },
 ]
 
 export default function Sidebar({ collapsed = false }) {

@@ -122,3 +122,9 @@ export const visiteApi = {
   creer:    (data)   => api.post('/visites', data),
   metadata: ()       => api.get('/visites/metadata'),
 }
+
+// ── Salle d'Attente ───────────────────────────────────────
+export const salleAttenteApi = {
+  liste:      (params) => api.get('/salle-attente', { params }),
+  marquerVu:  (id)     => api.patch(`/salle-attente/${id}/marquer-vu`),
+}

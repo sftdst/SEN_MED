@@ -173,7 +173,7 @@ class VisiteController extends Controller
                 'hospital_id'           => $validated['hospital_id'] ?? null,
                 'created_user_id'       => $userId,
                 'created_dttm'          => $now,
-                'doctor_seen'           => $validated['consulting_doctor_id'] ?? null,
+                'doctor_seen'           => 0, // 0 = En attente, 1 = Vu
                 'bill_amount'           => $totalBrut,
                 'refered_doctor'        => $validated['refered_doctor'] ?? null,
                 'refered_hospital'      => $validated['refered_hospital'] ?? null,
@@ -312,6 +312,81 @@ class VisiteController extends Controller
                     ['value' => 'Autre',             'label' => 'Autre'],
                 ],
             ],
+        ]);
+    }
+
+    /**
+     * Salle d'attente — visites en cours avec filtres
+     */
+    public function salleAttente(Request $request): JsonResponse
+    {
+        $query = VisiteAdt::with(['patient', 'medecin'])
+            ->orderByDesc('created_dttm');
+
+        // Filtre statut : 0 = en attente, 1 = vu, all = tous
+        $statut = $request->get('statut', 'all');
+        if ($statut === '0') {
+            $query->where('doctor_seen', 0);
+        } elseif ($statut === '1') {
+            $query->where('doctor_seen', 1);
+        }
+
+        // Filtre date (par défaut : aujourd'hui)
+        $date = $request->get('date', now()->toDateString());
+        if ($date) {
+            $query->whereDate('created_dttm', $date);
+        }
+
+        // Filtre priorité : urgence | normal | opd | ipd | emrg | all
+        $priorite = $request->get('priorite', 'all');
+        if ($priorite === 'urgence') {
+            $query->where('urgence', true);
+        } elseif ($priorite === 'normal') {
+            $query->where('urgence', false)->where('visit_type', 'OPD');
+        } elseif ($priorite === 'hospitalisation') {
+            $query->where('visit_type', 'IPD');
+        }
+
+        // Recherche patient
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('patient', function ($q) use ($search) {
+                $q->where('patient_name', 'ilike', "%{$search}%")
+                  ->orWhere('patient_id',   'ilike', "%{$search}%")
+                  ->orWhere('patient_code', 'ilike', "%{$search}%");
+            });
+        }
+
+        // Récupérer TOUTES les visites du jour (sans filtre priorité) pour les compteurs
+        $toutesVisites = VisiteAdt::whereDate('created_dttm', $date ?? now()->toDateString())->get();
+
+        $visites = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $visites,
+            'meta'    => [
+                'total'           => $toutesVisites->count(),
+                'en_attente'      => $toutesVisites->where('doctor_seen', 0)->count(),
+                'vus'             => $toutesVisites->where('doctor_seen', 1)->count(),
+                'urgences'        => $toutesVisites->where('urgence', true)->count(),
+                'normaux'         => $toutesVisites->where('urgence', false)->where('visit_type', 'OPD')->count(),
+                'hospitalisations'=> $toutesVisites->where('visit_type', 'IPD')->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Marquer un patient comme vu par le médecin
+     */
+    public function marquerVu(VisiteAdt $visite): JsonResponse
+    {
+        $visite->update(['doctor_seen' => 1]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Patient marqué comme vu.',
+            'data'    => $visite->fresh(['patient', 'medecin']),
         ]);
     }
 

@@ -52,6 +52,7 @@ class VisiteAdt extends Model
         'attestation'      => 'boolean',
         'urgence'          => 'boolean',
         'Hospitaliser'     => 'boolean',
+        'doctor_seen'      => 'integer',
         'bill_amount'      => 'decimal:3',
         'Total_a_payer'    => 'decimal:3',
         'montant_patient'  => 'decimal:3',
@@ -61,6 +62,11 @@ class VisiteAdt extends Model
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class, 'patient_pin', 'patient_id');
+    }
+
+    public function medecin(): BelongsTo
+    {
+        return $this->belongsTo(Personnel::class, 'consulting_doctor_id', 'user_id');
     }
 
     public function factures(): HasMany

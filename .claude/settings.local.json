@@ -17,7 +17,8 @@
       "Bash(cmd /c \"taskkill /F /PID 4876\")",
       "Bash(powershell -Command \"Stop-Process -Id 4876 -Force\")",
       "Bash(netstat -ano)",
-      "Bash(powershell -Command \"Get-Process -Id \\(Get-NetTCPConnection -LocalPort 8000\\).OwningProcess | Select-Object Id,ProcessName,Path\")"
+      "Bash(powershell -Command \"Get-Process -Id \\(Get-NetTCPConnection -LocalPort 8000\\).OwningProcess | Select-Object Id,ProcessName,Path\")",
+      "Bash(grep -n \"personnel_id\\\\|getKeyName\" \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/database/migrations/\"*personnel*)"
     ]
   }
 }
