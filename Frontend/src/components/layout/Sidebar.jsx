@@ -27,8 +27,7 @@ const navItems = [
     group: 'COMPTABILITÉ',
     icon: '💰',
     items: [
-      { to: '/factures', label: 'Factures' },
-      { to: '/paiements', label: 'Paiements' },
+      { to: '/comptabilite', label: 'Comptabilité' },
     ]
   },
   {
