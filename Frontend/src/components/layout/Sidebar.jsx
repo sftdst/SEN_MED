@@ -40,10 +40,10 @@ const navItems = [
     group: 'CONFIGURATION',
     icon: '⚙️',
     items: [
-      { to: '/config-systeme', label: 'Configuration système' },
-      { to: '/config-sanitaire', label: 'Config. sanitaire' },
-      { to: '/pharmacie', label: 'Gestion pharmaceutique' },
-      { to: '/laboratoire', label: 'Laboratoire' },
+      { to: '/config-systeme',  label: 'Configuration système' },
+      { to: '/config-sanitaire', label: 'Config. sanitaire'   },
+      { to: '/pharmacie',        label: 'Gestion pharmaceutique' },
+      { to: '/laboratoire',      label: 'Laboratoire'          },
     ]
   },
 ]

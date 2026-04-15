@@ -3,17 +3,17 @@ import { colors, radius, shadows } from '../../theme'
 import { produitApi } from '../../api'
 import { showToast } from '../../components/ui/Toast'
 
-// ── Menu items ───────────────────────────────────────────────────────────────
-const menuItems = [
-  { key: 'accueil',           label: 'Accueil',             icon: '🏠' },
-  { key: 'produits',          label: 'Liste des produits',  icon: '💊' },
-  { key: 'fournisseur',       label: 'Fournisseurs',        icon: '🏭' },
-  { key: 'commande',          label: 'Commandes',           icon: '📋' },
-  { key: 'approvisionnement', label: 'Approvisionnement',   icon: '🚚' },
-  { key: 'ajustement',        label: 'Ajustement de stock', icon: '⚖️' },
-  { key: 'sortie',            label: 'Sortie de stock',     icon: '📤' },
-  { key: 'reception',         label: 'Réception',           icon: '📥' },
-  { key: 'inventaire',        label: 'Inventaire',          icon: '📊' },
+// ── Sous-menu interne ────────────────────────────────────────────────────────
+const MENU_ITEMS = [
+  { key: 'accueil',           label: 'Tableau de bord',    icon: '🏠' },
+  { key: 'produits',          label: 'Liste des produits', icon: '💊' },
+  { key: 'fournisseurs',      label: 'Fournisseurs',       icon: '🏭' },
+  { key: 'commandes',         label: 'Commandes',          icon: '📋' },
+  { key: 'approvisionnement', label: 'Approvisionnement',  icon: '🚚' },
+  { key: 'ajustement',        label: 'Ajustement stock',   icon: '⚖️' },
+  { key: 'sortie',            label: 'Sortie de stock',    icon: '📤' },
+  { key: 'reception',         label: 'Réception',          icon: '📥' },
+  { key: 'inventaire',        label: 'Inventaire',         icon: '📊' },
 ]
 
 const mockFournisseurs = [
@@ -165,20 +165,20 @@ function ActionBtn({ color, bg, title, onClick, children }) {
 // PAGE PRINCIPALE
 // ════════════════════════════════════════════════════════════════════════════
 export default function PharmaciePage() {
-  const [activeTab,   setActiveTab]  = useState('accueil')
-  const [produits,    setProduits]   = useState([])
-  const [showModal,   setShowModal]  = useState(false)
-  const [editingId,   setEditingId]  = useState(null)
-  const [formData,    setFormData]   = useState(EMPTY)
-  const [loading,     setLoading]    = useState(false)
-  const [saving,      setSaving]     = useState(false)
-  const [search,      setSearch]     = useState('')
-  const [filterStatut,setFilter]     = useState('tous')
-  const [page,        setPage]       = useState(1)
-  const [perPage,     setPerPage]    = useState(10)
+  const [activeTab,    setActiveTab]  = useState('accueil')
+  const [produits,     setProduits]   = useState([])
+  const [showModal,    setShowModal]  = useState(false)
+  const [editingId,    setEditingId]  = useState(null)
+  const [formData,     setFormData]   = useState(EMPTY)
+  const [loading,      setLoading]    = useState(false)
+  const [saving,       setSaving]     = useState(false)
+  const [search,       setSearch]     = useState('')
+  const [filterStatut, setFilter]     = useState('tous')
+  const [page,         setPage]       = useState(1)
+  const [perPage,      setPerPage]    = useState(10)
 
   useEffect(() => {
-    if (activeTab === 'produits') loadProduits()
+    if (activeTab === 'produits' || activeTab === 'accueil') loadProduits()
   }, [activeTab])
 
   const loadProduits = async () => {
@@ -303,6 +303,8 @@ export default function PharmaciePage() {
   // Reset page quand filtre change
   useEffect(() => { setPage(1) }, [search, filterStatut, perPage])
 
+  const activeItem = MENU_ITEMS.find(m => m.key === activeTab)
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
@@ -323,7 +325,7 @@ export default function PharmaciePage() {
               Gestion Pharmaceutique
             </h1>
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>
-              Médicaments, stocks et approvisionnements
+              {activeItem?.label ?? 'Médicaments, stocks et approvisionnements'}
             </p>
           </div>
         </div>
@@ -342,47 +344,88 @@ export default function PharmaciePage() {
         )}
       </div>
 
-      {/* ── Barre de navigation ── */}
-      <div style={{
-        background: colors.white, borderRadius: radius.md,
-        padding: '8px 12px', boxShadow: shadows.sm,
-        border: `1px solid ${colors.gray200}`,
-        display: 'flex', gap: 4, overflowX: 'auto', flexWrap: 'wrap',
-      }}>
-        {menuItems.map(item => (
-          <button key={item.key} onClick={() => setActiveTab(item.key)} style={{
-            padding: '8px 16px', border: 'none', borderRadius: radius.sm,
-            cursor: 'pointer', fontWeight: 600, fontSize: 12,
-            whiteSpace: 'nowrap', transition: 'all 0.15s',
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: activeTab === item.key ? colors.bleu : 'transparent',
-            color: activeTab === item.key ? colors.white : colors.gray600,
-          }}>
-            <span>{item.icon}</span> {item.label}
-          </button>
-        ))}
-      </div>
+      {/* ── Corps : sous-menu gauche + contenu droite ── */}
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
 
-      {/* ── Contenu ── */}
-      {activeTab === 'accueil' && <AccueilTab produits={produits} />}
-      {activeTab === 'produits' && (
-        <ProduitsTab
-          produits={pageItems}
-          totalProduits={filtered.length}
-          allCount={produits.length}
-          loading={loading}
-          page={page} totalPages={totalPages}
-          perPage={perPage} setPerPage={setPerPage}
-          setPage={setPage}
-          search={search} setSearch={setSearch}
-          filterStatut={filterStatut} setFilter={setFilter}
-          onEdit={openEdit} onDelete={handleDelete} onDeactivate={handleDeactivate}
-        />
-      )}
-      {activeTab === 'fournisseur' && <FournisseursTab data={mockFournisseurs} />}
-      {['commande','approvisionnement','ajustement','sortie','reception','inventaire'].includes(activeTab) && (
-        <PlaceholderTab item={menuItems.find(m => m.key === activeTab)} />
-      )}
+        {/* ── Sous-menu vertical (même format que Sidebar) ── */}
+        <div style={{
+          width: 220, flexShrink: 0,
+          background: colors.bleu,
+          borderRadius: radius.lg,
+          overflow: 'hidden',
+          boxShadow: shadows.md,
+          padding: '8px 0',
+        }}>
+          {/* En-tête groupe (même style que bouton de groupe Sidebar) */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            width: '100%', padding: '11px 20px',
+            margin: '2px 8px', borderRadius: 8,
+            background: 'rgba(255,255,255,0.1)',
+            color: colors.white,
+            fontWeight: 700, fontSize: 13,
+            textTransform: 'uppercase', letterSpacing: '0.5px',
+            boxSizing: 'border-box',
+          }}>
+            <span style={{ fontSize: 16 }}>💊</span>
+            <span style={{ flex: 1, textAlign: 'left' }}>Pharmacie</span>
+          </div>
+
+          {/* Items (même style que sous-items Sidebar) */}
+          <div style={{ marginLeft: 16, paddingLeft: 12, borderLeft: `2px solid ${colors.orange}` }}>
+            {MENU_ITEMS.map(item => {
+              const active = activeTab === item.key
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveTab(item.key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: 'calc(100% - 8px)',
+                    padding: '10px 20px 10px 12px',
+                    margin: '2px 4px', borderRadius: 6,
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    background: active ? colors.orange : 'transparent',
+                    color: colors.white,
+                    fontWeight: active ? 700 : 500,
+                    fontSize: 13,
+                    transition: 'background 0.15s',
+                    boxSizing: 'border-box',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── Zone de contenu principale ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {activeTab === 'accueil' && <AccueilTab produits={produits} />}
+          {activeTab === 'produits' && (
+            <ProduitsTab
+              produits={pageItems}
+              totalProduits={filtered.length}
+              allCount={produits.length}
+              loading={loading}
+              page={page} totalPages={totalPages}
+              perPage={perPage} setPerPage={setPerPage}
+              setPage={setPage}
+              search={search} setSearch={setSearch}
+              filterStatut={filterStatut} setFilter={setFilter}
+              onEdit={openEdit} onDelete={handleDelete} onDeactivate={handleDeactivate}
+            />
+          )}
+          {activeTab === 'fournisseurs' && <FournisseursTab data={mockFournisseurs} />}
+          {['commandes','approvisionnement','ajustement','sortie','reception','inventaire'].includes(activeTab) && (
+            <PlaceholderTab item={MENU_ITEMS.find(m => m.key === activeTab)} />
+          )}
+        </div>
+      </div>
 
       {/* ── Modal création / édition ── */}
       {showModal && (
