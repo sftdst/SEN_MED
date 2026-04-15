@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { hospitalApi, departementApi, serviceApi, personnelApi, patientApi } from '../api'
+import { hospitalApi, departementApi, serviceApi, personnelApi, patientApi, visiteApi } from '../api'
 import { colors, radius, shadows, spacing } from '../theme'
 import Spinner from '../components/ui/Spinner'
 
@@ -8,25 +8,29 @@ function StatCard({ icon, label, value, color, subValue, to, loading }) {
   const navigate = useNavigate()
   return (
     <div
-      onClick={() => navigate(to)}
+      onClick={() => to && navigate(to)}
       style={{
         background: colors.white,
         borderRadius: radius.lg,
         padding: '20px 24px',
         boxShadow: shadows.sm,
         display: 'flex', alignItems: 'center', gap: 16,
-        cursor: 'pointer',
+        cursor: to ? 'pointer' : 'default',
         borderLeft: `5px solid ${color}`,
         transition: 'transform 0.18s, box-shadow 0.18s',
-        flex: 1, minWidth: 180,
+        flex: 1, minWidth: 160,
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)'
-        e.currentTarget.style.boxShadow = shadows.md
+        if (to) {
+          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = shadows.md
+        }
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = shadows.sm
+        if (to) {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = shadows.sm
+        }
       }}
     >
       <div style={{
@@ -69,63 +73,172 @@ function FilterButton({ label, active, onClick }) {
   )
 }
 
-function FilterSelect({ label, value, options, onChange }) {
+function SimpleBarChart({ data, title, color = colors.bleu }) {
+  const max = Math.max(...data.map(d => d.value))
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-      <span style={{ fontSize: 13, color: colors.gray600, fontWeight: 500 }}>{label}</span>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        style={{
-          padding: '8px 12px',
-          borderRadius: radius.sm,
-          border: `1.5px solid ${colors.gray300}`,
-          fontSize: 13,
-          color: colors.gray900,
-          background: colors.white,
-          cursor: 'pointer',
-          outline: 'none',
-        }}
-      >
-        {options.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
+    <div style={{ background: colors.white, borderRadius: radius.lg, padding: spacing.lg, boxShadow: shadows.sm }}>
+      <h3 style={{ margin: '0 0 16px', color: colors.bleu, fontSize: 14, fontWeight: 700 }}>{title}</h3>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 120 }}>
+        {data.map((d, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ 
+              width: '100%', 
+              height: `${(d.value / max) * 80}px`, 
+              background: color, 
+              borderRadius: '4px 4px 0 0',
+              minHeight: 4,
+            }} />
+            <span style={{ fontSize: 10, color: colors.gray500 }}>{d.label}</span>
+          </div>
         ))}
-      </select>
+      </div>
+    </div>
+  )
+}
+
+function SimpleDonutChart({ data, title }) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  let cumulative = 0
+  const segments = data.map((d => {
+    const pct = (d.value / total) * 100
+    const start = cumulative
+    cumulative += pct
+    return { ...d, pct, start }
+  }))
+  
+  const size = 100
+  const stroke = 20
+  const radius = (size - stroke) / 2
+  const circumference = 2 * Math.PI * radius
+  const dashArray = segments.map(s => `${(s.pct / 100) * circumference} ${circumference}`)
+  const dashOffset = segments.reduce((acc, s, i) => {
+    const offset = i === 0 ? 0 : -segments.slice(0, i).reduce((a, seg) => a + (seg.pct / 100) * circumference, 0)
+    return offset
+  }, circumference / 4)
+
+  const chartColors = [colors.bleu, colors.orange, colors.success, '#9c27b0', '#00bcd4']
+
+  return (
+    <div style={{ background: colors.white, borderRadius: radius.lg, padding: spacing.lg, boxShadow: shadows.sm }}>
+      <h3 style={{ margin: '0 0 16px', color: colors.bleu, fontSize: 14, fontWeight: 700 }}>{title}</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ width: 100, height: 100, position: 'relative' }}>
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            {segments.map((s, i) => (
+              <circle
+                key={i}
+                cx={size/2}
+                cy={size/2}
+                r={radius}
+                fill="none"
+                stroke={chartColors[i % chartColors.length]}
+                strokeWidth={stroke}
+                strokeDasharray={`${(s.pct / 100) * circumference} ${circumference}`}
+                strokeDashoffset={-segments.slice(0, i).reduce((a, seg) => a + (seg.pct / 100) * circumference, 0)}
+                transform={`rotate(-90 ${size/2} ${size/2})`}
+              />
+            ))}
+            <text x="50%" y="50%" textAnchor="middle" dy="0.3em" fontSize="14" fontWeight="800" fill={colors.gray700}>
+              {total}
+            </text>
+          </svg>
+        </div>
+        <div style={{ flex: 1 }}>
+          {data.map((d, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 11 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, background: chartColors[i % chartColors.length] }} />
+              <span style={{ color: colors.gray600, flex: 1 }}>{d.label}</span>
+              <span style={{ fontWeight: 600, color: colors.gray800 }}>{d.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function HorizontalBarChart({ data, title, color = colors.orange }) {
+  const max = Math.max(...data.map(d => d.value))
+  return (
+    <div style={{ background: colors.white, borderRadius: radius.lg, padding: spacing.lg, boxShadow: shadows.sm }}>
+      <h3 style={{ margin: '0 0 16px', color: colors.bleu, fontSize: 14, fontWeight: 700 }}>{title}</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {data.slice(0, 10).map((d, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 80, fontSize: 11, color: colors.gray600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {d.label}
+            </span>
+            <div style={{ flex: 1, height: 16, background: colors.gray100, borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ width: `${(d.value / max) * 100}%`, height: '100%', background: color, borderRadius: 4 }} />
+            </div>
+            <span style={{ width: 30, fontSize: 11, fontWeight: 600, color: colors.gray700, textAlign: 'right' }}>{d.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function LineChart({ data, title }) {
+  const max = Math.max(...data.map(d => Math.max(d.percu, d.recu)))
+  const pointsPercu = data.map((d, i) => `${i * 50 + 25},${80 - (d.percu / max) * 70}`)
+  const pointsRecu = data.map((d, i) => `${i * 50 + 25},${80 - (d.recu / max) * 70}`)
+  
+  return (
+    <div style={{ background: colors.white, borderRadius: radius.lg, padding: spacing.lg, boxShadow: shadows.sm }}>
+      <h3 style={{ margin: '0 0 16px', color: colors.bleu, fontSize: 14, fontWeight: 700 }}>{title}</h3>
+      <div style={{ position: 'relative', height: 150 }}>
+        <svg width="100%" height="150" viewBox="0 0 350 150" preserveAspectRatio="none">
+          <line x1="25" y1="80" x2="325" y2="80" stroke={colors.gray200} strokeWidth="1" />
+          {[0, 0.25, 0.5, 0.75, 1].map((p, i) => (
+            <text key={i} x="10" y={80 - p * 70} fontSize="9" fill={colors.gray400}>
+              {Math.round(max * p).toLocaleString()}
+            </text>
+          ))}
+          <polyline fill="none" stroke={colors.bleu} strokeWidth="2" points={pointsPercu.join(' ')} />
+          <polyline fill="none" stroke={colors.success} strokeWidth="2" points={pointsRecu.join(' ')} />
+          {data.map((d, i) => (
+            <text key={i} x={i * 50 + 25} y="140" fontSize="10" fill={colors.gray500} textAnchor="middle">{d.label}</text>
+          ))}
+        </svg>
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 12, height: 3, background: colors.bleu, borderRadius: 2 }} />
+            <span style={{ fontSize: 11, color: colors.gray600 }}>Montant perçu</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 12, height: 3, background: colors.success, borderRadius: 2 }} />
+            <span style={{ fontSize: 11, color: colors.gray600 }}>Montant reçu</span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ 
-    hospitals: 0, 
-    departements: 0, 
-    services: 0, 
-    personnels: 0,
-    patients: 0,
-    patientsToday: 0,
-    patientsWeek: 0,
-    patientsMonth: 0,
+    hospitals: 0, departements: 0, services: 0, personnels: 0,
+    patients: 0, consultations: 0, rendezvous: 0,
+    montantPercu: 0, montantRecu: 0,
   })
   const [loading, setLoading] = useState(true)
-  
-  const [filterPeriod, setFilterPeriod] = useState('all')
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [filterPeriod, setFilterPeriod] = useState('month')
+  const [selectedYear, setSelectedYear] = useState(2026)
+  const [dateRange, setDateRange] = useState({ start: '2026-04-01', end: '2026-04-15' })
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
   const months = [
-    { value: 1, label: 'Janvier' }, { value: 2, label: 'Février' },
-    { value: 3, label: 'Mars' }, { value: 4, label: 'Avril' },
-    { value: 5, label: 'Mai' }, { value: 6, label: 'Juin' },
-    { value: 7, label: 'Juillet' }, { value: 8, label: 'Août' },
-    { value: 9, label: 'Septembre' }, { value: 10, label: 'Octobre' },
-    { value: 11, label: 'Novembre' }, { value: 12, label: 'Décembre' },
+    { value: 1, label: 'Jan' }, { value: 2, label: 'Fév' }, { value: 3, label: 'Mars' },
+    { value: 4, label: 'Avr' }, { value: 5, label: 'Mai' }, { value: 6, label: 'Juin' },
+    { value: 7, label: 'Juil' }, { value: 8, label: 'Août' }, { value: 9, label: 'Sept' },
+    { value: 10, label: 'Oct' }, { value: 11, label: 'Nov' }, { value: 12, label: 'Déc' },
   ]
 
   useEffect(() => {
     loadStats()
-  }, [filterPeriod, selectedYear, selectedMonth])
+  }, [filterPeriod, selectedYear, dateRange])
 
   const loadStats = async () => {
     setLoading(true)
@@ -144,9 +257,10 @@ export default function Dashboard() {
         services: s.data?.data?.length ?? 0,
         personnels: p.data?.data?.total ?? p.data?.data?.length ?? 0,
         patients: pat.data?.data?.total ?? 0,
-        patientsToday: pat.data?.data?.total ?? 0,
-        patientsWeek: pat.data?.data?.total ?? 0,
-        patientsMonth: pat.data?.data?.total ?? 0,
+        consultations: 3,
+        rendezvous: 2,
+        montantPercu: 8500000,
+        montantRecu: 7200000,
       })
     } catch (err) {
       console.error('Error loading stats:', err)
@@ -155,28 +269,66 @@ export default function Dashboard() {
     }
   }
 
-  const getPatientStats = () => {
-    switch (filterPeriod) {
-      case 'today':
-        return { value: stats.patientsToday, label: "aujourd'hui" }
-      case 'week':
-        return { value: stats.patientsWeek, label: 'cette semaine' }
-      case 'month':
-        return { value: stats.patientsMonth, label: 'ce mois' }
-      case 'year':
-        return { value: stats.patients, label: `en ${selectedYear}` }
-      case 'monthly':
-        return { value: stats.patients, label: `en ${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}` }
-      default:
-        return { value: stats.patients, label: 'total' }
-    }
-  }
+  const patientParMois = [
+    { label: 'Jan', value: 45 },
+    { label: 'Fév', value: 52 },
+    { label: 'Mar', value: 48 },
+    { label: 'Avr', value: 38 },
+  ]
 
-  const patientStats = getPatientStats()
+  const consultationParAge = [
+    { label: 'Adultes', value: 80 },
+    { label: 'Enfance', value: 20 },
+  ]
+
+  const topBilans = [
+    { label: 'NFS', value: 45 },
+    { label: 'Glycémie', value: 38 },
+    { label: 'Créatinine', value: 32 },
+    { label: 'Bilan hépatique', value: 28 },
+    { label: 'TP/INR', value: 24 },
+    { label: 'ECBU', value: 20 },
+    { label: 'Sérologie', value: 18 },
+    { label: 'Ionogramme', value: 15 },
+    { label: 'Lipidique', value: 12 },
+    { label: 'TSH', value: 10 },
+  ]
+
+  const topImageries = [
+    { label: 'Radiographie Thorax', value: 35 },
+    { label: 'Échographie', value: 28 },
+    { label: 'Scanner', value: 22 },
+    { label: 'IRM', value: 18 },
+    { label: 'ECG', value: 15 },
+    { label: 'Mammographie', value: 12 },
+    { label: 'Doppler', value: 10 },
+    { label: 'Panoramique', value: 8 },
+    { label: 'Scanner cerebral', value: 6 },
+    { label: 'Ostéodensitométrie', value: 4 },
+  ]
+
+  const topMedicaments = [
+    { label: 'Paracétamol', value: 120 },
+    { label: 'Amoxicilline', value: 95 },
+    { label: 'Ibuprofène', value: 88 },
+    { label: 'Metronidazole', value: 72 },
+    { label: 'Ciprofloxacine', value: 65 },
+    { label: 'Oméprazole', value: 58 },
+    { label: 'Captopril', value: 52 },
+    { label: 'Metformin', value: 48 },
+    { label: 'Atorvastatin', value: 42 },
+    { label: 'Aspirin', value: 38 },
+  ]
+
+  const revenusParMois = [
+    { label: 'Jan', percu: 2500000, recu: 2200000 },
+    { label: 'Fév', percu: 2800000, recu: 2400000 },
+    { label: 'Mar', percu: 2200000, recu: 1800000 },
+    { label: 'Avr', percu: 1000000, recu: 800000 },
+  ]
 
   return (
     <div>
-      {/* Welcome banner */}
       <div style={{
         background: `linear-gradient(135deg, ${colors.bleu} 0%, ${colors.bleuLight} 100%)`,
         borderRadius: radius.lg,
@@ -184,26 +336,18 @@ export default function Dashboard() {
         marginBottom: 24,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         boxShadow: shadows.md,
-        overflow: 'hidden',
-        position: 'relative',
       }}>
-        <div style={{
-          position: 'absolute', right: -30, top: -30,
-          width: 160, height: 160, borderRadius: '50%',
-          background: 'rgba(255,118,49,0.12)',
-        }} />
         <div>
           <h1 style={{ margin: 0, color: colors.white, fontSize: 24, fontWeight: 800 }}>
             Tableau de bord <span style={{ color: colors.orange }}>SenMed</span>
           </h1>
           <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            Mois en cours : Avril 2026
           </p>
         </div>
         <div style={{ fontSize: 56, opacity: 0.25 }}>🏥</div>
       </div>
 
-      {/* Filters */}
       <div style={{
         background: colors.white,
         borderRadius: radius.lg,
@@ -213,152 +357,62 @@ export default function Dashboard() {
         display: 'flex', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap',
       }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: colors.bleu }}>Filtrer par:</span>
-        
         <div style={{ display: 'flex', gap: 8 }}>
-          <FilterButton label="Tout" active={filterPeriod === 'all'} onClick={() => setFilterPeriod('all')} />
-          <FilterButton label="Aujourd'hui" active={filterPeriod === 'today'} onClick={() => setFilterPeriod('today')} />
-          <FilterButton label="Semaine" active={filterPeriod === 'week'} onClick={() => setFilterPeriod('week')} />
           <FilterButton label="Mois" active={filterPeriod === 'month'} onClick={() => setFilterPeriod('month')} />
           <FilterButton label="Année" active={filterPeriod === 'year'} onClick={() => setFilterPeriod('year')} />
-          <FilterButton label="Mois sp." active={filterPeriod === 'monthly'} onClick={() => setFilterPeriod('monthly')} />
+          <FilterButton label="Plage dates" active={filterPeriod === 'range'} onClick={() => setFilterPeriod('range')} />
         </div>
 
         {filterPeriod === 'year' && (
-          <FilterSelect 
-            label="Année:" 
-            value={selectedYear} 
-            options={years.map(y => ({ value: y, label: y.toString() }))}
-            onChange={setSelectedYear}
-          />
+          <select
+            value={selectedYear}
+            onChange={e => setSelectedYear(Number(e.target.value))}
+            style={{ padding: '8px 12px', borderRadius: radius.sm, border: `1.5px solid ${colors.gray300}`, fontSize: 13 }}
+          >
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
         )}
 
-        {filterPeriod === 'monthly' && (
-          <div style={{ display: 'flex', gap: spacing.sm }}>
-            <FilterSelect 
-              label="Mois:" 
-              value={selectedMonth} 
-              options={months}
-              onChange={setSelectedMonth}
+        {filterPeriod === 'range' && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
+              style={{ padding: '6px 10px', borderRadius: radius.sm, border: `1.5px solid ${colors.gray300}`, fontSize: 12 }}
             />
-            <FilterSelect 
-              label="Année:" 
-              value={selectedYear} 
-              options={years.map(y => ({ value: y, label: y.toString() }))}
-              onChange={setSelectedYear}
+            <span style={{ color: colors.gray400 }}>→</span>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
+              style={{ padding: '6px 10px', borderRadius: radius.sm, border: `1.5px solid ${colors.gray300}`, fontSize: 12 }}
             />
           </div>
         )}
-
-        <div style={{ marginLeft: 'auto', fontSize: 12, color: colors.gray500 }}>
-          Période: <strong style={{ color: colors.bleu }}>
-            {filterPeriod === 'all' && 'Tous les temps'}
-            {filterPeriod === 'today' && "Aujourd'hui"}
-            {filterPeriod === 'week' && 'Cette semaine'}
-            {filterPeriod === 'month' && 'Ce mois'}
-            {filterPeriod === 'year' && selectedYear}
-            {filterPeriod === 'monthly' && `${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`}
-          </strong>
-        </div>
       </div>
 
-      {/* Stats */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-        <StatCard 
-          icon="🏥" 
-          label="Hôpitaux" 
-          value={stats.hospitals} 
-          color={colors.bleu} 
-          to="/hopitaux" 
-          loading={loading} 
-        />
-        <StatCard 
-          icon="🏢" 
-          label="Départements" 
-          value={stats.departements} 
-          color={colors.orange} 
-          to="/departements" 
-          loading={loading} 
-        />
-        <StatCard 
-          icon="⚕️" 
-          label="Services" 
-          value={stats.services} 
-          color="#6c3fc5" 
-          to="/services" 
-          loading={loading} 
-        />
-        <StatCard 
-          icon="👤" 
-          label="Personnel" 
-          value={stats.personnels} 
-          color={colors.success} 
-          to="/personnels" 
-          loading={loading} 
-        />
-        <StatCard 
-          icon="🧑‍🤝‍🧑" 
-          label="Patients" 
-          value={patientStats.value} 
-          subValue={patientStats.label}
-          color="#e91e63" 
-          to="/patients" 
-          loading={loading} 
-        />
+        <StatCard icon="🧑‍🤝‍🧑" label="Patients enregistrés" value={stats.patients} color="#e91e63" loading={loading} />
+        <StatCard icon="🩺" label="Consultations" value={stats.consultations} color={colors.bleu} loading={loading} />
+        <StatCard icon="📅" label="Rendez-vous" value={stats.rendezvous} color={colors.orange} loading={loading} />
+        <StatCard icon="💰" label="Montant perçu" value={(stats.montantPercu / 1000000).toFixed(1) + 'M'} subValue="F CFA" color={colors.success} loading={loading} />
+        <StatCard icon="✅" label="Montant reçu" value={(stats.montantRecu / 1000000).toFixed(1) + 'M'} subValue="F CFA" color="#6c3fc5" loading={loading} />
       </div>
 
-      {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-        <div style={{
-          background: colors.white,
-          borderRadius: radius.lg,
-          padding: spacing.lg,
-          boxShadow: shadows.sm,
-        }}>
-          <h3 style={{ margin: '0 0 16px', color: colors.bleu, fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>📊</span> Résumé organisation
-          </h3>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {[
-              { label: 'Établissements', value: stats.hospitals, icon: '🏥' },
-              { label: 'Départements', value: stats.departements, icon: '🏢' },
-              { label: 'Services médicaux', value: stats.services, icon: '⚕️' },
-            ].map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: colors.gray50, borderRadius: radius.md }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 18 }}>{item.icon}</span>
-                  <span style={{ fontSize: 13, color: colors.gray600 }}>{item.label}</span>
-                </div>
-                <span style={{ fontSize: 18, fontWeight: 800, color: colors.bleu }}>{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 16 }}>
+        <SimpleBarChart data={patientParMois} title="Patients visités par mois" color={colors.bleu} />
+        <SimpleDonutChart data={consultationParAge} title="Consultations par catégorie d'âge" />
+      </div>
 
-        <div style={{
-          background: colors.white,
-          borderRadius: radius.lg,
-          padding: spacing.lg,
-          boxShadow: shadows.sm,
-        }}>
-          <h3 style={{ margin: '0 0 16px', color: colors.bleu, fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>👥</span> Personnel & Patients
-          </h3>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {[
-              { label: 'Personnel total', value: stats.personnels, icon: '👨‍⚕️' },
-              { label: 'Patients total', value: stats.patients, icon: '🧑‍🤝‍🧑' },
-              { label: 'Période active', value: patientStats.label, icon: '📅' },
-            ].map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: colors.gray50, borderRadius: radius.md }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 18 }}>{item.icon}</span>
-                  <span style={{ fontSize: 13, color: colors.gray600 }}>{item.label}</span>
-                </div>
-                <span style={{ fontSize: 18, fontWeight: 800, color: '#e91e63' }}>{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 16 }}>
+        <HorizontalBarChart data={topBilans} title="Top 10 Bilans de laboratoire" color={colors.bleu} />
+        <HorizontalBarChart data={topImageries} title="Top 10 Imageries" color={colors.orange} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 16 }}>
+        <HorizontalBarChart data={topMedicaments} title="Top 10 Médicaments prescrits" color={colors.success} />
+        <LineChart data={revenusParMois} title="Courbe de revenus (Montant perçu/reçu)" />
       </div>
     </div>
   )
