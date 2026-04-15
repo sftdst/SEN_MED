@@ -25,6 +25,16 @@ class PatientController extends Controller
             $query->recherche($request->search);
         }
 
+        // Filtre "commence par" pour l'autocomplete RDV
+        if ($request->filled('starts_with')) {
+            $val = $request->starts_with;
+            $query->where(function ($q) use ($val) {
+                $q->where('first_name',   'ilike', "{$val}%")
+                  ->orWhere('last_name',  'ilike', "{$val}%")
+                  ->orWhere('patient_name', 'ilike', "{$val}%");
+            });
+        }
+
         if ($request->filled('company_id')) {
             $query->where('company_id', $request->company_id);
         }

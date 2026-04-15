@@ -15,6 +15,10 @@ use App\Http\Controllers\Api\CreneauxController;
 use App\Http\Controllers\Api\PartenaireController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\VisiteController;
+use App\Http\Controllers\Api\ChambreController;
+use App\Http\Controllers\Api\HospitalisationController;
+use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\ProductItemController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -145,5 +149,51 @@ Route::prefix('v1')->group(function () {
     Route::apiResource('visites', VisiteController::class)
         ->parameters(['visites' => 'visite'])
         ->only(['index', 'store', 'show']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Hospitalisation
+    |--------------------------------------------------------------------------
+    */
+
+    // ── Chambres ──────────────────────────────────────────────────────────────
+    Route::get('chambres/dashboard',                             [ChambreController::class, 'dashboard']);
+    Route::get('chambres/{chambre}/equipements',                 [ChambreController::class, 'equipements']);
+    Route::post('chambres/{chambre}/equipements',                [ChambreController::class, 'ajouterEquipement']);
+    Route::delete('chambres/{chambre}/equipements/{equipement}', [ChambreController::class, 'retirerEquipement']);
+    Route::apiResource('chambres', ChambreController::class)
+        ->parameters(['chambres' => 'chambre']);
+
+    // ── Équipements (catalogue) ───────────────────────────────────────────────
+    Route::get('equipements',           [ChambreController::class, 'indexEquipements']);
+    Route::post('equipements',          [ChambreController::class, 'storeEquipement']);
+    Route::put('equipements/{equipement}', [ChambreController::class, 'updateEquipement']);
+    Route::delete('equipements/{equipement}', [ChambreController::class, 'destroyEquipement']);
+
+    // ── Hospitalisations ──────────────────────────────────────────────────────
+    Route::get('hospitalisations/dashboard',                    [HospitalisationController::class, 'dashboard']);
+    Route::post('hospitalisations/{hospitalisation}/sortie',    [HospitalisationController::class, 'sortie']);
+    Route::patch('chambres/{chambre}/marquer-propre',           [HospitalisationController::class, 'marquerPropre']);
+    Route::apiResource('hospitalisations', HospitalisationController::class)
+        ->parameters(['hospitalisations' => 'hospitalisation'])
+        ->only(['index', 'store', 'show']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Rendez-Vous (Appointments)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('appointments/creneaux-disponibles', [AppointmentController::class, 'creneauxDisponibles']);
+    Route::apiResource('appointments', AppointmentController::class)
+        ->parameters(['appointments' => 'appointment']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Pharmacie - Gestion des produits
+    |--------------------------------------------------------------------------
+    */
+    Route::get('pharmacie/items/metadata', [ProductItemController::class, 'metadata']);
+    Route::apiResource('pharmacie/items', ProductItemController::class)
+        ->parameters(['pharmacie/items' => 'item']);
 
 });

@@ -13,6 +13,11 @@ import VisitesPage from './pages/visites/VisitesPage'
 import SalleAttentePage from './pages/salleAttente/SalleAttentePage'
 import PharmaciePage from './pages/pharmacie/PharmaciePage'
 import ConfigSanitairePage from './pages/configSanitaire/ConfigSanitairePage'
+import SalleAttentePage from './pages/salleAttente/SalleAttentePage'
+import PharmaciePage from './pages/pharmacie/PharmaciePage'
+import ConfigSanitairePage from './pages/configSanitaire/ConfigSanitairePage'
+import HospitalisationPage from './pages/hospitalisation/HospitalisationPage'
+import RendezVousPage from './pages/rendezvous/RendezVousPage'
 
 export default function App() {
   return (
@@ -29,9 +34,11 @@ export default function App() {
           <Route path="partenaires"   element={<PartenairesPage />} />
           <Route path="patients"      element={<PatientsPage />} />
           <Route path="visites"       element={<VisitesPage />} />
-          <Route path="salle-attente" element={<SalleAttentePage />} />
-          <Route path="pharmacie"     element={<PharmaciePage />} />
+<Route path="salle-attente"    element={<SalleAttentePage />} />
+          <Route path="pharmacie"        element={<PharmaciePage />} />
           <Route path="config-sanitaire" element={<ConfigSanitairePage />} />
+          <Route path="hospitalisation"  element={<HospitalisationPage />} />
+          <Route path="rendezvous"       element={<RendezVousPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

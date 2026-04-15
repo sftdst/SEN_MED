@@ -3,27 +3,29 @@ import { NavLink } from 'react-router-dom'
 import { colors } from '../../theme'
 
 const navItems = [
-  { 
-    group: 'ACCUEIL', 
+  {
+    group: 'ACCUEIL',
     icon: '⊞',
     items: [
       { to: '/', label: 'Tableau de bord' },
       { to: '/patients', label: 'Patients' },
-      { to: '/visites', label: 'Salle d\'attente' },
+      { to: '/visites', label: 'Visites' },
+      { to: '/salle-attente', label: "Salle d'attente" },
+      { to: '/hospitalisation', label: 'Hospitalisation' },
       { to: '/planning', label: 'Espace médical' },
       { to: '/rendezvous', label: 'Gestion des RDV' },
     ]
   },
-  { 
-    group: 'COMPTABILITÉ', 
+  {
+    group: 'COMPTABILITÉ',
     icon: '💰',
     items: [
       { to: '/factures', label: 'Factures' },
       { to: '/paiements', label: 'Paiements' },
     ]
   },
-  { 
-    group: 'ADMINISTRATION', 
+  {
+    group: 'ADMINISTRATION',
     icon: '🏢',
     items: [
       { to: '/personnels', label: 'Utilisateurs' },
@@ -34,14 +36,14 @@ const navItems = [
       { to: '/partenaires', label: 'Partenaires' },
     ]
   },
-  { 
-    group: 'CONFIGURATION', 
+  {
+    group: 'CONFIGURATION',
     icon: '⚙️',
     items: [
-      { to: '/config-systeme', label: 'Configuration système' },
-      { to: '/config-sanitaire', label: 'Config. sanitaire' },
-      { to: '/pharmacie', label: 'Gestion pharmaceutique' },
-      { to: '/laboratoire', label: 'Laboratoire' },
+      { to: '/config-systeme',  label: 'Configuration système' },
+      { to: '/config-sanitaire', label: 'Config. sanitaire'   },
+      { to: '/pharmacie',        label: 'Gestion pharmaceutique' },
+      { to: '/laboratoire',      label: 'Laboratoire'          },
     ]
   },
 ]

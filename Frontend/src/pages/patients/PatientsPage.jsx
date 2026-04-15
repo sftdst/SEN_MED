@@ -11,6 +11,8 @@ import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 import PatientCardModal from '../../components/patients/PatientCardModal'
+import HistoriqueVisitesModal from './HistoriqueVisitesModal'
+import HistoriqueRdvModal from './HistoriqueRdvModal'
 
 // ── Constantes ──────────────────────────────────────────────
 const EMPTY_COMPLET = {
@@ -425,7 +427,16 @@ export default function PatientsPage() {
         subtitle="Gestion des dossiers patients et informations personnelles"
         actions={
           <div style={{ display: 'flex', gap: spacing.sm, flexWrap: 'wrap' }}>
-            <Button onClick={() => setModalHistorique(true)} variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>Historique Visite</Button>
+            <Button
+              onClick={() => {
+                if (!selected) { showToast('Sélectionnez d\'abord un patient dans la liste', 'error'); return }
+                setModalHistorique(true)
+              }}
+              variant="warning" size="lg"
+              style={{ flex: '1 1 0', minWidth: '140px', opacity: selected ? 1 : 0.65 }}
+            >
+              Historique Visite{selected ? ` — ${selected.first_name}` : ''}
+            </Button>
             <Button onClick={() => setModalRdv(true)} variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>Historique Rendez-vous</Button>
             <Button
               onClick={() => {
@@ -915,30 +926,20 @@ export default function PatientsPage() {
       </Modal>
 
       {/* ── MODAL HISTORIQUE VISITE ────────────────────────── */}
-      <Modal
-        open={modalHistorique}
-        onClose={() => setModalHistorique(false)}
-        title="Historique des Visites"
-        width={700}
-      >
-        <div style={{ padding: spacing.md, textAlign: 'center', color: colors.gray500 }}>
-          <p>Sélectionnez un patient pour voir son historique de visites.</p>
-          <p style={{ fontSize: '12px' }}>(Fonctionnalité en cours de développement)</p>
-        </div>
-      </Modal>
+      {modalHistorique && (
+        <HistoriqueVisitesModal
+          patient={selected}
+          onClose={() => setModalHistorique(false)}
+        />
+      )}
 
       {/* ── MODAL HISTORIQUE RENDEZ-VOUS ────────────────────── */}
-      <Modal
-        open={modalRdv}
-        onClose={() => setModalRdv(false)}
-        title="Historique des Rendez-vous"
-        width={700}
-      >
-        <div style={{ padding: spacing.md, textAlign: 'center', color: colors.gray500 }}>
-          <p>Sélectionnez un patient pour voir son historique de rendez-vous.</p>
-          <p style={{ fontSize: '12px' }}>(Fonctionnalité en cours de développement)</p>
-        </div>
-      </Modal>
+      {modalRdv && selected && (
+        <HistoriqueRdvModal
+          patient={selected}
+          onClose={() => setModalRdv(false)}
+        />
+      )}
 
       {/* ── MODAL CRÉER CONSULTATION ───────────────────────── */}
       {modalConsult && (selected || patientVisite) && (
