@@ -133,16 +133,16 @@ function BandePatient({ patient }) {
 
 // ── Tableau des services ──────────────────────────────────────────────────────
 
-const EMPTY_SVC = { service_id: '', description: '', service_type_id: '', prix: '', quantite: 1, couverture_pct: 0 }
+const EMPTY_SVC = { service_id: '', description: '', prix: '', quantite: 1, couverture_pct: 0 }
 
-function TableServices({ lignes, onLignes, couverturePct }) {
+function TableServices({ lignes, onLignes, couverturePct, selectedTypeId }) {
   const [catalog, setCatalog] = useState([])
-  const [typesSvc, setTypesSvc] = useState([])
 
   useEffect(() => {
-    serviceApi.liste({ per_page: 200 }).then(r => setCatalog(r.data?.data?.data ?? [])).catch(() => {})
-    typeServiceApi.liste({ per_page: 100 }).then(r => setTypesSvc(r.data?.data?.data ?? [])).catch(() => {})
-  }, [])
+    const params = { per_page: 200 }
+    if (selectedTypeId) params.IDgen_mst_Type_Service = selectedTypeId
+    serviceApi.liste(params).then(r => setCatalog(r.data?.data?.data ?? [])).catch(() => {})
+  }, [selectedTypeId])
 
   const add = () => onLignes([...lignes, { ...EMPTY_SVC, couverture_pct: couverturePct }])
   const remove = (i) => onLignes(lignes.filter((_, idx) => idx !== i))
@@ -152,11 +152,10 @@ function TableServices({ lignes, onLignes, couverturePct }) {
       const next = { ...l, [field]: val }
       // Si on sélectionne un service du catalogue, remplir auto
       if (field === 'service_id' && val) {
-        const found = catalog.find(s => String(s.service_id ?? s.id_Rep) === String(val))
+        const found = catalog.find(s => String(s.id_service) === String(val))
         if (found) {
-          next.description    = found.service_name ?? found.description ?? ''
-          next.service_type_id= found.type_service_id ?? ''
-          next.prix           = found.service_price ?? found.prix ?? 0
+          next.description = found.short_name ?? ''
+          next.prix        = found.valeur_cts ?? found.service_price ?? 0
         }
       }
       return next
@@ -216,7 +215,6 @@ function TableServices({ lignes, onLignes, couverturePct }) {
             <tr>
               <th style={{ ...thStyle, width: 36 }}>N°</th>
               <th style={thStyle}>Service</th>
-              <th style={thStyle}>Type</th>
               <th style={{ ...thStyle, width: 90 }}>Prix</th>
               <th style={{ ...thStyle, width: 70 }}>Qté</th>
               <th style={{ ...thStyle, width: 100 }}>Cov%</th>
@@ -228,7 +226,7 @@ function TableServices({ lignes, onLignes, couverturePct }) {
           <tbody>
             {lignes.length === 0 && (
               <tr>
-                <td colSpan={9} style={{ ...tdStyle, textAlign: 'center', color: colors.gray500, padding: 24 }}>
+                <td colSpan={8} style={{ ...tdStyle, textAlign: 'center', color: colors.gray500, padding: 24 }}>
                   Aucun service — cliquez sur + pour en ajouter
                 </td>
               </tr>
@@ -250,22 +248,8 @@ function TableServices({ lignes, onLignes, couverturePct }) {
                       }}>
                       <option value="">-- Choisir --</option>
                       {catalog.map(s => (
-                        <option key={s.service_id ?? s.id_Rep} value={s.service_id ?? s.id_Rep}>
-                          {s.service_name ?? s.description}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td style={tdStyle}>
-                    <select value={l.service_type_id} onChange={e => change(i, 'service_type_id', e.target.value)}
-                      style={{
-                        width: '100%', border: `1px solid ${colors.gray300}`, borderRadius: 4,
-                        padding: '4px 6px', fontSize: 12, background: colors.white,
-                      }}>
-                      <option value="">—</option>
-                      {typesSvc.map(t => (
-                        <option key={t.type_service_id ?? t.id_Rep} value={t.type_service_id ?? t.id_Rep}>
-                          {t.type_name ?? t.nom}
+                        <option key={s.id_service} value={s.id_service}>
+                          {s.short_name}
                         </option>
                       ))}
                     </select>
@@ -330,10 +314,10 @@ function TotalBox({ label, value, color }) {
 // ── Modal principal ───────────────────────────────────────────────────────────
 
 const EMPTY_FORM = {
-  consulting_doctor_id:  '',
-  IDgen_mst_Departement: '',
-  visit_type:            'OPD',
-  visit_place:           '',
+  consulting_doctor_id:    '',
+  IDgen_mst_Departement:   '',
+  IDgen_mst_Type_Service:  '',
+  visit_place:             '',
   refered_doctor:        '',
   numero_medcin:         '',
   refered_hospital:      '',
@@ -357,18 +341,20 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
 
   const [medecins, setMedecins]     = useState([])
   const [depts, setDepts]           = useState([])
-  const [metadata, setMetadata]     = useState({ visit_places: [], visit_types: [], liens_parente: [] })
+  const [typesSvc, setTypesSvc]     = useState([])
+  const [metadata, setMetadata]     = useState({ visit_places: [], liens_parente: [] })
 
   // Couverture du partenaire (en %)
   const couverturePct = 0 // À améliorer : charger depuis les détails partenaire
 
   useEffect(() => {
-    personnelApi.liste({ per_page: 200 }).then(r => {
-      const all = r.data?.data?.data ?? []
-      setMedecins(all.filter(p => p.role === 'medecin' || p.job_title?.toLowerCase().includes('médecin') || p.job_title?.toLowerCase().includes('docteur') || p.job_title?.toLowerCase().includes('doctor')))
+    personnelApi.liste({ per_page: 200, staff_type: 'medecin' }).then(r => {
+      setMedecins(r.data?.data?.data ?? [])
     }).catch(() => {})
 
     departementApi.liste({ per_page: 100 }).then(r => setDepts(r.data?.data?.data ?? [])).catch(() => {})
+
+    typeServiceApi.liste({ per_page: 100 }).then(r => setTypesSvc(r.data?.data?.data ?? [])).catch(() => {})
 
     visiteApi.metadata().then(r => setMetadata(r.data?.data ?? metadata)).catch(() => {})
   }, [])
@@ -376,9 +362,9 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
   // Auto-remplissage département selon médecin
   useEffect(() => {
     if (form.consulting_doctor_id) {
-      const med = medecins.find(m => String(m.personnel_id ?? m.id_Rep) === form.consulting_doctor_id)
-      if (med?.departement_id) {
-        setForm(f => ({ ...f, IDgen_mst_Departement: med.departement_id }))
+      const med = medecins.find(m => String(m.id) === form.consulting_doctor_id)
+      if (med?.IDgen_mst_Departement) {
+        setForm(f => ({ ...f, IDgen_mst_Departement: String(med.IDgen_mst_Departement) }))
       }
     }
   }, [form.consulting_doctor_id, medecins])
@@ -452,16 +438,19 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
   }
 
   const medecinOpts = medecins.map(m => ({
-    value: String(m.personnel_id ?? m.id_Rep),
-    label: m.full_name ?? `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim(),
+    value: String(m.id),
+    label: m.staff_name ?? `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim(),
   }))
   const deptOpts = depts.map(d => ({
-    value: String(d.departement_id ?? d.id_Rep),
-    label: d.departement_name ?? d.nom ?? d.name,
+    value: String(d.IDgen_mst_Departement),
+    label: d.NomDepartement ?? d.departement_name ?? d.nom,
   }))
-  const liensOpts = (metadata.liens_parente ?? []).map(l => ({ value: l.value, label: l.label }))
-  const placesOpts = (metadata.visit_places ?? []).map(l => ({ value: l.value, label: l.label }))
-  const typesOpts  = (metadata.visit_types ?? []).map(l => ({ value: l.value, label: l.label }))
+  const liensOpts   = (metadata.liens_parente ?? []).map(l => ({ value: l.value, label: l.label }))
+  const placesOpts  = (metadata.visit_places ?? []).map(l => ({ value: l.value, label: l.label }))
+  const typesSvcOpts = typesSvc.map(t => ({
+    value: String(t.IDgen_mst_Type_Service),
+    label: t.NomType ?? t.nom,
+  }))
 
   return (
     /* Overlay */
@@ -536,9 +525,9 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
               <Sel label="Département" name="IDgen_mst_Departement"
                 value={form.IDgen_mst_Departement} onChange={handleChange}
                 options={deptOpts} />
-              <Sel label="Type de Service" name="visit_type"
-                value={form.visit_type} onChange={handleChange}
-                options={typesOpts} />
+              <Sel label="Type de Service" name="IDgen_mst_Type_Service"
+                value={form.IDgen_mst_Type_Service} onChange={handleChange}
+                options={typesSvcOpts} required />
               <Sel label="Lieu du RDV" name="visit_place"
                 value={form.visit_place} onChange={handleChange}
                 options={placesOpts} required error={errors.visit_place} />
@@ -576,7 +565,7 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
           {errors.services && (
             <div style={{ color: colors.danger, fontSize: 12, marginBottom: -8 }}>⚠ {errors.services}</div>
           )}
-          <TableServices lignes={lignes} onLignes={setLignes} couverturePct={couverturePct} />
+          <TableServices lignes={lignes} onLignes={setLignes} couverturePct={couverturePct} selectedTypeId={form.IDgen_mst_Type_Service} />
 
         </div>
       </div>

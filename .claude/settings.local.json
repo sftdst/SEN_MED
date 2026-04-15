@@ -18,7 +18,24 @@
       "Bash(powershell -Command \"Stop-Process -Id 4876 -Force\")",
       "Bash(netstat -ano)",
       "Bash(powershell -Command \"Get-Process -Id \\(Get-NetTCPConnection -LocalPort 8000\\).OwningProcess | Select-Object Id,ProcessName,Path\")",
-      "Bash(grep -n \"personnel_id\\\\|getKeyName\" \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/database/migrations/\"*personnel*)"
+      "Bash(grep -n \"personnel_id\\\\|getKeyName\" \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/database/migrations/\"*personnel*)",
+      "Bash(more)",
+      "Bash(where php:*)",
+      "Bash(C:/xampp/php/php.exe -l \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/routes/api.php\")",
+      "Bash(C:/xampp/php/php.exe -l \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/app/Http/Controllers/Api/AppointmentController.php\")",
+      "Bash(C:/xampp/php/php.exe -r \"echo json_encode\\(@file_get_contents\\('http://localhost:8000/api/v1/patients?per_page=2', false, stream_context_create\\(['http'=>['ignore_errors'=>true,'timeout'=>5]]\\)\\)\\);\")",
+      "Bash(C:/xampp/php/php.exe -r ':*)",
+      "Bash(node_modules/.bin/vite build:*)",
+      "Bash(\"C:/Program Files/nodejs/node.exe\" node_modules/vite/bin/vite.js build --mode development)",
+      "Bash(cmd /c \"npx vite build\")",
+      "Bash(/c/Windows/System32/cmd.exe /c \"npx vite build 2>&1\")",
+      "Bash(/c/Windows/System32/cmd.exe /c \"npm run build 2>&1\")",
+      "Bash(powershell -Command \"cd 'e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Frontend'; npm run build 2>&1\")",
+      "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command \"Set-Location 'e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Frontend'; npm run build\")",
+      "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command \"Set-Location 'e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Frontend'; & 'C:\\\\Program Files\\\\nodejs\\\\npm.cmd' run build\")",
+      "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command \"Get-ChildItem 'C:\\\\Program Files\\\\' | Where-Object Name -like '*node*'\")",
+      "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command 'Set-Location '\\\\''e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Frontend'\\\\''; $env:Path += '\\\\'';C:\\\\Program Files\\\\nodejs'\\\\''; npm run build 2>&1')",
+      "Bash(C:/xampp/php/php.exe artisan:*)"
     ]
   }
 }

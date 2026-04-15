@@ -128,3 +128,54 @@ export const salleAttenteApi = {
   liste:      (params) => api.get('/salle-attente', { params }),
   marquerVu:  (id)     => api.patch(`/salle-attente/${id}/marquer-vu`),
 }
+
+// ── Chambres ──────────────────────────────────────────────
+export const chambreApi = {
+  liste:             (params)   => api.get('/chambres', { params }),
+  detail:            (id)       => api.get(`/chambres/${id}`),
+  creer:             (data)     => api.post('/chambres', data),
+  modifier:          (id, data) => api.put(`/chambres/${id}`, data),
+  supprimer:         (id)       => api.delete(`/chambres/${id}`),
+  dashboard:         ()         => api.get('/chambres/dashboard'),
+  equipements:       (id)       => api.get(`/chambres/${id}/equipements`),
+  ajouterEquipement: (id, data) => api.post(`/chambres/${id}/equipements`, data),
+  retirerEquipement: (id, eqId) => api.delete(`/chambres/${id}/equipements/${eqId}`),
+  marquerPropre:     (id)       => api.patch(`/chambres/${id}/marquer-propre`),
+}
+
+// ── Équipements ───────────────────────────────────────────
+export const equipementApi = {
+  liste:    (params)   => api.get('/equipements', { params }),
+  creer:    (data)     => api.post('/equipements', data),
+  modifier: (id, data) => api.put(`/equipements/${id}`, data),
+  supprimer:(id)       => api.delete(`/equipements/${id}`),
+}
+
+// ── Hospitalisations ──────────────────────────────────────
+export const hospitalisationApi = {
+  liste:     (params)   => api.get('/hospitalisations', { params }),
+  detail:    (id)       => api.get(`/hospitalisations/${id}`),
+  admettre:  (data)     => api.post('/hospitalisations', data),
+  sortie:    (id, data) => api.post(`/hospitalisations/${id}/sortie`, data),
+  dashboard: ()         => api.get('/hospitalisations/dashboard'),
+}
+
+// ── Rendez-Vous (Appointments) ────────────────────────────
+export const rendezVousApi = {
+  liste:                (params)   => api.get('/appointments', { params }),
+  detail:               (id)       => api.get(`/appointments/${id}`),
+  creer:                (data)     => api.post('/appointments', data),
+  modifier:             (id, data) => api.put(`/appointments/${id}`, data),
+  supprimer:            (id)       => api.delete(`/appointments/${id}`),
+  creneauxDisponibles:  (params)   => api.get('/appointments/creneaux-disponibles', { params }),
+}
+
+// ── Pharmacie: Produits (ph_mst_item) ───────────────────────
+export const produitApi = {
+  liste:     (params) => api.get('/pharmacie/items', { params }),
+  detail:    (id)     => api.get(`/pharmacie/items/${id}`),
+  creer:     (data)   => api.post('/pharmacie/items', data),
+  modifier:  (id, data) => api.put(`/pharmacie/items/${id}`, data),
+  supprimer: (id)     => api.delete(`/pharmacie/items/${id}`),
+  metadata:  ()       => api.get('/pharmacie/items/metadata'),
+}

@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             PersonnelSeeder::class,
             PartenaireHeaderSeeder::class,
             PatientSeeder::class,
+            ProductItemSeeder::class,
         ]);
     }
 }

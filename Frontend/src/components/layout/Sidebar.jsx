@@ -11,6 +11,7 @@ const navItems = [
       { to: '/patients', label: 'Patients' },
       { to: '/visites', label: 'Visites' },
       { to: '/salle-attente', label: "Salle d'attente" },
+      { to: '/hospitalisation', label: 'Hospitalisation' },
       { to: '/planning', label: 'Espace médical' },
       { to: '/rendezvous', label: 'Gestion des RDV' },
     ]
