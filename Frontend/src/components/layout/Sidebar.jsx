@@ -17,6 +17,13 @@ const navItems = [
     ]
   },
   {
+    group: 'GESTION PHARMACEUTIQUE',
+    icon: '💊',
+    items: [
+      { to: '/pharmacie', label: 'Pharmacie' },
+    ]
+  },
+  {
     group: 'COMPTABILITÉ',
     icon: '💰',
     items: [
@@ -42,7 +49,6 @@ const navItems = [
     items: [
       { to: '/config-systeme',  label: 'Configuration système' },
       { to: '/config-sanitaire', label: 'Config. sanitaire'   },
-      { to: '/pharmacie',        label: 'Gestion pharmaceutique' },
       { to: '/laboratoire',      label: 'Laboratoire'          },
     ]
   },
@@ -83,24 +89,60 @@ function NavItem({ item, collapsed }) {
           }}>▼</span>
         </button>
         {expanded && (
-          <div style={{ marginLeft: 16, paddingLeft: 12, borderLeft: `2px solid ${colors.orange}` }}>
+          <div style={{ 
+            display: 'block',
+            marginLeft: 16, paddingLeft: 12, 
+            borderLeft: `2px solid ${colors.orange}`,
+          }}>
             {item.items?.map((sub, i) => (
-              <NavLink
-                key={i}
-                to={sub.to}
-                style={({ isActive }) => ({
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 20px 10px 28px',
-                  margin: '2px 4px', borderRadius: 6,
-                  textDecoration: 'none',
-                  color: colors.white,
-                  background: isActive ? colors.orange : 'transparent',
-                  fontWeight: isActive ? 700 : 500,
-                  fontSize: 13,
-                })}
-              >
-                <span>{sub.label}</span>
-              </NavLink>
+              sub.children ? (
+                <div key={i}>
+                  <div style={{ 
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 20px 10px 28px',
+                    margin: '2px 4px', borderRadius: 6,
+                    color: colors.white,
+                    fontWeight: 600, fontSize: 13,
+                  }}>
+                    <span>{sub.label}</span>
+                  </div>
+                  {sub.children.map((child, j) => (
+                    <NavLink
+                      key={j}
+                      to={child.to}
+                      style={({ isActive }) => ({
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '8px 20px 8px 48px',
+                        margin: '2px 4px', borderRadius: 6,
+                        textDecoration: 'none',
+                        color: colors.white,
+                        background: isActive ? colors.orange : 'transparent',
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: 12,
+                      })}
+                    >
+                      <span>{child.label}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              ) : (
+                <NavLink
+                  key={i}
+                  to={sub.to}
+                  style={({ isActive }) => ({
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 20px 10px 28px',
+                    margin: '2px 4px', borderRadius: 6,
+                    textDecoration: 'none',
+                    color: colors.white,
+                    background: isActive ? colors.orange : 'transparent',
+                    fontWeight: isActive ? 700 : 500,
+                    fontSize: 13,
+                  })}
+                >
+                  <span>{sub.label}</span>
+                </NavLink>
+              )
             ))}
           </div>
         )}

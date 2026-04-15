@@ -32,7 +32,10 @@ export default function App() {
           <Route path="patients"      element={<PatientsPage />} />
           <Route path="visites"       element={<VisitesPage />} />
           <Route path="salle-attente" element={<SalleAttentePage />} />
-          <Route path="pharmacie"     element={<PharmaciePage />} />
+          <Route path="pharmacie"           element={<PharmaciePage />} />
+          <Route path="pharmacie/approvisionnement" element={<PharmaciePage />} />
+          <Route path="pharmacie/ventes"             element={<PharmaciePage />} />
+          <Route path="pharmacie/stock"              element={<PharmaciePage />} />
           <Route path="config-sanitaire" element={<ConfigSanitairePage />} />
           <Route path="hospitalisation" element={<HospitalisationPage />} />
           <Route path="rendezvous"    element={<RendezVousPage />} />

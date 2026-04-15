@@ -47,8 +47,8 @@ export default function ServicesPage() {
       const result = s.data.data
       setData(result?.data || [])
       setPaginationMeta(result?.last_page ? result : null)
-      const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
-      setTypes(toArr(t.data.data))
+      const toArr = v => (v?.data?.data && Array.isArray(v.data.data)) ? v.data.data : (Array.isArray(v) ? v : [])
+      setTypes(toArr(t))
     }).finally(() => setLoading(false))
   }
 
@@ -93,7 +93,10 @@ export default function ServicesPage() {
         <div style={{ fontSize: 12, color: colors.gray500 }}>Code: {row.id_gen_mst_service || '—'} | Local: {row.code_local || '—'}</div>
       </div>
     )},
-    { key: 'typeService', title: 'Type de service', render: (_, row) => row.typeService?.NomType || '—' },
+    { key: 'type_service', title: 'Type de service', render: (_, row) => {
+      const type = row.type_service || row.typeService
+      return type?.NomType || '—'
+    }},
     { key: 'type_categorie', title: 'Catégorie' },
     { key: 'valeur_cts',     title: 'Valeur CTS' },
     { key: 'status', title: 'Statut', align: 'center', render: v => <StatusBadge status={v} /> },

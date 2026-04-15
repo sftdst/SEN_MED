@@ -344,63 +344,43 @@ export default function PharmaciePage() {
         )}
       </div>
 
-      {/* ── Corps : sous-menu gauche + contenu droite ── */}
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+      {/* ── Corps : menu horizontal + contenu ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* ── Sous-menu vertical (même format que Sidebar) ── */}
+        {/* ── Menu horizontal ── */}
         <div style={{
-          width: 220, flexShrink: 0,
+          display: 'flex', gap: 8, flexWrap: 'wrap',
           background: colors.bleu,
           borderRadius: radius.lg,
-          overflow: 'hidden',
+          padding: '12px 16px',
           boxShadow: shadows.md,
-          padding: '8px 0',
         }}>
-          {/* En-tête groupe (même style que bouton de groupe Sidebar) */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            width: '100%', padding: '11px 20px',
-            margin: '2px 8px', borderRadius: 8,
-            background: 'rgba(255,255,255,0.1)',
-            color: colors.white,
-            fontWeight: 700, fontSize: 13,
-            textTransform: 'uppercase', letterSpacing: '0.5px',
-            boxSizing: 'border-box',
-          }}>
-            <span style={{ fontSize: 16 }}>💊</span>
-            <span style={{ flex: 1, textAlign: 'left' }}>Pharmacie</span>
-          </div>
-
-          {/* Items (même style que sous-items Sidebar) */}
-          <div style={{ marginLeft: 16, paddingLeft: 12, borderLeft: `2px solid ${colors.orange}` }}>
-            {MENU_ITEMS.map(item => {
-              const active = activeTab === item.key
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => setActiveTab(item.key)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    width: 'calc(100% - 8px)',
-                    padding: '10px 20px 10px 12px',
-                    margin: '2px 4px', borderRadius: 6,
-                    border: 'none', cursor: 'pointer', textAlign: 'left',
-                    background: active ? colors.orange : 'transparent',
-                    color: colors.white,
-                    fontWeight: active ? 700 : 500,
-                    fontSize: 13,
-                    transition: 'background 0.15s',
-                    boxSizing: 'border-box',
-                  }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
-                >
-                  <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              )
-            })}
-          </div>
+          {MENU_ITEMS.map(item => {
+            const active = activeTab === item.key
+            return (
+              <button
+                key={item.key}
+                onClick={() => setActiveTab(item.key)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 16px',
+                  borderRadius: 20,
+                  border: 'none', cursor: 'pointer',
+                  background: active ? colors.orange : 'rgba(255,255,255,0.1)',
+                  color: colors.white,
+                  fontWeight: active ? 700 : 500,
+                  fontSize: 13,
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.2)' }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+              >
+                <span style={{ fontSize: 14 }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
         </div>
 
         {/* ── Zone de contenu principale ── */}
