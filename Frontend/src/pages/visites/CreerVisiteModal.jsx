@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { visiteApi, personnelApi, departementApi, serviceApi, typeServiceApi } from '../../api'
+import { visiteApi, personnelApi, departementApi, serviceApi, typeServiceApi, medecinTarifApi } from '../../api'
 import { colors, radius, shadows, spacing } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
 
@@ -135,7 +135,7 @@ function BandePatient({ patient }) {
 
 const EMPTY_SVC = { service_id: '', description: '', prix: '', quantite: 1, couverture_pct: 0 }
 
-function TableServices({ lignes, onLignes, couverturePct, selectedTypeId }) {
+function TableServices({ lignes, onLignes, couverturePct, selectedTypeId, medecinTarifs = [] }) {
   const [catalog, setCatalog] = useState([])
 
   useEffect(() => {
@@ -150,12 +150,22 @@ function TableServices({ lignes, onLignes, couverturePct, selectedTypeId }) {
     const updated = lignes.map((l, idx) => {
       if (idx !== i) return l
       const next = { ...l, [field]: val }
-      // Si on sélectionne un service du catalogue, remplir auto
+      // Si on sélectionne un service du catalogue, remplir auto le prix
       if (field === 'service_id' && val) {
         const found = catalog.find(s => String(s.id_service) === String(val))
         if (found) {
           next.description = found.short_name ?? ''
-          next.prix        = found.valeur_cts ?? found.service_price ?? 0
+          // Chercher d'abord le tarif médecin configuré (actif)
+          const medecinTarif = medecinTarifs.find(
+            t => String(t.service_id) === String(val) && t.actif !== false
+          )
+          if (medecinTarif?.prix_service != null) {
+            next.prix         = medecinTarif.prix_service
+            next._source_prix = 'medecin'
+          } else {
+            next.prix         = found.valeur_cts ?? found.service_price ?? 0
+            next._source_prix = 'hopital'
+          }
         }
       }
       return next
@@ -257,6 +267,12 @@ function TableServices({ lignes, onLignes, couverturePct, selectedTypeId }) {
                   <td style={tdStyle}>
                     <input type="number" value={l.prix} onChange={e => change(i, 'prix', e.target.value)} min={0}
                       style={{ width: '100%', border: `1px solid ${colors.gray300}`, borderRadius: 4, padding: '4px 6px', fontSize: 12 }} />
+                    {l._source_prix === 'medecin' && (
+                      <span style={{ fontSize: 10, color: colors.bleu, fontWeight: 700 }}>Tarif médecin</span>
+                    )}
+                    {l._source_prix === 'hopital' && (
+                      <span style={{ fontSize: 10, color: colors.gray500 }}>Tarif hôpital</span>
+                    )}
                   </td>
                   <td style={tdStyle}>
                     <input type="number" value={l.quantite} onChange={e => change(i, 'quantite', e.target.value)} min={1}
@@ -339,10 +355,11 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
   const [saving, setSaving] = useState(false)
   const [visiteCreee, setVisiteCreee] = useState(null)  // stocke la visite après sauvegarde
 
-  const [medecins, setMedecins]     = useState([])
-  const [depts, setDepts]           = useState([])
-  const [typesSvc, setTypesSvc]     = useState([])
-  const [metadata, setMetadata]     = useState({ visit_places: [], liens_parente: [] })
+  const [medecins, setMedecins]         = useState([])
+  const [depts, setDepts]               = useState([])
+  const [typesSvc, setTypesSvc]         = useState([])
+  const [metadata, setMetadata]         = useState({ visit_places: [], liens_parente: [] })
+  const [medecinTarifs, setMedecinTarifs] = useState([])
 
   // Couverture du partenaire (en %)
   const couverturePct = 0 // À améliorer : charger depuis les détails partenaire
@@ -359,14 +376,23 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
     visiteApi.metadata().then(r => setMetadata(r.data?.data ?? metadata)).catch(() => {})
   }, [])
 
-  // Auto-remplissage département selon médecin
+  // Auto-remplissage département + chargement tarifs selon médecin
   useEffect(() => {
-    if (form.consulting_doctor_id) {
-      const med = medecins.find(m => String(m.id) === form.consulting_doctor_id)
-      if (med?.IDgen_mst_Departement) {
-        setForm(f => ({ ...f, IDgen_mst_Departement: String(med.IDgen_mst_Departement) }))
-      }
+    if (!form.consulting_doctor_id) {
+      setMedecinTarifs([])
+      return
     }
+    const med = medecins.find(m => String(m.id) === form.consulting_doctor_id)
+    if (med?.IDgen_mst_Departement) {
+      setForm(f => ({ ...f, IDgen_mst_Departement: String(med.IDgen_mst_Departement) }))
+    }
+    // Charger les tarifs configurés pour ce médecin
+    medecinTarifApi.liste({ medecin_id: form.consulting_doctor_id, per_page: 200, actif: 1 })
+      .then(r => {
+        const d = r.data?.data?.data ?? r.data?.data ?? []
+        setMedecinTarifs(Array.isArray(d) ? d : [])
+      })
+      .catch(() => setMedecinTarifs([]))
   }, [form.consulting_doctor_id, medecins])
 
   const handleChange = useCallback(e => {
@@ -565,7 +591,7 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
           {errors.services && (
             <div style={{ color: colors.danger, fontSize: 12, marginBottom: -8 }}>⚠ {errors.services}</div>
           )}
-          <TableServices lignes={lignes} onLignes={setLignes} couverturePct={couverturePct} selectedTypeId={form.IDgen_mst_Type_Service} />
+          <TableServices lignes={lignes} onLignes={setLignes} couverturePct={couverturePct} selectedTypeId={form.IDgen_mst_Type_Service} medecinTarifs={medecinTarifs} />
 
         </div>
       </div>
