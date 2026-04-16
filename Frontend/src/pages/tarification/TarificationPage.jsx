@@ -63,20 +63,16 @@ export default function TarificationPage() {
 
   const loadAll = async () => {
     setLoading(true)
-    try {
-      const [sRes, mRes, tRes] = await Promise.all([
-        serviceApi.liste({ per_page: 200 }),
-        personnelApi.liste({ staff_type: 'medecin', per_page: 200 }),
-        medecinTarifApi.liste({ per_page: 500 }),
-      ])
-      setServices(sRes.data?.data?.data ?? sRes.data?.data ?? [])
-      setMedecins(mRes.data?.data?.data ?? mRes.data?.data ?? [])
-      setTarifs(tRes.data?.data?.data   ?? tRes.data?.data ?? [])
-    } catch {
-      // Fallback silencieux
-    } finally {
-      setLoading(false)
-    }
+    // Chaque appel indépendant — si un échoue les autres continuent
+    const [sRes, mRes, tRes] = await Promise.all([
+      serviceApi.liste({ per_page: 200 }).catch(() => null),
+      personnelApi.liste({ staff_type: 'medecin', per_page: 200 }).catch(() => null),
+      medecinTarifApi.liste({ per_page: 500 }).catch(() => null),
+    ])
+    if (sRes) setServices(sRes.data?.data?.data ?? sRes.data?.data ?? [])
+    if (mRes) setMedecins(mRes.data?.data?.data ?? mRes.data?.data ?? [])
+    if (tRes) setTarifs(tRes.data?.data?.data   ?? tRes.data?.data ?? [])
+    setLoading(false)
   }
 
   return (
