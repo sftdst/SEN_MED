@@ -50,6 +50,19 @@ const TABS = [
   { key: 'medecin',  label: '👨‍⚕️ Tarifs Médecins', desc: 'Personnalisation des tarifs par médecin' },
 ]
 
+// ── Utilitaire : extrait un tableau depuis une réponse axios paginée ou simple ──
+const extractList = (res) => {
+  if (!res) return []
+  const d = res.data
+  // { success, data: { data: [...] } }  (paginé)
+  if (d?.data?.data && Array.isArray(d.data.data)) return d.data.data
+  // { success, data: [...] }  (liste simple)
+  if (d?.data && Array.isArray(d.data)) return d.data
+  // { data: [...] }  (direct)
+  if (Array.isArray(d)) return d
+  return []
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 export default function TarificationPage() {
   const [activeTab,  setActiveTab]  = useState('hopital')
@@ -63,16 +76,30 @@ export default function TarificationPage() {
 
   const loadAll = async () => {
     setLoading(true)
-    // Chaque appel indépendant — si un échoue les autres continuent
+    // Appels complètement indépendants — l'échec de l'un n'affecte pas les autres
     const [sRes, mRes, tRes] = await Promise.all([
-      serviceApi.liste({ per_page: 200 }).catch(() => null),
-      personnelApi.liste({ staff_type: 'medecin', per_page: 200 }).catch(() => null),
-      medecinTarifApi.liste({ per_page: 500 }).catch(() => null),
+      serviceApi.liste({ per_page: 500 }).catch(e => { console.error('[Tarif] services:', e?.response?.status, e?.message); return null }),
+      // Charger TOUS les personnels — filtre medecin côté client (plus fiable)
+      personnelApi.liste({ per_page: 500 }).catch(e => { console.error('[Tarif] personnels:', e?.response?.status, e?.message); return null }),
+      medecinTarifApi.liste({ per_page: 500 }).catch(e => { console.error('[Tarif] tarifs:', e?.response?.status, e?.message); return null }),
     ])
-    if (sRes) setServices(sRes.data?.data?.data ?? sRes.data?.data ?? [])
-    if (mRes) setMedecins(mRes.data?.data?.data ?? mRes.data?.data ?? [])
-    if (tRes) setTarifs(tRes.data?.data?.data   ?? tRes.data?.data ?? [])
+
+    const allServices  = extractList(sRes)
+    const allPersonnel = extractList(mRes)
+    const allTarifs    = extractList(tRes)
+
+    setServices(allServices)
+    // Filtrer : staff_type === 'medecin' OU consult === 1
+    setMedecins(allPersonnel.filter(p =>
+      p.staff_type === 'medecin' || p.consult === 1 || p.consult === '1'
+    ))
+    setTarifs(allTarifs)
     setLoading(false)
+  }
+
+  const reloadTarifs = async () => {
+    const res = await medecinTarifApi.liste({ per_page: 500 }).catch(() => null)
+    setTarifs(extractList(res))
   }
 
   return (
@@ -157,7 +184,7 @@ export default function TarificationPage() {
       ) : activeTab === 'hopital' ? (
         <TarifsHopital services={services} search={search} setSearch={setSearch} onRefresh={loadAll} />
       ) : (
-        <TarifsMedecins services={services} medecins={medecins} tarifs={tarifs} onRefresh={loadAll} />
+        <TarifsMedecins services={services} medecins={medecins} tarifs={tarifs} onRefresh={reloadTarifs} />
       )}
     </div>
   )
@@ -434,21 +461,25 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
   const tarifsMedecin = useMemo(() => {
     if (!medecinId) return []
     return tarifs
-      .filter(t => t.medecin_id === medecinId)
+      // Comparer en string pour éviter "1" !== 1
+      .filter(t => String(t.medecin_id) === String(medecinId))
       .map(t => ({
         ...t,
-        serviceNom:  t.service?.short_name || services.find(s => s.id_service === t.service_id)?.short_name || '—',
-        tarifHopital: services.find(s => s.id_service === t.service_id)?.valeur_cts,
+        serviceNom:  t.service?.short_name || services.find(s => String(s.id_service) === String(t.service_id))?.short_name || '—',
+        tarifHopital: services.find(s => String(s.id_service) === String(t.service_id))?.valeur_cts,
       }))
   }, [medecinId, tarifs, services])
 
   // Services sans tarif personnalisé (pour l'ajout)
   const servicesSansTarif = useMemo(() => {
-    const dejaConfigures = new Set(tarifsMedecin.map(t => t.service_id))
-    return services.filter(s => !dejaConfigures.has(s.id_service))
+    const dejaConfigures = new Set(tarifsMedecin.map(t => String(t.service_id)))
+    return services.filter(s => !dejaConfigures.has(String(s.id_service)))
   }, [services, tarifsMedecin])
 
-  const medecin = medecins.find(m => m.user_id === medecinId)
+  // Trouver le médecin par user_id ou id (string/int safe)
+  const medecin = medecins.find(m =>
+    String(m.user_id) === String(medecinId) || String(m.id) === String(medecinId)
+  )
 
   const openAdd = () => {
     setForm({ service_id: '', prix_service: '', majoration_ferie: 0, type_majoration: 'pourcentage', note: '' })
@@ -527,9 +558,9 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
           >
             <option value="">— Choisir un médecin —</option>
             {medecins.map(m => (
-              <option key={m.user_id} value={m.user_id}>
+              <option key={m.user_id ?? m.id} value={m.user_id ?? m.id}>
                 Dr. {m.first_name} {m.last_name}
-                {m.specialization ? ` (${m.specialization})` : ''}
+                {m.specialization ? ` · ${m.specialization}` : ''}
               </option>
             ))}
           </select>
