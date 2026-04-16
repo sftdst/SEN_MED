@@ -22,8 +22,8 @@ return new class extends Migration
                   ->comment('null = fallback tarif hôpital (gen_mst_service.valeur_cts)');
 
             // Majoration jour férié
-            $table->decimal('majoration_ferie', 5, 2)->default(0)
-                  ->comment('Valeur de majoration (% ou montant fixe)');
+            $table->decimal('majoration_ferie', 10, 2)->default(0)
+                  ->comment('Valeur de majoration (% ou montant fixe FCFA)');
             $table->enum('type_majoration', ['pourcentage', 'montant_fixe'])
                   ->default('pourcentage')
                   ->comment('Type de la majoration férie');
