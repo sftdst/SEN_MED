@@ -113,16 +113,21 @@ class MedecinTarifController extends Controller
     // Revenus du médecin : services facturés + statut paiement
     public function revenus(Request $request, string $medecinId): JsonResponse
     {
-        // On récupère les détails de factures liés au médecin via les visites
+        // Colonnes réelles :
+        //   bill_txn_bill_details : bill_txn_id, bill_hd_id, service_id (varchar), service_price, service_qty, total_price
+        //   bill_txn_bill_hd      : bill_hd_id, adt_id, bill_date, paid_amount, pending_amount, net_amount, mode_paye
+        //   clinic_txn_adt        : adt_id, patient_pin, consulting_doctor_id
+        //   gen_mst_service       : id_service (bigint), short_name, type_categorie
+        //   gen_mst_patient       : patient_id, patient_name, first_name, last_name
         $query = \DB::table('bill_txn_bill_details as bd')
-            ->join('bill_txn_bill_hd as bh', 'bd.bill_id', '=', 'bh.id')
-            ->join('clinic_txn_adt as v', 'bh.visite_id', '=', 'v.id')
-            ->join('gen_mst_service as s', 'bd.service_id', '=', 's.id_service')
-            ->join('gen_mst_patient as p', 'v.patient_id', '=', 'p.patient_id')
+            ->join('bill_txn_bill_hd as bh', 'bd.bill_hd_id', '=', 'bh.bill_hd_id')
+            ->join('clinic_txn_adt as v',    'bh.adt_id',     '=', 'v.adt_id')
+            ->join('gen_mst_patient as p',   'v.patient_pin', '=', 'p.patient_id')
+            ->leftJoin('gen_mst_service as s', \DB::raw('bd.service_id::bigint'), '=', 's.id_service')
             ->where('v.consulting_doctor_id', $medecinId)
             ->select([
-                'bd.id as detail_id',
-                'bh.id as bill_id',
+                'bd.bill_txn_id as detail_id',
+                'bh.bill_hd_id as bill_id',
                 'bh.bill_date',
                 'bh.paid_amount',
                 'bh.pending_amount',
@@ -135,7 +140,7 @@ class MedecinTarifController extends Controller
                 'bd.total_price',
                 'p.patient_name',
                 \DB::raw("CONCAT(p.first_name, ' ', p.last_name) as patient_complet"),
-                'v.id as visite_id',
+                'v.adt_id as visite_id',
             ]);
 
         if ($request->filled('date_debut')) {
