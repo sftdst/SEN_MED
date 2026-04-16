@@ -12,8 +12,15 @@ const navItems = [
       { to: '/visites', label: 'Visites' },
       { to: '/salle-attente', label: "Salle d'attente" },
       { to: '/hospitalisation', label: 'Hospitalisation' },
-      { to: '/planning', label: 'Espace médical' },
-      { to: '/rendezvous', label: 'Gestion des RDV' },
+      { to: '/planning',        label: 'Espace médical' },
+      { to: '/rendezvous',      label: 'Gestion des RDV' },
+    ]
+  },
+  {
+    group: 'ESPACE MÉDECIN',
+    icon: '👨‍⚕️',
+    items: [
+      { to: '/espace-medecin', label: 'Tableau de bord' },
     ]
   },
   {
@@ -46,9 +53,10 @@ const navItems = [
     group: 'CONFIGURATION',
     icon: '⚙️',
     items: [
-      { to: '/config-systeme',  label: 'Configuration système' },
-      { to: '/config-sanitaire', label: 'Config. sanitaire'   },
-      { to: '/laboratoire',      label: 'Laboratoire'          },
+      { to: '/config-systeme',   label: 'Configuration système' },
+      { to: '/config-sanitaire', label: 'Config. sanitaire'     },
+      { to: '/tarification',     label: 'Tarification'          },
+      { to: '/laboratoire',      label: 'Laboratoire'           },
     ]
   },
 ]
@@ -212,24 +220,6 @@ export default function Sidebar({ collapsed = false }) {
         ))}
       </nav>
 
-      <div style={{
-        padding: collapsed ? '16px 0' : '16px 20px',
-        borderTop: '1px solid rgba(255,255,255,0.1)',
-        display: 'flex', alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start', gap: 10,
-      }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: '50%', background: colors.orange,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: colors.white, fontWeight: 700, fontSize: 13, flexShrink: 0,
-        }}>A</div>
-        {!collapsed && (
-          <div>
-            <div style={{ color: colors.white, fontSize: 13, fontWeight: 600 }}>Admin</div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Administrateur</div>
-          </div>
-        )}
-      </div>
     </aside>
   )
 }

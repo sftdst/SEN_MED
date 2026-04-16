@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\ChambreController;
 use App\Http\Controllers\Api\HospitalisationController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ProductItemController;
+use App\Http\Controllers\Api\MedecinTarifController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -186,6 +187,19 @@ Route::prefix('v1')->group(function () {
     Route::get('appointments/creneaux-disponibles', [AppointmentController::class, 'creneauxDisponibles']);
     Route::apiResource('appointments', AppointmentController::class)
         ->parameters(['appointments' => 'appointment']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Tarification Médecins
+    |--------------------------------------------------------------------------
+    */
+    // Résolution de tarif (avant apiResource pour éviter conflit de route)
+    Route::get('medecin-tarifs/resoudre', [MedecinTarifController::class, 'resoudre']);
+    // Revenus d'un médecin
+    Route::get('medecin-tarifs/medecin/{medecinId}/revenus', [MedecinTarifController::class, 'revenus']);
+    // CRUD tarifs médecins
+    Route::apiResource('medecin-tarifs', MedecinTarifController::class)
+        ->parameters(['medecin-tarifs' => 'medecinTarif']);
 
     /*
     |--------------------------------------------------------------------------

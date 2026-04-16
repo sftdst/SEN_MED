@@ -17,6 +17,8 @@ import ConfigSystemePage from './pages/configSysteme/ConfigSystemePage'
 import ConfigSanitairePage from './pages/configSanitaire/ConfigSanitairePage'
 import HospitalisationPage from './pages/hospitalisation/HospitalisationPage'
 import RendezVousPage from './pages/rendezvous/RendezVousPage'
+import EspaceMedecinPage from './pages/espaceMedecin/EspaceMedecinPage'
+import TarificationPage from './pages/tarification/TarificationPage'
 
 export default function App() {
   return (
@@ -38,8 +40,10 @@ export default function App() {
           <Route path="comptabilite"       element={<ComptabilitePage />} />
           <Route path="config-systeme"    element={<ConfigSystemePage />} />
           <Route path="config-sanitaire" element={<ConfigSanitairePage />} />
+          <Route path="tarification"     element={<TarificationPage />} />
           <Route path="hospitalisation" element={<HospitalisationPage />} />
-          <Route path="rendezvous"    element={<RendezVousPage />} />
+          <Route path="rendezvous"      element={<RendezVousPage />} />
+          <Route path="espace-medecin"  element={<EspaceMedecinPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

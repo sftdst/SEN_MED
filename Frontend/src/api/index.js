@@ -170,6 +170,17 @@ export const rendezVousApi = {
   creneauxDisponibles:  (params)   => api.get('/appointments/creneaux-disponibles', { params }),
 }
 
+// ── Tarification Médecins ─────────────────────────────────────
+export const medecinTarifApi = {
+  liste:      (params)         => api.get('/medecin-tarifs', { params }),
+  detail:     (id)             => api.get(`/medecin-tarifs/${id}`),
+  creer:      (data)           => api.post('/medecin-tarifs', data),
+  modifier:   (id, data)       => api.put(`/medecin-tarifs/${id}`, data),
+  supprimer:  (id)             => api.delete(`/medecin-tarifs/${id}`),
+  resoudre:   (params)         => api.get('/medecin-tarifs/resoudre', { params }),
+  revenus:    (medecinId, params) => api.get(`/medecin-tarifs/medecin/${medecinId}/revenus`, { params }),
+}
+
 // ── Pharmacie: Produits (ph_mst_item) ───────────────────────
 export const produitApi = {
   liste:     (params) => api.get('/pharmacie/items', { params }),

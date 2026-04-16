@@ -11,6 +11,7 @@ import { colors, radius, shadows, spacing } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
 import NouveauRendezVousModal from './NouveauRendezVousModal'
+import ListeRendezVousModal from './ListeRendezVousModal'
 
 // ── Constantes ──────────────────────────────────────────────────────────────
 const JOURS_SEMAINE = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
@@ -84,24 +85,231 @@ function Legende() {
   )
 }
 
+// ── Popup détail d'un RDV ────────────────────────────────────────────────────
+function RdvDetailPopup({ rdv, onClose, onAnnuler, onModifier }) {
+  if (!rdv) return null
+  const statut = STATUTS[rdv.statut_app] ?? STATUTS[0]
+  const start  = timeStr(rdv.start_time)
+  const end    = timeStr(rdv.end_time)
+  const nom    = rdv.patient_nom_complet?.trim() || rdv.nom_patient || 'Patient'
+  const motif  = rdv.motif || rdv.raison || '—'
+  const type   = rdv.type_consultation || '—'
+  const date   = rdv.appointment_date
+    ? new Date(rdv.appointment_date).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+    : '—'
+
+  const [annulLoading, setAnnulLoading] = useState(false)
+  const [confirmAnnul, setConfirmAnnul] = useState(false)
+
+  const doAnnuler = async () => {
+    setAnnulLoading(true)
+    try {
+      await rendezVousApi.modifier(rdv.appointment_id || rdv.id, { statut_app: 2 })
+      showToast('Rendez-vous annulé', 'success')
+      onAnnuler?.()
+      onClose()
+    } catch {
+      showToast('Erreur lors de l\'annulation', 'error')
+    } finally {
+      setAnnulLoading(false)
+    }
+  }
+
+  const rows = [
+    { icon: '👤', label: 'Patient',    val: nom },
+    { icon: '📅', label: 'Date',       val: date.charAt(0).toUpperCase() + date.slice(1) },
+    { icon: '🕐', label: 'Horaire',    val: `${start} → ${end}` },
+    { icon: '📋', label: 'Motif',      val: motif },
+    { icon: '🩺', label: 'Type',       val: type },
+    { icon: '📞', label: 'Téléphone',  val: rdv.patient_mobile || rdv.mobile || '—' },
+  ]
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,20,50,0.45)',
+          backdropFilter: 'blur(3px)',
+          zIndex: 1200,
+          animation: 'rdvFadeIn 0.15s ease',
+        }}
+      />
+
+      {/* Panneau */}
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 420, maxWidth: '95vw',
+        background: '#fff',
+        borderRadius: 14,
+        boxShadow: '0 24px 72px rgba(0,0,0,0.28)',
+        zIndex: 1201,
+        overflow: 'hidden',
+        animation: 'rdvSlideUp 0.22s cubic-bezier(0.34,1.4,0.64,1)',
+      }}>
+
+        {/* En-tête coloré selon statut */}
+        <div style={{
+          background: `linear-gradient(135deg, ${statut.color}dd, ${statut.color}aa)`,
+          padding: '14px 18px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 10,
+              background: 'rgba(255,255,255,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18,
+            }}>📅</div>
+            <div>
+              <div style={{ color: '#fff', fontWeight: 800, fontSize: 15 }}>
+                Détails du Rendez-vous
+              </div>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                marginTop: 3,
+                padding: '2px 9px', borderRadius: 20,
+                background: 'rgba(255,255,255,0.22)',
+                color: '#fff', fontSize: 10, fontWeight: 700,
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#fff' }} />
+                {statut.label}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 32, height: 32, borderRadius: '50%',
+              border: '1.5px solid rgba(255,255,255,0.3)',
+              background: 'rgba(255,255,255,0.15)',
+              color: '#fff', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16, fontWeight: 700, transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(198,40,40,0.55)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+          >✕</button>
+        </div>
+
+        {/* Corps */}
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {rows.map(({ icon, label, val }) => (
+            <div key={label} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              padding: '8px 10px',
+              borderRadius: 8,
+              background: '#f8f9fa',
+              border: '1px solid #eee',
+            }}>
+              <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1.4 }}>{icon}</span>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 1 }}>
+                  {label}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#212529' }}>{val}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pied */}
+        <div style={{
+          padding: '12px 18px',
+          borderTop: '1px solid #f0f0f0',
+          display: 'flex', gap: 8, justifyContent: 'flex-end',
+          background: '#fafafa',
+        }}>
+          {rdv.statut_app !== 2 && rdv.statut_app !== 3 && (
+            <>
+              {!confirmAnnul ? (
+                <button
+                  onClick={() => setConfirmAnnul(true)}
+                  style={{
+                    padding: '7px 16px', borderRadius: 7, cursor: 'pointer',
+                    border: '1.5px solid #c62828', background: '#fdecea',
+                    color: '#c62828', fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#c62828'; e.currentTarget.style.color = '#fff' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fdecea'; e.currentTarget.style.color = '#c62828' }}
+                >✕ Annuler le RDV</button>
+              ) : (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: '#c62828', fontWeight: 600 }}>Confirmer l'annulation ?</span>
+                  <button
+                    onClick={() => setConfirmAnnul(false)}
+                    style={{ padding: '5px 12px', borderRadius: 6, cursor: 'pointer', border: '1px solid #dee2e6', background: '#f8f9fa', color: '#495057', fontSize: 11, fontWeight: 700 }}
+                  >Non</button>
+                  <button
+                    onClick={doAnnuler}
+                    disabled={annulLoading}
+                    style={{ padding: '5px 12px', borderRadius: 6, cursor: 'pointer', border: 'none', background: '#c62828', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}
+                  >
+                    {annulLoading
+                      ? <span style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'rdvSpin 0.6s linear infinite' }} />
+                      : null}
+                    Oui, annuler
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => { onClose(); onModifier?.(rdv) }}
+                style={{
+                  padding: '7px 18px', borderRadius: 7, cursor: 'pointer',
+                  border: 'none', background: colors.bleu,
+                  color: '#fff', fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+                  boxShadow: '0 3px 10px rgba(0,63,122,0.3)',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#003f7a'}
+                onMouseLeave={e => e.currentTarget.style.background = colors.bleu}
+              >✏️ Modifier</button>
+            </>
+          )}
+          <button
+            onClick={onClose}
+            style={{
+              padding: '7px 16px', borderRadius: 7, cursor: 'pointer',
+              border: '1.5px solid #dee2e6', background: '#f8f9fa',
+              color: '#495057', fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#e9ecef'}
+            onMouseLeave={e => e.currentTarget.style.background = '#f8f9fa'}
+          >Fermer</button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes rdvFadeIn  { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes rdvSlideUp { from { opacity: 0; transform: translate(-50%,-50%) scale(0.88) } to { opacity: 1; transform: translate(-50%,-50%) scale(1) } }
+        @keyframes rdvSpin    { to { transform: rotate(360deg) } }
+      `}</style>
+    </>
+  )
+}
+
 // ── Bloc RDV dans le calendrier ──────────────────────────────────────────────
 function RdvBlock({ rdv, onClick }) {
-  const start = timeStr(rdv.start_time)
-  const end   = timeStr(rdv.end_time)
-  const top   = pxFromTime(start)
-  const h     = heightFromRange(start, end)
+  const start  = timeStr(rdv.start_time)
+  const end    = timeStr(rdv.end_time)
+  const top    = pxFromTime(start)
+  const h      = heightFromRange(start, end)
   const statut = STATUTS[rdv.statut_app] ?? STATUTS[0]
-  const nom   = rdv.patient_nom_complet?.trim() || rdv.nom_patient || 'Patient'
+  const nom    = rdv.patient_nom_complet?.trim() || rdv.nom_patient || 'Patient'
+  const motif  = rdv.motif || rdv.raison || ''
 
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick(rdv) }}
-      title={`${nom} — ${start} à ${end}`}
+      title={`${nom}${motif ? ' · ' + motif : ''} — ${start} à ${end}`}
       style={{
         position: 'absolute', left: 3, right: 3,
         top, height: h,
         background: statut.bg,
         border: `2px solid ${statut.color}`,
+        borderLeft: `4px solid ${statut.color}`,
         borderRadius: 6,
         padding: '3px 6px',
         cursor: 'pointer',
@@ -119,12 +327,28 @@ function RdvBlock({ rdv, onClick }) {
         e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.12)'
       }}
     >
-      <div style={{ fontSize: 10, fontWeight: 700, color: statut.color, lineHeight: 1.2 }}>
+      {/* Heure */}
+      <div style={{ fontSize: 9, fontWeight: 700, color: statut.color, lineHeight: 1.3 }}>
         {start}–{end}
       </div>
-      {h > 30 && (
-        <div style={{ fontSize: 10, color: colors.gray800, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {nom}
+      {/* Nom patient */}
+      {h > 22 && (
+        <div style={{
+          fontSize: 10, color: colors.gray800, fontWeight: 700,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          lineHeight: 1.3,
+        }}>
+          👤 {nom}
+        </div>
+      )}
+      {/* Motif */}
+      {h > 44 && motif && (
+        <div style={{
+          fontSize: 9, color: colors.gray600, fontWeight: 500,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          lineHeight: 1.3, fontStyle: 'italic',
+        }}>
+          📋 {motif}
         </div>
       )}
     </div>
@@ -132,7 +356,7 @@ function RdvBlock({ rdv, onClick }) {
 }
 
 // ── Colonne d'un jour dans le calendrier semaine ─────────────────────────────
-function JourColonne({ date, horaires, rdvs, onSlotClick, selectedSlot, jourIdx }) {
+function JourColonne({ date, horaires, rdvs, onSlotClick, selectedSlot, jourIdx, onRdvClick }) {
   const past     = isBefore(startOfDay(date), startOfDay(new Date()))
   const today    = isToday(date)
   const totalH   = (HOURS_END - HOURS_START) * SLOT_H
@@ -205,7 +429,7 @@ function JourColonne({ date, horaires, rdvs, onSlotClick, selectedSlot, jourIdx 
 
       {/* RDV du jour */}
       {rdvs.map((rdv, i) => (
-        <RdvBlock key={rdv.appointment_id ?? i} rdv={rdv} onClick={() => {}} />
+        <RdvBlock key={rdv.appointment_id ?? i} rdv={rdv} onClick={onRdvClick ?? (() => {})} />
       ))}
 
       {/* Indicateur maintenant */}
@@ -244,7 +468,8 @@ export default function RendezVousPage() {
   const [horaires, setHoraires]   = useState([])
   const [rdvs, setRdvs]           = useState([])
   const [loading, setLoading]     = useState(false)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modalOpen, setModalOpen]       = useState(false)
+  const [listeOpen, setListeOpen]       = useState(false)
   const [slotChoisi, setSlotChoisi] = useState(null)   // { date, heure }
   const [rdvDetail, setRdvDetail] = useState(null)
   const [selectedSlot, setSelectedSlot] = useState(null)
@@ -308,6 +533,11 @@ export default function RendezVousPage() {
     setSlotChoisi({ date: format(date, 'yyyy-MM-dd'), heure: hhmm })
     setRdvDetail(null)
     setModalOpen(true)
+  }
+
+  // ── Clic sur un bloc RDV ─────────────────────────────────────────────────
+  const handleRdvClick = (rdv) => {
+    setRdvDetail(rdv)
   }
 
   // ── RDV filtrés par jour ─────────────────────────────────────────────────
@@ -400,23 +630,40 @@ export default function RendezVousPage() {
           ))}
         </div>
 
-        {/* Bouton nouveau RDV */}
-        <button
-          onClick={() => { setSlotChoisi(null); setRdvDetail(null); setModalOpen(true) }}
-          style={{
-            background: colors.orange, border: 'none',
-            color: colors.white, padding: '10px 20px',
-            borderRadius: radius.md, cursor: 'pointer',
-            fontWeight: 700, fontSize: 13,
-            display: 'flex', alignItems: 'center', gap: 8,
-            boxShadow: '0 4px 12px rgba(255,118,49,0.4)',
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = colors.orangeDark}
-          onMouseLeave={e => e.currentTarget.style.background = colors.orange}
-        >
-          <span style={{ fontSize: 16 }}>+</span> Nouveau RDV
-        </button>
+        {/* Boutons actions */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setListeOpen(true)}
+            style={{
+              background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.3)',
+              color: colors.white, padding: '10px 18px',
+              borderRadius: radius.md, cursor: 'pointer',
+              fontWeight: 700, fontSize: 13,
+              display: 'flex', alignItems: 'center', gap: 8,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+          >
+            <span style={{ fontSize: 15 }}>📋</span> Liste des RDV
+          </button>
+          <button
+            onClick={() => { setSlotChoisi(null); setRdvDetail(null); setModalOpen(true) }}
+            style={{
+              background: colors.orange, border: 'none',
+              color: colors.white, padding: '10px 20px',
+              borderRadius: radius.md, cursor: 'pointer',
+              fontWeight: 700, fontSize: 13,
+              display: 'flex', alignItems: 'center', gap: 8,
+              boxShadow: '0 4px 12px rgba(255,118,49,0.4)',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = colors.orangeDark}
+            onMouseLeave={e => e.currentTarget.style.background = colors.orange}
+          >
+            <span style={{ fontSize: 16 }}>+</span> Nouveau RDV
+          </button>
+        </div>
       </div>
 
       {/* ── Barre de contrôles ── */}
@@ -527,6 +774,7 @@ export default function RendezVousPage() {
               rdvsDuJour={rdvsDuJour}
               onSlotClick={handleSlotClick}
               selectedSlot={selectedSlot}
+              onRdvClick={handleRdvClick}
             />
           )}
           {vue === 'jour' && (
@@ -536,6 +784,7 @@ export default function RendezVousPage() {
               rdvs={rdvsDuJour(dateCourante)}
               onSlotClick={handleSlotClick}
               selectedSlot={selectedSlot}
+              onRdvClick={handleRdvClick}
             />
           )}
           {vue === 'mois' && (
@@ -547,6 +796,24 @@ export default function RendezVousPage() {
           )}
         </div>
       )}
+
+      {/* ── Popup détail RDV ── */}
+      <RdvDetailPopup
+        rdv={rdvDetail}
+        onClose={() => setRdvDetail(null)}
+        onAnnuler={chargerRdvs}
+        onModifier={(rdv) => {
+          setRdvDetail(null)
+          setSlotChoisi({ date: rdv.appointment_date?.slice(0,10), heure: timeStr(rdv.start_time) })
+          setModalOpen(true)
+        }}
+      />
+
+      {/* ── Modal liste RDV ── */}
+      <ListeRendezVousModal
+        open={listeOpen}
+        onClose={() => setListeOpen(false)}
+      />
 
       {/* ── Modal nouveau/détail RDV ── */}
       <NouveauRendezVousModal
@@ -585,7 +852,7 @@ function NavBtn({ onClick, children }) {
 // ════════════════════════════════════════════════════════════════════════════
 // VUE SEMAINE
 // ════════════════════════════════════════════════════════════════════════════
-function VueSemaine({ joursSemaine, horaires, rdvsDuJour, onSlotClick, selectedSlot }) {
+function VueSemaine({ joursSemaine, horaires, rdvsDuJour, onSlotClick, selectedSlot, onRdvClick }) {
   const totalH = (HOURS_END - HOURS_START) * SLOT_H
 
   return (
@@ -667,6 +934,7 @@ function VueSemaine({ joursSemaine, horaires, rdvsDuJour, onSlotClick, selectedS
             rdvs={rdvsDuJour(jour)}
             onSlotClick={onSlotClick}
             selectedSlot={selectedSlot}
+            onRdvClick={onRdvClick}
           />
         ))}
       </div>
@@ -677,7 +945,7 @@ function VueSemaine({ joursSemaine, horaires, rdvsDuJour, onSlotClick, selectedS
 // ════════════════════════════════════════════════════════════════════════════
 // VUE JOUR
 // ════════════════════════════════════════════════════════════════════════════
-function VueJour({ date, horaires, rdvs, onSlotClick, selectedSlot }) {
+function VueJour({ date, horaires, rdvs, onSlotClick, selectedSlot, onRdvClick }) {
   const dowIso = date.getDay() === 0 ? 7 : date.getDay()
   const hJour  = horaires.filter(h => Number(h.JourSemaine) === dowIso && Number(h.Statut) === 1)
   const past   = isBefore(startOfDay(date), startOfDay(new Date()))
@@ -743,6 +1011,7 @@ function VueJour({ date, horaires, rdvs, onSlotClick, selectedSlot }) {
             rdvs={rdvs}
             onSlotClick={onSlotClick}
             selectedSlot={selectedSlot}
+            onRdvClick={onRdvClick}
           />
         </div>
       </div>
