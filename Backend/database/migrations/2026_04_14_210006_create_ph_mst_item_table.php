@@ -15,7 +15,7 @@ return new class extends Migration
             $table->integer('days')->nullable();
             $table->integer('default_qty')->nullable();
             $table->string('created_user_id', 20);
-            $table->timestamp('created_dttm')->default(DB::raw("'1900-01-01 00:00:00'"));
+            $table->timestamp('created_dttm')->nullable()->default(null);
             $table->integer('status_id')->nullable();
             $table->timestamp('modified_dttm')->nullable();
             $table->smallInteger('duration')->default(0);

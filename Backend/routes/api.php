@@ -20,6 +20,11 @@ use App\Http\Controllers\Api\HospitalisationController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ProductItemController;
 use App\Http\Controllers\Api\MedecinTarifController;
+use App\Http\Controllers\Api\FournisseurController;
+use App\Http\Controllers\Api\CommandeController;
+use App\Http\Controllers\Api\ApprovisionnementController;
+use App\Http\Controllers\Api\MouvementStockController;
+use App\Http\Controllers\Api\InventaireController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -209,5 +214,51 @@ Route::prefix('v1')->group(function () {
     Route::get('pharmacie/items/metadata', [ProductItemController::class, 'metadata']);
     Route::apiResource('pharmacie/items', ProductItemController::class)
         ->parameters(['pharmacie/items' => 'item']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Pharmacie - Gestion des fournisseurs
+    |--------------------------------------------------------------------------
+    */
+    Route::apiResource('pharmacie/fournisseurs', FournisseurController::class)
+        ->parameters(['pharmacie/fournisseurs' => 'fournisseur']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Pharmacie - Commandes
+    |--------------------------------------------------------------------------
+    */
+    Route::get('pharmacie/commandes/stats', [CommandeController::class, 'listeParStatut']);
+    Route::apiResource('pharmacie/commandes', CommandeController::class)
+        ->parameters(['pharmacie/commandes' => 'commande']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Pharmacie - Approvisionnements
+    |--------------------------------------------------------------------------
+    */
+    Route::get('pharmacie/approvisionnements/stats', [ApprovisionnementController::class, 'stats']);
+    Route::apiResource('pharmacie/approvisionnements', ApprovisionnementController::class)
+        ->parameters(['pharmacie/approvisionnements' => 'approvisionnement']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Pharmacie - Mouvements de stock
+    |--------------------------------------------------------------------------
+    */
+    Route::get('pharmacie/mouvements/historique/{itemId}', [MouvementStockController::class, 'historique']);
+    Route::get('pharmacie/mouvements/stats', [MouvementStockController::class, 'stats']);
+    Route::apiResource('pharmacie/mouvements', MouvementStockController::class)
+        ->parameters(['pharmacie/mouvements' => 'mouvement']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Pharmacie - Inventaires
+    |--------------------------------------------------------------------------
+    */
+    Route::post('pharmacie/inventaires/{inventaire}/cloturer', [InventaireController::class, 'cloturer']);
+    Route::put('pharmacie/inventaires/detail/{detail}', [InventaireController::class, 'updateDetail']);
+    Route::apiResource('pharmacie/inventaires', InventaireController::class)
+        ->parameters(['pharmacie/inventaires' => 'inventaire']);
 
 });

@@ -190,3 +190,50 @@ export const produitApi = {
   supprimer: (id)     => api.delete(`/pharmacie/items/${id}`),
   metadata:  ()       => api.get('/pharmacie/items/metadata'),
 }
+
+// ── Pharmacie: Fournisseurs (ph_mst_fournisseur) ─────────────
+export const fournisseurApi = {
+  liste:     (params) => api.get('/pharmacie/fournisseurs', { params }),
+  detail:    (id)     => api.get(`/pharmacie/fournisseurs/${id}`),
+  creer:     (data)   => api.post('/pharmacie/fournisseurs', data),
+  modifier:  (id, data) => api.put(`/pharmacie/fournisseurs/${id}`, data),
+  supprimer: (id)     => api.delete(`/pharmacie/fournisseurs/${id}`),
+}
+
+// ── Pharmacie: Commandes ─────────────────────────────────────
+export const commandeApi = {
+  liste:      (params) => api.get('/pharmacie/commandes', { params }),
+  detail:     (id)    => api.get(`/pharmacie/commandes/${id}`),
+  creer:      (data)  => api.post('/pharmacie/commandes', data),
+  modifier:   (id, data) => api.put(`/pharmacie/commandes/${id}`, data),
+  supprimer:  (id)    => api.delete(`/pharmacie/commandes/${id}`),
+  stats:      ()      => api.get('/pharmacie/commandes/stats'),
+}
+
+// ── Pharmacie: Approvisionnements ─────────────────────────────
+export const approvisionnementApi = {
+  liste:      (params) => api.get('/pharmacie/approvisionnements', { params }),
+  detail:     (id)    => api.get(`/pharmacie/approvisionnements/${id}`),
+  creer:      (data)  => api.post('/pharmacie/approvisionnements', data),
+  modifier:   (id, data) => api.put(`/pharmacie/approvisionnements/${id}`, data),
+  supprimer:  (id)    => api.delete(`/pharmacie/approvisionnements/${id}`),
+  stats:      ()      => api.get('/pharmacie/approvisionnements/stats'),
+}
+
+// ── Pharmacie: Mouvements de stock ────────────────────────────
+export const mouvementStockApi = {
+  liste:       (params) => api.get('/pharmacie/mouvements', { params }),
+  historique:  (itemId) => api.get(`/pharmacie/mouvements/historique/${itemId}`),
+  creer:       (data)   => api.post('/pharmacie/mouvements', data),
+  stats:       ()       => api.get('/pharmacie/mouvements/stats'),
+}
+
+// ── Pharmacie: Inventaires ─────────────────────────────────────
+export const inventaireApi = {
+  liste:       (params) => api.get('/pharmacie/inventaires', { params }),
+  detail:      (id)     => api.get(`/pharmacie/inventaires/${id}`),
+  creer:       (data)   => api.post('/pharmacie/inventaires', data),
+  supprimer:   (id)     => api.delete(`/pharmacie/inventaires/${id}`),
+  cloturer:    (id, data) => api.post(`/pharmacie/inventaires/${id}/cloturer`, data),
+  updateDetail:(detailId, data) => api.put(`/pharmacie/inventaires/detail/${detailId}`, data),
+}

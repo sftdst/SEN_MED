@@ -17,7 +17,7 @@ return new class extends Migration
             $table->timestamp('end_time')->nullable();
             $table->integer('status_id')->nullable();
             $table->string('created_user_id', 20);
-            $table->timestamp('created_dttm')->default(DB::raw("'1900-01-01 00:00:00'"));
+            $table->timestamp('created_dttm')->nullable()->default(null);
             $table->string('consulting_doctor_id', 20)->nullable();
             $table->string('remarks', 255)->nullable();
             $table->string('appointment_type', 20)->nullable();
