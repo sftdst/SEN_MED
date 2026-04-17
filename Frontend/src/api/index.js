@@ -181,6 +181,16 @@ export const medecinTarifApi = {
   revenus:    (medecinId, params) => api.get(`/medecin-tarifs/medecin/${medecinId}/revenus`, { params }),
 }
 
+// ── Transferts de Patients ────────────────────────────────
+export const transfertApi = {
+  liste:    (params) => api.get('/transferts', { params }),
+  detail:   (id)     => api.get(`/transferts/${id}`),
+  creer:    (data)   => api.post('/transferts', data),
+  valider:  (id)     => api.post(`/transferts/${id}/valider`),
+  annuler:  (id)     => api.post(`/transferts/${id}/annuler`),
+  stats:    ()       => api.get('/transferts/stats'),
+}
+
 // ── Pharmacie: Produits (ph_mst_item) ───────────────────────
 export const produitApi = {
   liste:     (params) => api.get('/pharmacie/items', { params }),

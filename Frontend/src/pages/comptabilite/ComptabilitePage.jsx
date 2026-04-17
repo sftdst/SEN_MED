@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { colors, radius, shadows } from '../../theme'
+import FacturesTab from './FacturesTab'
+import HistoriqueTab from './HistoriqueTab'
+import CreditPatientTab from './CreditPatientTab'
 
 const MENU_ITEMS = [
   { key: 'accueil',       label: 'Tableau de bord', icon: '🏠' },
   { key: 'factures',      label: 'Factures',        icon: '📄' },
-  { key: 'paiements',     label: 'Paiements',       icon: '💳' },
   { key: 'historique',    label: 'Historique paiement', icon: '📜' },
   { key: 'credits',       label: 'Crédit patient',   icon: '💸' },
   { key: 'rapports',      label: 'Rapports',        icon: '📊' },
@@ -146,8 +148,11 @@ export default function ComptabilitePage() {
 
         {/* Zone de contenu principale */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {activeTab === 'accueil' && <AccueilTab />}
-          {['factures','paiements','historique','credits','rapports','avances','partenaires','devis'].includes(activeTab) && (
+          {activeTab === 'accueil'     && <AccueilTab />}
+          {activeTab === 'factures'    && <FacturesTab />}
+          {activeTab === 'historique'  && <HistoriqueTab />}
+          {activeTab === 'credits'     && <CreditPatientTab onPayer={null} />}
+          {['rapports','avances','partenaires','devis'].includes(activeTab) && (
             <PlaceholderTab item={MENU_ITEMS.find(m => m.key === activeTab)} />
           )}
         </div>

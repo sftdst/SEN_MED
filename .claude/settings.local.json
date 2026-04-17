@@ -36,7 +36,10 @@
       "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command \"Get-ChildItem 'C:\\\\Program Files\\\\' | Where-Object Name -like '*node*'\")",
       "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command 'Set-Location '\\\\''e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Frontend'\\\\''; $env:Path += '\\\\'';C:\\\\Program Files\\\\nodejs'\\\\''; npm run build 2>&1')",
       "Bash(C:/xampp/php/php.exe artisan:*)",
-      "Bash(grep -n \"staff_type\" \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/database/migrations/\"*personnel*)"
+      "Bash(grep -n \"staff_type\" \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/database/migrations/\"*personnel*)",
+      "Bash(dir \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\" /b)",
+      "Bash(git.exe log *)",
+      "Bash(xargs grep *)"
     ]
   }
 }

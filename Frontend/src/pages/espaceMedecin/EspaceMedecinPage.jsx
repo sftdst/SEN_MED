@@ -4,6 +4,8 @@ import { colors, radius, shadows } from '../../theme'
 import { patientApi, visiteApi, rendezVousApi, salleAttenteApi, personnelApi, medecinTarifApi, hospitalApi } from '../../api'
 import { showToast } from '../../components/ui/Toast'
 import RdvRapideModal from './RdvRapideModal'
+import TransfertModal from '../transferts/TransfertModal'
+import FicheAttModal from './FicheAttModal'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const fmtDate = (d) => {
@@ -245,8 +247,10 @@ export default function EspaceMedecinPage() {
   useEffect(() => { if (isPrivate && medecin) loadRevenus() }, [isPrivate, medecin])
 
   // ── RDV Rapide modal ──────────────────────────────────────────────────────
-  const [rdvRapideOpen, setRdvRapideOpen] = useState(false)
-  const [rdvEdit,       setRdvEdit]       = useState(null)   // RDV à modifier
+  const [rdvRapideOpen,   setRdvRapideOpen]   = useState(false)
+  const [rdvEdit,         setRdvEdit]         = useState(null)
+  const [transfertOpen,   setTransfertOpen]   = useState(false)
+  const [ficheAttOpen,    setFicheAttOpen]    = useState(false)
 
   // ── Données ────────────────────────────────────────────────────────────────
   const [patients,   setPatients]   = useState([])
@@ -749,8 +753,21 @@ export default function EspaceMedecinPage() {
               padding: '10px 14px', borderTop: '1px solid #f1f3f5',
               background: '#f8f9fa', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
             }}>
-              <ABtn label="📄 Fiche Att."   c={colors.bleu}  disabled={!selected} />
-              <ABtn label="↔ Trans. Int."   c="#1976d2"      disabled={!selected} />
+              <ABtn
+                label="📄 Fiche Att."
+                c={colors.bleu}
+                disabled={!selected}
+                onClick={() => { if (!selected) return; setFicheAttOpen(true) }}
+              />
+              <ABtn
+                label="↔ Trans. Int."
+                c="#1976d2"
+                disabled={!selected}
+                onClick={() => {
+                  if (!selected) return
+                  setTransfertOpen(true)
+                }}
+              />
               <ABtn label="💳 Paiement"     c="#f57c00"      disabled={!selected} />
               <ABtn
                 label="▶ Consultation"
@@ -967,6 +984,28 @@ export default function EspaceMedecinPage() {
           )
         })}
       </div>
+
+      {/* ── Fiches d'Attachement ── */}
+      {ficheAttOpen && selected && (
+        <FicheAttModal
+          patientId={selected.patient_id}
+          patientName={selected.nom}
+          adtId={selected.adt_id ?? null}
+          onClose={() => setFicheAttOpen(false)}
+          showToast={showToast}
+        />
+      )}
+
+      {/* ── Transfert rapide ── */}
+      {transfertOpen && selected && (
+        <TransfertModal
+          defaultPatientId={selected.patient_id}
+          defaultPatientName={selected.nom}
+          onClose={() => setTransfertOpen(false)}
+          onSaved={() => showToast('Transfert enregistré avec succès.', 'success')}
+          showToast={showToast}
+        />
+      )}
 
       {/* ── RDV Rapide ── */}
       <RdvRapideModal

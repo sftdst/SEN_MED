@@ -19,6 +19,7 @@ import HospitalisationPage from './pages/hospitalisation/HospitalisationPage'
 import RendezVousPage from './pages/rendezvous/RendezVousPage'
 import EspaceMedecinPage from './pages/espaceMedecin/EspaceMedecinPage'
 import TarificationPage from './pages/tarification/TarificationPage'
+import TransfertsPage from './pages/transferts/TransfertsPage'
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="hospitalisation" element={<HospitalisationPage />} />
           <Route path="rendezvous"      element={<RendezVousPage />} />
           <Route path="espace-medecin"  element={<EspaceMedecinPage />} />
+          <Route path="transferts"      element={<TransfertsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
