@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             PartenaireHeaderSeeder::class,
             PatientSeeder::class,
             ProductItemSeeder::class,
+            TarificationSeeder::class,
         ]);
     }
 }

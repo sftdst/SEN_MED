@@ -10,9 +10,7 @@ class PersonnelSeeder extends Seeder
 {
     public function run(): void
     {
-        \DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        Personnel::truncate();
-        \DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        \DB::statement('TRUNCATE TABLE "hr_mst_user" RESTART IDENTITY CASCADE');
 
         $personnels = [
             ['user_id' => 'USR001', 'staff_name' => 'Dr. Amadou Diallo', 'status_id' => 1, 'gender_id' => 'masculin', 'created_user_id' => 'admin', 'created_dttm' => now(), 'user_name' => 'amadou.diallo', 'email_adress' => 'amadou.diallo@senmed.sn', 'date_of_birth' => '1980-05-15', 'staff_type' => 'medecin', 'contact_number' => '771234567', 'specialization' => 'Médecine Interne', 'first_name' => 'Amadou', 'last_name' => 'Diallo', 'nationality_id' => 1, 'address' => 'Point E, Dakar', 'phone_number' => '771234567', 'Joining_date' => '2020-01-15', 'city' => 'Dakar', 'groupe_sanguin' => 'O+', 'personnel' => 1, 'consult' => 1, 'IDgen_mst_Departement' => 1],

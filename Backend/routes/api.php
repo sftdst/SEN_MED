@@ -20,6 +20,10 @@ use App\Http\Controllers\Api\HospitalisationController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ProductItemController;
 use App\Http\Controllers\Api\MedecinTarifController;
+use App\Http\Controllers\Api\TransfertController;
+use App\Http\Controllers\Api\FicheAttController;
+use App\Http\Controllers\Api\ComptabiliteController;
+use App\Http\Controllers\Api\PaiementController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -200,6 +204,51 @@ Route::prefix('v1')->group(function () {
     // CRUD tarifs médecins
     Route::apiResource('medecin-tarifs', MedecinTarifController::class)
         ->parameters(['medecin-tarifs' => 'medecinTarif']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Transferts de Patients
+    |--------------------------------------------------------------------------
+    */
+    Route::get('transferts/stats',                      [TransfertController::class, 'stats']);
+    Route::post('transferts/{transfert}/valider',       [TransfertController::class, 'valider']);
+    Route::post('transferts/{transfert}/annuler',       [TransfertController::class, 'annuler']);
+    Route::apiResource('transferts', TransfertController::class)
+        ->parameters(['transferts' => 'transfert'])
+        ->only(['index', 'store', 'show']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Fiches d'Attachement (examens, captures webcam)
+    |--------------------------------------------------------------------------
+    */
+    // Route nommée pour servir les fichiers (utilisée dans FicheAtt::getUrlAttribute)
+    Route::get('fiches-att/{fiche}/serve', [FicheAttController::class, 'serve'])
+        ->name('fiches-att.serve');
+    Route::apiResource('fiches-att', FicheAttController::class)
+        ->parameters(['fiches-att' => 'fiche'])
+        ->only(['index', 'store', 'destroy']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Comptabilité
+    |--------------------------------------------------------------------------
+    */
+    Route::get('comptabilite/factures-en-attente', [ComptabiliteController::class, 'facturesEnAttente']);
+    Route::get('comptabilite/credits-patients',                          [ComptabiliteController::class, 'creditsPatients']);
+    Route::get('comptabilite/credits-patients/{patientId}/factures',     [ComptabiliteController::class, 'creditPatientFactures']);
+    Route::get('comptabilite/partenaires',          [ComptabiliteController::class, 'partenaires']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Paiement
+    |--------------------------------------------------------------------------
+    */
+    Route::get('paiements/historique',                      [PaiementController::class, 'historique']);
+    Route::post('paiements/patient/{patientId}/solder',     [PaiementController::class, 'solderPatient']);
+    Route::get('paiements/{billId}',                        [PaiementController::class, 'detail']);
+    Route::post('paiements/{billId}/payer',                 [PaiementController::class, 'payer']);
+    Route::post('paiements/{billId}/attente',               [PaiementController::class, 'mettreEnAttente']);
 
     /*
     |--------------------------------------------------------------------------

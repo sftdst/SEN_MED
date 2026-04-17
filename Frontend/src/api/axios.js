@@ -9,11 +9,16 @@ const api = axios.create({
   timeout: 10000,
 })
 
-// Intercepteur requête — ajoute le token si présent
+// Intercepteur requête — token + gestion FormData
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('senmed_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  // Pour les FormData, supprimer Content-Type afin qu'axios génère automatiquement
+  // le header multipart/form-data avec le bon boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
   }
   return config
 })

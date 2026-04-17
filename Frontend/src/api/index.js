@@ -181,6 +181,16 @@ export const medecinTarifApi = {
   revenus:    (medecinId, params) => api.get(`/medecin-tarifs/medecin/${medecinId}/revenus`, { params }),
 }
 
+// ── Transferts de Patients ────────────────────────────────
+export const transfertApi = {
+  liste:    (params) => api.get('/transferts', { params }),
+  detail:   (id)     => api.get(`/transferts/${id}`),
+  creer:    (data)   => api.post('/transferts', data),
+  valider:  (id)     => api.post(`/transferts/${id}/valider`),
+  annuler:  (id)     => api.post(`/transferts/${id}/annuler`),
+  stats:    ()       => api.get('/transferts/stats'),
+}
+
 // ── Pharmacie: Produits (ph_mst_item) ───────────────────────
 export const produitApi = {
   liste:     (params) => api.get('/pharmacie/items', { params }),
@@ -189,4 +199,27 @@ export const produitApi = {
   modifier:  (id, data) => api.put(`/pharmacie/items/${id}`, data),
   supprimer: (id)     => api.delete(`/pharmacie/items/${id}`),
   metadata:  ()       => api.get('/pharmacie/items/metadata'),
+}
+
+export const comptabiliteApi = {
+  facturesEnAttente:        (params)    => api.get('/comptabilite/factures-en-attente', { params }),
+  creditsPatients:          (params)    => api.get('/comptabilite/credits-patients',    { params }),
+  creditPatientFactures:    (patientId) => api.get(`/comptabilite/credits-patients/${patientId}/factures`),
+  partenaires:              ()          => api.get('/comptabilite/partenaires'),
+}
+
+export const paiementApi = {
+  historique:    (params)           => api.get('/paiements/historique', { params }),
+  detail:        (billId)           => api.get(`/paiements/${billId}`),
+  payer:         (billId, data)     => api.post(`/paiements/${billId}/payer`, data),
+  enAttente:     (billId)           => api.post(`/paiements/${billId}/attente`),
+  solderPatient: (patientId, data)  => api.post(`/paiements/patient/${patientId}/solder`, data),
+}
+
+export const ficheAttApi = {
+  liste:     (params) => api.get('/fiches-att', { params }),
+  uploader:  (data)   => api.post('/fiches-att', data, { timeout: 120000 }),
+  webcam:    (data)   => api.post('/fiches-att', data),
+  supprimer: (id)     => api.delete(`/fiches-att/${id}`),
+  serveUrl:  (id)     => `${api.defaults.baseURL}/fiches-att/${id}/serve`,
 }

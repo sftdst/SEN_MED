@@ -10,9 +10,7 @@ class DepartementSeeder extends Seeder
 {
     public function run(): void
     {
-        \DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        Departement::truncate();
-        \DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        \DB::statement('TRUNCATE TABLE "gen_mst_Departement" RESTART IDENTITY CASCADE');
 
         $departements = [
             ['IDgen_mst_Departement' => 1,  'NomDepartement' => 'Médecine Interne',    'description' => 'Département de médecine interne',                        'status' => 1, 'Hospital_id' => 1],
