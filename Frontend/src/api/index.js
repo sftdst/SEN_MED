@@ -247,3 +247,29 @@ export const inventaireApi = {
   cloturer:    (id, data) => api.post(`/pharmacie/inventaires/${id}/cloturer`, data),
   updateDetail:(detailId, data) => api.put(`/pharmacie/inventaires/detail/${detailId}`, data),
 }
+
+// ── Comptabilité ────────────────────────────────────────────
+export const comptabiliteApi = {
+  facturesEnAttente:    (params) => api.get('/comptabilite/factures-en-attente', { params }),
+  creditsPatients:     (params) => api.get('/comptabilite/credits-patients', { params }),
+  creditPatientFactures:(patientId) => api.get(`/comptabilite/credits-patients/${patientId}/factures`),
+  partenaires:         () => api.get('/comptabilite/partenaires'),
+}
+
+// ── Paiements ────────────────────────────────────────────────
+export const paiementApi = {
+  historique:    (params) => api.get('/paiements/historique', { params }),
+  detail:        (billId) => api.get(`/paiements/${billId}`),
+  payer:         (billId, data) => api.post(`/paiements/${billId}/payer`, data),
+  enAttente:     (billId) => api.post(`/paiements/${billId}/attente`),
+  solderPatient: (patientId, data) => api.post(`/paiements/patient/${patientId}/solder`, data),
+}
+
+// ── Fiches ATT ───────────────────────────────────────────────
+export const ficheAttApi = {
+  liste:     (params) => api.get('/fiches-att', { params }),
+  uploader:  (data)   => api.post('/fiches-att', data, { timeout: 120000 }),
+  webcam:    (data)   => api.post('/fiches-att', data),
+  supprimer: (id)     => api.delete(`/fiches-att/${id}`),
+  serveUrl:  (id)     => `${api.defaults.baseURL}/fiches-att/${id}/serve`,
+}

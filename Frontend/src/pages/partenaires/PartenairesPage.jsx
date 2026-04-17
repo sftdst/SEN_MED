@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { partenaireApi } from '../../api'
 import Pagination from '../../components/ui/Pagination'
-import { colors, radius, shadows, typography, spacing } from '../../theme'
+import { colors, radius, shadows, spacing } from '../../theme'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
@@ -1023,25 +1023,25 @@ const [partenaires, setPartenaires]         = useState([])
   const [newCouvertures, setNewCouvertures] = useState([])
   const timer = useRef(null)
 
-  const loadPartenaires = (p = page, pp = perPage) => {
-    setLoadingList(true)
-    const params = { page: p, per_page: pp }
-    if (search)            params.search   = search
-    if (filterType !== '') params.TypePart = filterType
-    partenaireApi.liste(params)
-      .then(r => {
-        const result = r.data.data
-        setPartenaires(result?.data || [])
-        setPaginationMeta(result?.last_page ? result : null)
-      })
-      .finally(() => setLoadingList(false))
-  }
+   const loadPartenaires = useCallback((p = page, pp = perPage) => {
+     setLoadingList(true)
+     const params = { page: p, per_page: pp }
+     if (search)            params.search   = search
+     if (filterType !== '') params.TypePart = filterType
+     partenaireApi.liste(params)
+       .then(r => {
+         const result = r.data.data
+         setPartenaires(result?.data || [])
+         setPaginationMeta(result?.last_page ? result : null)
+       })
+       .finally(() => setLoadingList(false))
+   }, [search, filterType, page, perPage])
 
-  useEffect(() => {
-    clearTimeout(timer.current)
-    timer.current = setTimeout(() => { setPage(1); loadPartenaires(1, perPage) }, 300)
-    return () => clearTimeout(timer.current)
-  }, [search, filterType])
+   useEffect(() => {
+     clearTimeout(timer.current)
+     timer.current = setTimeout(() => { setPage(1); loadPartenaires(1, perPage) }, 300)
+     return () => clearTimeout(timer.current)
+   }, [search, filterType, perPage, loadPartenaires])
 
   const loadCouvertures = async (part) => {
     setLoadingCov(true)

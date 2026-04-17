@@ -20,18 +20,15 @@ use App\Http\Controllers\Api\HospitalisationController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ProductItemController;
 use App\Http\Controllers\Api\MedecinTarifController;
-<<<<<<< HEAD
 use App\Http\Controllers\Api\FournisseurController;
 use App\Http\Controllers\Api\CommandeController;
 use App\Http\Controllers\Api\ApprovisionnementController;
 use App\Http\Controllers\Api\MouvementStockController;
 use App\Http\Controllers\Api\InventaireController;
-=======
 use App\Http\Controllers\Api\TransfertController;
 use App\Http\Controllers\Api\FicheAttController;
 use App\Http\Controllers\Api\ComptabiliteController;
 use App\Http\Controllers\Api\PaiementController;
->>>>>>> d8c4da337df1efa248b2dd875d85ff287cbf2cbb
 
 Route::get('/user', function (Request $request) {
     return $request->user();
