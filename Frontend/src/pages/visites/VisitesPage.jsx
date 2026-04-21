@@ -7,6 +7,7 @@ import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 import CreerVisiteModal from './CreerVisiteModal'
+import PaiementModal from '../comptabilite/PaiementModal'
 
 const fmtDate = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
 const fmtN    = n => Number(n || 0).toLocaleString('fr-FR')
@@ -162,9 +163,12 @@ export default function VisitesPage() {
   const [dateFrom, setDateFrom]     = useState('')
   const [dateTo, setDateTo]         = useState('')
 
-  // Modal création
+  // Modal création visite
   const [modalOpen, setModalOpen]   = useState(false)
   const [patientSel, setPatientSel] = useState(null)
+
+  // Modal paiement (après création visite)
+  const [paiementModal, setPaiementModal] = useState(null) // { billId, patientName }
 
   const load = async (p = 1) => {
     setLoading(true)
@@ -196,7 +200,15 @@ export default function VisitesPage() {
 
   const onVisiteSaved = () => {
     load(page)
-    setPatientSel(null)
+  }
+
+  const handlePaiement = (visite) => {
+    const billId      = visite.bill_hd_id ?? visite.bill_id
+    const patientName = patientSel?.patient_name
+      ?? `${patientSel?.first_name ?? ''} ${patientSel?.last_name ?? ''}`.trim()
+    if (!billId) { showToast('Identifiant de facture introuvable', 'error'); return }
+    setModalOpen(false)
+    setPaiementModal({ billId, patientName })
   }
 
   if (loading && visites.length === 0) return <FullPageSpinner />
@@ -299,12 +311,23 @@ export default function VisitesPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal création visite */}
       {modalOpen && patientSel && (
         <CreerVisiteModal
           patient={patientSel}
           onClose={() => { setModalOpen(false); setPatientSel(null) }}
           onSaved={onVisiteSaved}
+          onPaiement={handlePaiement}
+        />
+      )}
+
+      {/* Modal paiement (ouvert après création de la visite) */}
+      {paiementModal && (
+        <PaiementModal
+          billId={paiementModal.billId}
+          patientName={paiementModal.patientName}
+          onClose={() => setPaiementModal(null)}
+          onSuccess={() => { setPaiementModal(null); load(page) }}
         />
       )}
     </div>

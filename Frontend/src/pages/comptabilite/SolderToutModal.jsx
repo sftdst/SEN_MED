@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { comptabiliteApi, paiementApi } from '../../api'
+import RecuPaiement from './RecuPaiement'
 
 const fmtF  = (n) => Number(n ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtD  = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
@@ -106,6 +107,7 @@ export default function SolderToutModal({ patient, onClose, onSuccess }) {
   const [chq,    setChq]    = useState({ montant: '', numero: '', date: today(), banque: '' })
   const [mob,    setMob]    = useState({ montant: '', numero: '', operateur: '' })
   const [remise, setRemise] = useState('')
+  const [recu,   setRecu]   = useState(null)
 
   // Chargement des factures du patient
   useEffect(() => {
@@ -170,13 +172,28 @@ export default function SolderToutModal({ patient, onClose, onSuccess }) {
     }
 
     try {
-      const r = await paiementApi.solderPatient(patient.patient_id, payload)
-      setToast({ type: 'success', msg: r.data.message })
-      setTimeout(() => { onSuccess?.(); onClose() }, 1400)
+      await paiementApi.solderPatient(patient.patient_id, payload)
+      const now = new Date()
+      const dateHeure = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      setRecu({
+        patientName:     patient.patient_name,
+        bills:           bills,
+        especes:         cashAmt > 0 ? { montant: cashAmt, montantRendu: montantRendu } : null,
+        carte:           cardAmt > 0 ? { montant: cardAmt, banque: car.banque }         : null,
+        cheque:          chqAmt  > 0 ? { montant: chqAmt,  numero: chq.numero }         : null,
+        mobile:          mobAmt  > 0 ? { montant: mobAmt,  operateur: mob.operateur }   : null,
+        totalPaye,
+        remise:          remiseVal || 0,
+        totalPartenaire: 0,
+        dateHeure,
+      })
+      onSuccess?.()
     } catch (e) {
       setApiErr(e.response?.data?.message || 'Erreur lors du paiement')
     } finally { setSaving(false) }
   }
+
+  if (recu) return <RecuPaiement data={recu} onClose={onClose} />
 
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()}

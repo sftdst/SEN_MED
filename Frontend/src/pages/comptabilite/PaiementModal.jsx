@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { colors, radius, shadows } from '../../theme'
-import { paiementApi } from '../../api'
+import { paiementApi, comptabiliteApi } from '../../api'
+import RecuPaiement from './RecuPaiement'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtF  = (n) => Number(n ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -173,12 +174,14 @@ function Spinner() {
 // COMPOSANT PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PaiementModal({ billId, patientName, onClose, onSuccess, totalEncours }) {
-  const [data,    setData]    = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [saving,  setSaving]  = useState(false)
-  const [apiErr,  setApiErr]  = useState(null)
-  const [toast,   setToast]   = useState(null)
-  const [errors,  setErrors]  = useState({})
+  const [data,             setData]             = useState(null)
+  const [loading,          setLoading]          = useState(true)
+  const [saving,           setSaving]           = useState(false)
+  const [apiErr,           setApiErr]           = useState(null)
+  const [toast,            setToast]            = useState(null)
+  const [errors,           setErrors]           = useState({})
+  const [recu,             setRecu]             = useState(null)
+  const [patientEncours,   setPatientEncours]   = useState(null) // total toutes factures du patient
 
   // Modes de paiement
   const [esp, setEsp] = useState({ montant: '', recu: '', monnaie_rendue: 'Non' })
@@ -196,11 +199,21 @@ export default function PaiementModal({ billId, patientName, onClose, onSuccess,
         setData(d)
         const partenaire = parseFloat(d?.totaux?.total_partenaire) || 0
         const brut       = parseFloat(d?.totaux?.total_brut) || 0
-        const patient    = parseFloat(d?.totaux?.total_patient) || 0
         const restant    = parseFloat(d?.totaux?.total_restant) || 0
-        // Si pas de couverture : le patient paie l'intégralité, sinon sa part restante
         const montantSuggere = partenaire === 0 ? (restant > 0 ? restant : brut) : restant
         if (montantSuggere > 0) setEsp(e => ({ ...e, montant: String(montantSuggere) }))
+
+        // Récupérer le total de toutes les factures en cours du patient
+        const patientId = d?.bill?.patient_id
+        if (patientId) {
+          comptabiliteApi.creditPatientFactures(patientId)
+            .then(cr => {
+              const bills = cr.data?.data ?? []
+              const total = bills.reduce((s, b) => s + (parseFloat(b.pending_amount) || 0), 0)
+              if (total > 0) setPatientEncours(total)
+            })
+            .catch(() => {})
+        }
       })
       .catch(err => setApiErr(err.response?.data?.message || 'Erreur de chargement'))
       .finally(() => setLoading(false))
@@ -271,8 +284,23 @@ export default function PaiementModal({ billId, patientName, onClose, onSuccess,
     }
     try {
       const r = await paiementApi.payer(billId, payload)
-      setToast({ type: 'success', msg: r.data.message })
-      setTimeout(() => { onSuccess?.(); onClose() }, 1400)
+      const now = new Date()
+      const dateHeure = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      setRecu({
+        patientName: patientName || bill?.patient_name,
+        billNo:      bill?.bill_no,
+        billDate:    bill?.bill_date,
+        services:    data?.services ?? [],
+        especes:     cashAmt  > 0 ? { montant: cashAmt,  montantRendu: montantRendu } : null,
+        carte:       cardAmt  > 0 ? { montant: cardAmt,  banque: car.banque }         : null,
+        cheque:      chqAmt   > 0 ? { montant: chqAmt,   numero: chq.numero }         : null,
+        mobile:      mobAmt   > 0 ? { montant: mobAmt,   operateur: mob.operateur }   : null,
+        totalPaye,
+        remise:          remiseVal || 0,
+        totalPartenaire: num(data?.totaux?.total_partenaire),
+        dateHeure,
+      })
+      onSuccess?.()
     } catch (e) {
       setApiErr(e.response?.data?.message || 'Erreur lors du paiement')
     } finally { setSaving(false) }
@@ -281,6 +309,8 @@ export default function PaiementModal({ billId, patientName, onClose, onSuccess,
   const handleEnAttente = async () => { await paiementApi.enAttente(billId).catch(() => {}); onClose() }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  if (recu) return <RecuPaiement data={recu} onClose={onClose} />
+
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, animation: 'fadeIn 0.15s ease' }}>
@@ -296,6 +326,25 @@ export default function PaiementModal({ billId, patientName, onClose, onSuccess,
             <TitleBtn label="Remboursement"     onClick={() => {}} />
             <TitleBtn label="Paiement en attente" onClick={handleEnAttente} />
             <TitleBtn label="Avance"            onClick={() => {}} />
+            {num(data?.bill?.paid_amount) > 0 && (
+              <TitleBtn label="🧾 Reçu" onClick={() => {
+                const b  = data.bill
+                const dt = b.bill_date ? new Date(b.bill_date) : new Date()
+                setRecu({
+                  patientName:     patientName || b.patient_name,
+                  billNo:          b.bill_no,
+                  services:        data.services ?? [],
+                  especes:         num(b.cash_amount)    > 0 ? { montant: b.cash_amount,    montantRendu: num(b.mont_monaie) } : null,
+                  carte:           num(b.card_amount)    > 0 ? { montant: b.card_amount,    banque: b.bank_id }                : null,
+                  cheque:          num(b.cheque_amount)  > 0 ? { montant: b.cheque_amount,  numero: b.cheque_no }              : null,
+                  mobile:          num(b.montant_mobile) > 0 ? { montant: b.montant_mobile, operateur: b.operateur_mobil }     : null,
+                  totalPaye:       num(b.paid_amount),
+                  remise:          num(b.discount_amount),
+                  totalPartenaire: num(data?.totaux?.total_partenaire),
+                  dateHeure:       dt.toLocaleDateString('fr-FR') + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                })
+              }} />
+            )}
             <TitleBtn label="Sauvegarder" accent onClick={handleSave} disabled={saving || statusId === 3} loading={saving} />
             <TitleBtn label="Fermer"      danger  onClick={onClose} />
           </div>
@@ -343,11 +392,9 @@ export default function PaiementModal({ billId, patientName, onClose, onSuccess,
                   <div style={{ paddingBottom: 2 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#f57c00', marginBottom: 4 }}>Total des encours :</div>
                     <div style={{ fontSize: 20, fontWeight: 900, color: '#f57c00', lineHeight: 1 }}>
-                      {fmtF(totalEncours != null ? totalEncours : totaux?.total_restant)} F
+                      {fmtF(totalEncours ?? patientEncours ?? totaux?.total_restant)} F
                     </div>
-                    {totalEncours != null && (
-                      <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>Cumul toutes factures patient</div>
-                    )}
+                    <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>Cumul toutes factures patient</div>
                   </div>
                   <Field label="Montant de la facture">
                     <NInput value={fmtF(totaux?.total_brut)} readOnly />

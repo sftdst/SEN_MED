@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { paiementApi } from '../../api'
+import RecuPaiement from './RecuPaiement'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtF = (n) => Number(n ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' F'
@@ -397,7 +398,7 @@ export default function HistoriqueTab() {
                     { l: 'Reste',          w: 110, a: 'right'  },
                     { l: 'Mode(s)',        w: 160             },
                     { l: 'Statut',         w: 140, a: 'center' },
-                    { l: 'Actions',        w: 90,  a: 'center' },
+                    { l: 'Actions',        w: 160, a: 'center' },
                   ].map(c => (
                     <th key={c.l} style={{ padding: '10px 12px', textAlign: c.a ?? 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: colors.gray500, width: c.w ?? undefined, whiteSpace: 'nowrap' }}>
                       {c.l}
@@ -498,8 +499,11 @@ export default function HistoriqueTab() {
                       </td>
 
                       {/* Actions */}
-                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                        <DetailBtn onClick={() => setDetail({ billId: row.bill_hd_id, patientName: row.patient_name })} />
+                      <td style={{ padding: '10px 12px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
+                          <DetailBtn onClick={() => setDetail({ billId: row.bill_hd_id, patientName: row.patient_name })} />
+                          <RecuBtn row={row} />
+                        </div>
                       </td>
                     </tr>
                   )
@@ -538,8 +542,50 @@ function DetailBtn({ onClick }) {
   const [hov, setHov] = useState(false)
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ padding: '5px 12px', borderRadius: radius.sm, cursor: 'pointer', border: `1.5px solid ${colors.bleu}`, background: hov ? colors.bleu : `${colors.bleu}12`, color: hov ? '#fff' : colors.bleu, fontSize: 11, fontWeight: 700, transition: 'all 0.12s', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      style={{ padding: '5px 10px', borderRadius: radius.sm, cursor: 'pointer', border: `1.5px solid ${colors.bleu}`, background: hov ? colors.bleu : `${colors.bleu}12`, color: hov ? '#fff' : colors.bleu, fontSize: 11, fontWeight: 700, transition: 'all 0.12s', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
       <span>👁</span><span>Détail</span>
     </button>
+  )
+}
+
+function RecuBtn({ row }) {
+  const [loading,  setLoading]  = useState(false)
+  const [recuData, setRecuData] = useState(null)
+  const [hov,      setHov]      = useState(false)
+  const n = (v) => parseFloat(v) || 0
+
+  const handleClick = async () => {
+    setLoading(true)
+    try {
+      const r  = await paiementApi.detail(row.bill_hd_id)
+      const d  = r.data.data
+      const b  = d.bill
+      const dt = b.bill_date ? new Date(b.bill_date) : new Date()
+      setRecuData({
+        patientName:     row.patient_name,
+        billNo:          b.bill_no,
+        services:        d.services ?? [],
+        especes:         n(b.cash_amount)     > 0 ? { montant: b.cash_amount,     montantRendu: n(b.mont_monaie) }     : null,
+        carte:           n(b.card_amount)     > 0 ? { montant: b.card_amount,     banque: b.bank_id }                  : null,
+        cheque:          n(b.cheque_amount)   > 0 ? { montant: b.cheque_amount,   numero: b.cheque_no }                : null,
+        mobile:          n(b.montant_mobile)  > 0 ? { montant: b.montant_mobile,  operateur: b.operateur_mobil }       : null,
+        totalPaye:       n(b.paid_amount),
+        remise:          n(b.discount_amount),
+        totalPartenaire: n(d.totaux?.total_partenaire),
+        dateHeure:       dt.toLocaleDateString('fr-FR') + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      })
+    } catch {
+      alert('Impossible de charger le reçu')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <>
+      {recuData && <RecuPaiement data={recuData} onClose={() => setRecuData(null)} />}
+      <button onClick={handleClick} disabled={loading} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+        style={{ padding: '5px 10px', borderRadius: radius.sm, cursor: loading ? 'wait' : 'pointer', border: '1.5px solid #2e7d32', background: hov ? '#2e7d32' : '#2e7d3212', color: hov ? '#fff' : '#2e7d32', fontSize: 11, fontWeight: 700, transition: 'all 0.12s', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span>{loading ? '⏳' : '🧾'}</span><span>Reçu</span>
+      </button>
+    </>
   )
 }

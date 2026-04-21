@@ -452,15 +452,12 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
 
   const handleSave = () => sauvegarderVisite()
 
-  const handlePaiement = async () => {
-    // Si visite déjà créée → passer directement au paiement
-    if (visiteCreee) {
-      onPaiement?.(visiteCreee)
+  const handlePaiement = () => {
+    if (!visiteCreee) {
+      showToast('Veuillez d\'abord enregistrer la visite avant de procéder au paiement.', 'warning')
       return
     }
-    // Sinon sauvegarder d'abord puis ouvrir paiement
-    const visite = await sauvegarderVisite()
-    if (visite) onPaiement?.(visite)
+    onPaiement?.(visiteCreee)
   }
 
   const medecinOpts = medecins.map(m => ({

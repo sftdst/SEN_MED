@@ -265,9 +265,10 @@ class VisiteController extends Controller
                 'success' => true,
                 'message' => 'Visite créée avec succès.',
                 'data'    => [
-                    'visite'   => $visite,
-                    'bill_no'  => $billNo,
-                    'totaux'   => [
+                    'visite'     => $visite,
+                    'bill_no'    => $billNo,
+                    'bill_hd_id' => $billHd->bill_hd_id,
+                    'totaux'     => [
                         'total'    => $totalBrut,
                         'patient'  => $totalPatient,
                         'compagny' => $totalCompagny,
