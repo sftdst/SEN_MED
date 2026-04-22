@@ -10,6 +10,7 @@ const titles = {
   '/personnels':    'Gestion du Personnel',
   '/planning':      'Emplois du temps',
   '/partenaires':   'Partenaires & Couvertures',
+  '/consultation':  'Consultation Médicale',
 }
 
 export default function Header({ onToggleSidebar }) {

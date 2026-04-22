@@ -20,6 +20,7 @@ import RendezVousPage from './pages/rendezvous/RendezVousPage'
 import EspaceMedecinPage from './pages/espaceMedecin/EspaceMedecinPage'
 import TarificationPage from './pages/tarification/TarificationPage'
 import TransfertsPage from './pages/transferts/TransfertsPage'
+import ConsultationPage from './pages/consultation/ConsultationPage'
 
 export default function App() {
   return (
@@ -47,6 +48,9 @@ export default function App() {
           <Route path="espace-medecin"  element={<EspaceMedecinPage />} />
           <Route path="transferts"      element={<TransfertsPage />} />
         </Route>
+        {/* Consultation plein écran — hors Layout sidebar */}
+        <Route path="/consultation"     element={<ConsultationPage />} />
+        <Route path="/consultation/:id" element={<ConsultationPage />} />
       </Routes>
     </BrowserRouter>
   )

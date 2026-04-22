@@ -773,7 +773,23 @@ export default function EspaceMedecinPage() {
                 label="▶ Consultation"
                 c="#2e7d32"
                 disabled={!selected}
-                onClick={() => selected && showToast(`Démarrage consultation : ${selected.nom} — ${selected.service}`)}
+                onClick={() => {
+                  if (!selected) return
+                  // Construire l'objet patient pour la ConsultationPage
+                  const parts = (selected.nom || '').trim().split(' ')
+                  const patientData = {
+                    prenom:        parts.slice(0, -1).join(' ') || parts[0] || '',
+                    nom:           parts.slice(-1)[0] || '',
+                    nom_complet:   selected.nom,
+                    code_patient:  selected.patient_id,
+                    sexe:          selected.sexe || '',
+                    date_naissance:selected.date_naissance || null,
+                    date_visite:   new Date().toISOString(),
+                    telephone:     selected.telephone,
+                    service:       selected.service,
+                  }
+                  navigate('/consultation', { state: { patient: patientData } })
+                }}
               />
               <div style={{ flex: 1 }} />
               {selected ? (

@@ -39,7 +39,10 @@
       "Bash(grep -n \"staff_type\" \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/database/migrations/\"*personnel*)",
       "Bash(dir \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\" /b)",
       "Bash(git.exe log *)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(taskkill /F /FI \"WINDOWTITLE eq php*\")",
+      "Bash(taskkill /F /FI \"IMAGENAME eq php.exe\")",
+      "Bash(taskkill //F //FI \"IMAGENAME eq php.exe\")"
     ]
   }
 }
