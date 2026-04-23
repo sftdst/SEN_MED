@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\ApprovisionnementController;
 use App\Http\Controllers\Api\MouvementStockController;
 use App\Http\Controllers\Api\InventaireController;
 use App\Http\Controllers\Api\TransfertController;
+use App\Http\Controllers\Api\ConsultationController;
 use App\Http\Controllers\Api\FicheAttController;
 use App\Http\Controllers\Api\ComptabiliteController;
 use App\Http\Controllers\Api\PaiementController;
@@ -103,6 +104,61 @@ Route::prefix('v1')->group(function () {
         Route::get('creneaux',         [CreneauxController::class, 'creneauxDuJour']);
         Route::get('creneaux/semaine', [CreneauxController::class, 'creneauxSemaine']);
         Route::get('synthese/{idMedecin}', [CreneauxController::class, 'synthese']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Consultation (Cls_Patient_Quick_Notes_New)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('consultations/{visite}')->group(function () {
+
+        // Fiche globale
+        Route::get('/',           [ConsultationController::class, 'show']);
+        Route::post('/sauvegarder', [ConsultationController::class, 'sauvegarder']);
+
+        // Signes vitaux
+        Route::get('/vitalsigns',              [ConsultationController::class, 'indexVitalSigns']);
+        Route::post('/vitalsigns',             [ConsultationController::class, 'storeVitalSign']);
+        Route::put('/vitalsigns/{vitalSign}',  [ConsultationController::class, 'updateVitalSign']);
+
+        // Notes ADT
+        Route::get('/adt-notes',              [ConsultationController::class, 'indexAdtNotes']);
+        Route::post('/adt-notes',             [ConsultationController::class, 'storeAdtNote']);
+        Route::put('/adt-notes/{adtNote}',    [ConsultationController::class, 'updateAdtNote']);
+        Route::delete('/adt-notes/{adtNote}', [ConsultationController::class, 'destroyAdtNote']);
+
+        // Notes patient
+        Route::get('/patient-notes',                  [ConsultationController::class, 'indexPatientNotes']);
+        Route::post('/patient-notes',                 [ConsultationController::class, 'storePatientNote']);
+        Route::put('/patient-notes/{patientNote}',    [ConsultationController::class, 'updatePatientNote']);
+        Route::delete('/patient-notes/{patientNote}', [ConsultationController::class, 'destroyPatientNote']);
+
+        // Prescriptions (médicaments de la consultation)
+        Route::get('/medications',               [ConsultationController::class, 'indexMedications']);
+        Route::post('/medications',              [ConsultationController::class, 'storeMedication']);
+        Route::put('/medications/{medication}',  [ConsultationController::class, 'updateMedication']);
+        Route::delete('/medications/{medication}', [ConsultationController::class, 'destroyMedication']);
+
+        // Procédures cliniques
+        Route::get('/procedures',               [ConsultationController::class, 'indexProcedures']);
+        Route::post('/procedures',              [ConsultationController::class, 'storeProcedure']);
+        Route::put('/procedures/{procedure}',   [ConsultationController::class, 'updateProcedure']);
+        Route::delete('/procedures/{procedure}', [ConsultationController::class, 'destroyProcedure']);
+
+        // Examens de laboratoire
+        Route::get('/lab-procedures',                    [ConsultationController::class, 'indexLabProcedures']);
+        Route::post('/lab-procedures',                   [ConsultationController::class, 'storeLabProcedure']);
+        Route::put('/lab-procedures/{labProcedure}',     [ConsultationController::class, 'updateLabProcedure']);
+        Route::delete('/lab-procedures/{labProcedure}',  [ConsultationController::class, 'destroyLabProcedure']);
+    });
+
+    // Traitements chroniques (rattachés au patient, pas à une visite)
+    Route::prefix('patients/{patientId}/long-term-medications')->group(function () {
+        Route::get('/',                      [ConsultationController::class, 'indexLongTermMeds']);
+        Route::post('/',                     [ConsultationController::class, 'storeLongTermMed']);
+        Route::put('/{medication}',          [ConsultationController::class, 'updateLongTermMed']);
+        Route::delete('/{medication}',       [ConsultationController::class, 'destroyLongTermMed']);
     });
 
     /*

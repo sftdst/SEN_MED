@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class VisiteAdt extends Model
 {
@@ -77,5 +78,42 @@ class VisiteAdt extends Model
     public function billHeader(): HasMany
     {
         return $this->hasMany(BillHeader::class, 'adt_id', 'adt_id');
+    }
+
+    // ── Relations consultation ────────────────────────────────────────────
+
+    public function adtNotes(): HasMany
+    {
+        return $this->hasMany(AdtNote::class, 'adt_id', 'adt_id');
+    }
+
+    public function patientNotes(): HasMany
+    {
+        return $this->hasMany(PatientNote::class, 'adt_id', 'adt_id');
+    }
+
+    public function vitalSign(): HasOne
+    {
+        return $this->hasOne(VitalSign::class, 'adt_id', 'adt_id')->latestOfMany('vital_sign_id');
+    }
+
+    public function vitalSigns(): HasMany
+    {
+        return $this->hasMany(VitalSign::class, 'adt_id', 'adt_id');
+    }
+
+    public function medications(): HasMany
+    {
+        return $this->hasMany(ConsultationMedication::class, 'adt_id', 'adt_id');
+    }
+
+    public function procedures(): HasMany
+    {
+        return $this->hasMany(ConsultationProcedure::class, 'adt_id', 'adt_id');
+    }
+
+    public function labProcedures(): HasMany
+    {
+        return $this->hasMany(LabProcedure::class, 'adt_id', 'adt_id');
     }
 }

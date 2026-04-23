@@ -139,11 +139,11 @@ function VueGrilleSemaine({ medecins }) {
   const load = async () => {
     setLoading(true)
     try {
-      const params = filterMed ? { IDMedecin: filterMed } : {}
+      const params = { per_page: 1000, ...(filterMed ? { IDMedecin: filterMed } : {}) }
       const [h, e, f, d] = await Promise.all([
         horaireApi.liste(params),
         exceptionApi.liste(params),
-        jourFerieApi.liste({ annee: weekStart.getFullYear() }),
+        jourFerieApi.liste({ annee: weekStart.getFullYear(), per_page: 500 }),
         ferieDispoApi.liste(params),
       ])
       const toArray = (v) => Array.isArray(v) ? v : (v?.data ?? [])
@@ -494,11 +494,11 @@ function VueCalendrierMois({ medecins }) {
   const load = async () => {
     setLoading(true)
     try {
-      const params = filterMed ? { IDMedecin: filterMed } : {}
+      const params = { per_page: 1000, ...(filterMed ? { IDMedecin: filterMed } : {}) }
       const [h, e, f, d] = await Promise.all([
         horaireApi.liste(params),
         exceptionApi.liste(params),
-        jourFerieApi.liste({ annee: new Date().getFullYear() }),
+        jourFerieApi.liste({ annee: new Date().getFullYear(), per_page: 500 }),
         ferieDispoApi.liste(params),
       ])
       const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
@@ -648,8 +648,8 @@ function VueDashboard({ medecins }) {
     setLoading(true)
     try {
       const [h, e, f, d] = await Promise.all([
-        horaireApi.liste({}), exceptionApi.liste({}),
-        jourFerieApi.liste({ annee: new Date().getFullYear() }), ferieDispoApi.liste({}),
+        horaireApi.liste({ per_page: 1000 }), exceptionApi.liste({ per_page: 1000 }),
+        jourFerieApi.liste({ annee: new Date().getFullYear(), per_page: 500 }), ferieDispoApi.liste({ per_page: 1000 }),
       ])
       const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
       const horaires = toArr(h.data.data), exceptions = toArr(e.data.data)
@@ -876,7 +876,7 @@ function PlanningHebdomadaire({ medecins }) {
 
   const load = () => {
     setLoading(true)
-    horaireApi.liste(filterMed ? { IDMedecin: filterMed } : {})
+    horaireApi.liste({ per_page: 1000, ...(filterMed ? { IDMedecin: filterMed } : {}) })
       .then(r => setData(Array.isArray(r.data.data) ? r.data.data : (r.data.data?.data ?? [])))
       .finally(() => setLoading(false))
   }
@@ -995,7 +995,7 @@ function Exceptions({ medecins }) {
 
   const load = () => {
     setLoading(true)
-    exceptionApi.liste(filterMed ? { IDMedecin: filterMed } : {}).then(r => setData(Array.isArray(r.data.data) ? r.data.data : (r.data.data?.data ?? []))).finally(() => setLoading(false))
+    exceptionApi.liste({ per_page: 1000, ...(filterMed ? { IDMedecin: filterMed } : {}) }).then(r => setData(Array.isArray(r.data.data) ? r.data.data : (r.data.data?.data ?? []))).finally(() => setLoading(false))
   }
   useEffect(() => { load() }, [filterMed])
 
@@ -1075,7 +1075,7 @@ function JoursFeries() {
 
   const load = () => {
     setLoading(true)
-    jourFerieApi.liste({ annee }).then(r => setData(Array.isArray(r.data.data) ? r.data.data : (r.data.data?.data ?? []))).finally(() => setLoading(false))
+    jourFerieApi.liste({ annee, per_page: 500 }).then(r => setData(Array.isArray(r.data.data) ? r.data.data : (r.data.data?.data ?? []))).finally(() => setLoading(false))
   }
   useEffect(() => { load() }, [annee])
 
@@ -1157,8 +1157,8 @@ function FerieDisponibilites({ medecins }) {
   const load = () => {
     setLoading(true)
     Promise.all([
-      ferieDispoApi.liste(filterMed ? { IDMedecin: filterMed } : {}),
-      jourFerieApi.liste({ annee: new Date().getFullYear() }),
+      ferieDispoApi.liste({ per_page: 1000, ...(filterMed ? { IDMedecin: filterMed } : {}) }),
+      jourFerieApi.liste({ annee: new Date().getFullYear(), per_page: 500 }),
     ]).then(([d, f]) => {
       const toArr = v => Array.isArray(v) ? v : (v?.data ?? [])
       setData(toArr(d.data.data)); setFeries(toArr(f.data.data))
@@ -1241,8 +1241,11 @@ export default function PlanningPage() {
   const [medecins, setMedecins] = useState([])
 
   useEffect(() => {
-    personnelApi.liste({ per_page: 200 })
-      .then(r => setMedecins(r.data?.data?.data || r.data?.data || []))
+    personnelApi.liste({ per_page: 500 })
+      .then(r => {
+        const raw = r.data?.data
+        setMedecins(Array.isArray(raw) ? raw : (Array.isArray(raw?.data) ? raw.data : []))
+      })
       .catch(() => {})
   }, [])
 

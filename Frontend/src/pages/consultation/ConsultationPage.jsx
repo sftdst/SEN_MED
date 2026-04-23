@@ -286,7 +286,7 @@ function Sel({ value, onChange, options }) {
 
 // ─── Table éditable ────────────────────────────────────────────────────────────
 
-function ETable({ rows, cols, onAdd, onRemove, onChange, empty }) {
+function ETable({ rows, cols, onAdd, onRemove, onChange, empty, extraButtons }) {
   return (
     <div>
       <div style={{ borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
@@ -356,21 +356,165 @@ function ETable({ rows, cols, onAdd, onRemove, onChange, empty }) {
           </tbody>
         </table>
       </div>
-      <button onClick={onAdd} style={{
-        marginTop: 6, border: `1.5px dashed ${C.bleu}60`,
-        borderRadius: 6, padding: '4px 12px',
-        background: `${C.bleu}08`, color: C.bleu,
-        fontSize: 11, fontWeight: 600, cursor: 'pointer',
-        display: 'flex', alignItems: 'center', gap: 4,
-        transition: 'background 0.15s',
-      }}
-        onMouseOver={e => e.currentTarget.style.background = `${C.bleu}14`}
-        onMouseOut={e => e.currentTarget.style.background = `${C.bleu}08`}
-      >
-        <span style={{ fontSize: 15, lineHeight: 1 }}>+</span> Ajouter
-      </button>
+      {/* Barre de boutons */}
+      <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <button onClick={onAdd} style={{
+          border: `1.5px dashed ${C.bleu}60`,
+          borderRadius: 6, padding: '4px 12px',
+          background: `${C.bleu}08`, color: C.bleu,
+          fontSize: 11, fontWeight: 600, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 4,
+          transition: 'background 0.15s',
+        }}
+          onMouseOver={e => e.currentTarget.style.background = `${C.bleu}14`}
+          onMouseOut={e => e.currentTarget.style.background = `${C.bleu}08`}
+        >
+          <span style={{ fontSize: 15, lineHeight: 1 }}>+</span> Ajouter
+        </button>
+        {extraButtons}
+      </div>
     </div>
   )
+}
+
+// ─── Modal Résultat ────────────────────────────────────────────────────────────
+
+function ResultatModal({ title, icon, accent, rows, labelKey, onUpdate, onClose }) {
+  const [local, setLocal] = useState(() => rows.map(r => ({ ...r })))
+
+  const upd = (i, val) => {
+    const next = [...local]
+    next[i] = { ...next[i], remarques: val }
+    setLocal(next)
+  }
+
+  const handleSave = () => { onUpdate(local); onClose() }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(3px)' }}
+      onClick={onClose}
+    >
+      <div
+        style={{ background: C.surface, borderRadius: 14, width: 560, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.4)', overflow: 'hidden' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.border}`, background: `linear-gradient(to right, ${accent}14, ${accent}04)`, borderLeft: `4px solid ${accent}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+            <span style={{ fontSize: 20 }}>{icon}</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: accent }}>Résultats — {title}</div>
+              <div style={{ fontSize: 10, color: C.textSm }}>{rows.length} examen(s) prescrit(s)</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ border: 'none', background: '#f1f5f9', borderRadius: 8, width: 28, height: 28, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textMd }}>×</button>
+        </div>
+
+        {/* Corps */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '14px 18px' }}>
+          {rows.length === 0 ? (
+            <div style={{ textAlign: 'center', color: C.textSm, fontSize: 12, fontStyle: 'italic', padding: '24px 0' }}>
+              Aucun examen prescrit. Ajoutez des examens avant de saisir les résultats.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {local.map((row, i) => (
+                <div key={row.id} style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+                  {/* Nom examen */}
+                  <div style={{ padding: '8px 12px', background: `${accent}0c`, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: accent, flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700, fontSize: 12, color: C.text }}>{row[labelKey] || `Examen ${i + 1}`}</span>
+                    {row.remarques && (
+                      <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, color: C.green, background: '#f0fdf4', borderRadius: 10, padding: '2px 8px', border: `1px solid #bbf7d0` }}>✓ Renseigné</span>
+                    )}
+                  </div>
+                  {/* Champ résultat */}
+                  <div style={{ padding: '10px 12px' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: C.textSm, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Résultat / Compte-rendu</div>
+                    <textarea
+                      value={row.remarques ?? ''}
+                      rows={3}
+                      placeholder="Saisir les valeurs, l'interprétation ou le compte-rendu…"
+                      onChange={e => upd(i, e.target.value)}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        border: `1.5px solid ${C.border}`, borderRadius: 7,
+                        padding: '7px 10px', fontSize: 12, color: C.text,
+                        resize: 'vertical', fontFamily: 'inherit', outline: 'none',
+                        lineHeight: 1.55,
+                      }}
+                      onFocus={e => e.target.style.borderColor = accent}
+                      onBlur={e => e.target.style.borderColor = C.border}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '12px 18px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8, background: '#f8fafc' }}>
+          <button onClick={onClose} style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '7px 18px', fontSize: 12, cursor: 'pointer', background: C.surface, color: C.textMd, fontWeight: 600 }}>
+            Annuler
+          </button>
+          <button onClick={handleSave} style={{ border: 'none', borderRadius: 8, padding: '7px 20px', fontSize: 12, cursor: 'pointer', background: accent, color: '#fff', fontWeight: 700, boxShadow: `0 2px 8px ${accent}40` }}>
+            ✓ Enregistrer les résultats
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Impression bilan ──────────────────────────────────────────────────────────
+
+function imprimerBilan({ title, rows, labelKey, patientName, date }) {
+  const html = `
+    <!DOCTYPE html><html lang="fr"><head>
+    <meta charset="utf-8"/>
+    <title>${title}</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 24px; font-size: 13px; color: #1e293b; }
+      h1   { font-size: 17px; margin: 0 0 4px; }
+      .sub { font-size: 11px; color: #64748b; margin-bottom: 20px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      th   { background: #f1f5f9; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid #e2e8f0; }
+      td   { padding: 9px 10px; border: 1px solid #e2e8f0; font-size: 12px; vertical-align: top; }
+      tr:nth-child(even) td { background: #f8fafc; }
+      .sign { margin-top: 40px; display: flex; justify-content: flex-end; }
+      .sign-box { border-top: 1px solid #94a3b8; width: 200px; text-align: center; padding-top: 8px; font-size: 11px; color: #64748b; }
+      @media print { body { padding: 10px; } }
+    </style>
+    </head><body>
+    <h1>📋 ${title}</h1>
+    <div class="sub">
+      Patient : <strong>${patientName}</strong> &nbsp;|&nbsp; Date : <strong>${date}</strong>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Examen prescrit</th><th>Résultat / Compte-rendu</th></tr></thead>
+      <tbody>
+        ${rows.length === 0
+          ? `<tr><td colspan="3" style="text-align:center;color:#94a3b8;font-style:italic">Aucun examen</td></tr>`
+          : rows.map((r, i) => `
+            <tr>
+              <td style="width:32px;text-align:center;font-weight:700">${i + 1}</td>
+              <td style="font-weight:600">${r[labelKey] || '—'}</td>
+              <td style="min-width:200px">${r.remarques || '<span style="color:#94a3b8;font-style:italic">En attente</span>'}</td>
+            </tr>`).join('')
+        }
+      </tbody>
+    </table>
+    <div class="sign"><div class="sign-box">Signature du médecin</div></div>
+    </body></html>
+  `
+  const win = window.open('', '_blank', 'width=800,height=600')
+  if (!win) return
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  win.print()
 }
 
 // ─── Picker Modal ─────────────────────────────────────────────────────────────
@@ -834,9 +978,15 @@ function SuiviSection({ data, onChange }) {
 
 // ─── COLONNE DROITE ────────────────────────────────────────────────────────────
 
-function ColonneDroite({ data, onChange }) {
+function ColonneDroite({ data, onChange, patient }) {
   const upd = (f, v) => onChange({ ...data, [f]: v })
-  const [picker, setPicker] = useState(null)
+  const [picker,   setPicker]   = useState(null)
+  const [resultat, setResultat] = useState(null) // { key, title, icon, accent, labelKey }
+
+  const patientName = patient
+    ? (patient.nom_complet || `${patient.prenom || ''} ${patient.nom || ''}`.trim() || 'Patient')
+    : 'Patient'
+  const dateImpression = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 
   const withPicker = (key, cols, pickerTitle, pickerIcon, pickerAccent, pickerItems) => {
     const ops = makeOps(data, key, cols, onChange)
@@ -852,12 +1002,66 @@ function ColonneDroite({ data, onChange }) {
     setPicker(null)
   }
 
+  // Boutons Résultat + Imprimer pour une section bilan
+  const bilanButtons = (key, title, icon, accent, labelKey) => (
+    <>
+      <button
+        onClick={() => setResultat({ key, title, icon, accent, labelKey })}
+        style={{
+          border: `1.5px solid ${C.green}60`, borderRadius: 6, padding: '4px 11px',
+          background: `${C.green}0a`, color: C.green,
+          fontSize: 11, fontWeight: 600, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 4,
+          transition: 'background 0.15s',
+        }}
+        onMouseOver={e => e.currentTarget.style.background = `${C.green}18`}
+        onMouseOut={e => e.currentTarget.style.background = `${C.green}0a`}
+        title="Saisir / voir les résultats"
+      >
+        <span style={{ fontSize: 12 }}>📋</span> Résultat
+      </button>
+      <button
+        onClick={() => imprimerBilan({
+          title,
+          rows: data[key] ?? [],
+          labelKey,
+          patientName,
+          date: dateImpression,
+        })}
+        style={{
+          border: `1.5px solid ${accent}60`, borderRadius: 6, padding: '4px 11px',
+          background: `${accent}0a`, color: accent,
+          fontSize: 11, fontWeight: 600, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 4,
+          transition: 'background 0.15s',
+        }}
+        onMouseOver={e => e.currentTarget.style.background = `${accent}18`}
+        onMouseOut={e => e.currentTarget.style.background = `${accent}0a`}
+        title="Imprimer la fiche"
+      >
+        <span style={{ fontSize: 12 }}>🖨️</span> Imprimer
+      </button>
+    </>
+  )
+
   return (
     <>
       {picker && (
         <PickerModal
           title={picker.title} icon={picker.icon} accent={picker.accent} items={picker.items}
           onSelect={handleSelect} onClose={() => setPicker(null)}
+        />
+      )}
+
+      {resultat && (
+        <ResultatModal
+          title={resultat.title}
+          icon={resultat.icon}
+          accent={resultat.accent}
+          labelKey={resultat.labelKey}
+          rows={data[resultat.key] ?? []}
+          onUpdate={updatedRows => onChange({ ...data, [resultat.key]: updatedRows })}
+          onClose={() => setResultat(null)}
         />
       )}
 
@@ -869,30 +1073,42 @@ function ColonneDroite({ data, onChange }) {
       <Card>
         <CardHead title="Laboratoire" icon="🧪" accent={C.pink} />
         <CardBody>
-          <ETable empty="Aucun examen" {...withPicker('laboratoire', [
-            { k: 'laboratoire', l: 'Examen', p: 'Biologie…' },
-            { k: 'remarques',   l: 'Résultats', p: 'Valeurs…' },
-          ], 'Laboratoire', '🧪', C.pink, LABO_LIST)} />
+          <ETable
+            empty="Aucun examen"
+            {...withPicker('laboratoire', [
+              { k: 'laboratoire', l: 'Examen', p: 'Biologie…' },
+              { k: 'remarques',   l: 'Résultats', p: 'Valeurs…' },
+            ], 'Laboratoire', '🧪', C.pink, LABO_LIST)}
+            extraButtons={bilanButtons('laboratoire', 'Laboratoire', '🧪', C.pink, 'laboratoire')}
+          />
         </CardBody>
       </Card>
 
       <Card>
         <CardHead title="Imagerie" icon="🖼️" accent={C.purple} />
         <CardBody>
-          <ETable empty="Aucun examen" {...withPicker('imagerie', [
-            { k: 'imagerie',  l: 'Examen', p: 'Rx, écho…' },
-            { k: 'remarques', l: 'Résultats', p: 'C.R…' },
-          ], 'Imagerie', '🖼️', C.purple, IMAGERIE_LIST)} />
+          <ETable
+            empty="Aucun examen"
+            {...withPicker('imagerie', [
+              { k: 'imagerie',  l: 'Examen', p: 'Rx, écho…' },
+              { k: 'remarques', l: 'Résultats', p: 'C.R…' },
+            ], 'Imagerie', '🖼️', C.purple, IMAGERIE_LIST)}
+            extraButtons={bilanButtons('imagerie', 'Imagerie', '🖼️', C.purple, 'imagerie')}
+          />
         </CardBody>
       </Card>
 
       <Card>
         <CardHead title="Bilans Spéciaux" icon="⚗️" accent={C.teal} />
         <CardBody>
-          <ETable empty="Aucun bilan" {...withPicker('bilansSpeciaux', [
-            { k: 'type_bilan', l: 'Type', p: 'ECG, EEG…' },
-            { k: 'remarques',  l: 'Résultats', p: '…' },
-          ], 'Bilans Spéciaux', '⚗️', C.teal, BILANS_LIST)} />
+          <ETable
+            empty="Aucun bilan"
+            {...withPicker('bilansSpeciaux', [
+              { k: 'type_bilan', l: 'Type', p: 'ECG, EEG…' },
+              { k: 'remarques',  l: 'Résultats', p: '…' },
+            ], 'Bilans Spéciaux', '⚗️', C.teal, BILANS_LIST)}
+            extraButtons={bilanButtons('bilansSpeciaux', 'Bilans Spéciaux', '⚗️', C.teal, 'type_bilan')}
+          />
         </CardBody>
       </Card>
 
@@ -1018,7 +1234,7 @@ export default function ConsultationPage({ patient: propPatient, onClose: propOn
           borderLeft: `1px solid ${C.border}`,
           background: '#f8fafc',
         }}>
-          <ColonneDroite data={data} onChange={onChange} />
+          <ColonneDroite data={data} onChange={onChange} patient={patient} />
         </div>
 
       </div>
