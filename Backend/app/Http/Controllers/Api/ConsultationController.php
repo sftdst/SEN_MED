@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdtNote;
+use App\Models\BillHeader;
 use App\Models\ConsultationMedication;
 use App\Models\ConsultationProcedure;
+use App\Models\Facture;
 use App\Models\LabProcedure;
 use App\Models\LongTermMedication;
 use App\Models\Patient;
@@ -192,7 +194,7 @@ class ConsultationController extends Controller
             if ($request->has('procedures') && is_array($request->procedures)) {
                 foreach ($request->procedures as $proc) {
                     if (empty($proc['procedure_name'])) continue;
-                    ConsultationProcedure::create([
+                    $newProc = ConsultationProcedure::create([
                         'patient_id'      => $patientId,
                         'adt_id'          => $adtId,
                         'hospital_id'     => $hospitalId,
@@ -207,6 +209,14 @@ class ConsultationController extends Controller
                         'created_user_id' => $userId,
                         'created_dttm'    => $now,
                     ]);
+                    // Facturation si coût renseigné
+                    $this->ajouterLigneFacture(
+                        $visite,
+                        $newProc->procedure_name,
+                        (float) ($newProc->cost ?? 0),
+                        $newProc->procedure_type ?? 'BILAN',
+                        $newProc->procedure_id
+                    );
                 }
             }
 
@@ -214,7 +224,7 @@ class ConsultationController extends Controller
             if ($request->has('lab_procedures') && is_array($request->lab_procedures)) {
                 foreach ($request->lab_procedures as $lab) {
                     if (empty($lab['lab_test_name'])) continue;
-                    LabProcedure::create([
+                    $newLab = LabProcedure::create([
                         'patient_id'      => $patientId,
                         'adt_id'          => $adtId,
                         'hospital_id'     => $hospitalId,
@@ -232,6 +242,14 @@ class ConsultationController extends Controller
                         'created_user_id' => $userId,
                         'created_dttm'    => $now,
                     ]);
+                    // Facturation si coût renseigné
+                    $this->ajouterLigneFacture(
+                        $visite,
+                        $newLab->lab_test_name,
+                        (float) ($newLab->cost ?? 0),
+                        'LAB',
+                        $newLab->lab_procedure_id
+                    );
                 }
             }
 
@@ -527,6 +545,16 @@ class ConsultationController extends Controller
             'created_user_id' => auth()?->user()?->id ?? 'SYSTEM',
             'created_dttm'    => now(),
         ]));
+
+        // ── Facturation automatique ───────────────────────────────────────
+        $this->ajouterLigneFacture(
+            $visite,
+            $proc->procedure_name,
+            (float) ($proc->cost ?? 0),
+            $proc->procedure_type ?? 'BILAN',
+            $proc->procedure_id
+        );
+
         return response()->json(['success' => true, 'data' => $proc], 201);
     }
 
@@ -543,13 +571,38 @@ class ConsultationController extends Controller
             'result'         => 'nullable|string',
             'status_id'      => 'nullable|integer|in:0,1,2',
         ]);
+
+        $ancienCout  = (float) ($procedure->cost ?? 0);
+        $ancienType  = $procedure->procedure_type ?? 'BILAN';
+        $ancienNom   = $procedure->procedure_name;
+
         $procedure->update($v);
-        return response()->json(['success' => true, 'data' => $procedure->fresh()]);
+        $p = $procedure->fresh();
+
+        // ── Ajustement facturation si le coût a changé ───────────────────
+        $nouveauCout = (float) ($p->cost ?? 0);
+        $this->mettreAJourLigneFacture(
+            $visite,
+            $p->procedure_id,
+            $p->procedure_type ?? $ancienType,
+            $ancienCout,
+            $nouveauCout,
+            $p->procedure_name ?? $ancienNom
+        );
+
+        return response()->json(['success' => true, 'data' => $p]);
     }
 
     /** DELETE /consultations/{adt_id}/procedures/{procedure} */
     public function destroyProcedure(VisiteAdt $visite, ConsultationProcedure $procedure): JsonResponse
     {
+        // ── Retirer la ligne de facturation avant suppression ────────────
+        $this->retirerLigneFacture(
+            $visite,
+            $procedure->procedure_id,
+            $procedure->procedure_type ?? 'BILAN'
+        );
+
         $procedure->delete();
         return response()->json(['success' => true, 'message' => 'Procédure supprimée.']);
     }
@@ -587,6 +640,16 @@ class ConsultationController extends Controller
             'created_user_id' => auth()?->user()?->id ?? 'SYSTEM',
             'created_dttm'    => now(),
         ]));
+
+        // ── Facturation automatique ───────────────────────────────────────
+        $this->ajouterLigneFacture(
+            $visite,
+            $lab->lab_test_name,
+            (float) ($lab->cost ?? 0),
+            'LAB',
+            $lab->lab_procedure_id
+        );
+
         return response()->json(['success' => true, 'data' => $lab], 201);
     }
 
@@ -606,13 +669,37 @@ class ConsultationController extends Controller
             'status_id'     => 'nullable|integer|in:0,1,2',
             'result_date'   => 'nullable|date',
         ]);
+
+        $ancienCout = (float) ($labProcedure->cost ?? 0);
+        $ancienNom  = $labProcedure->lab_test_name;
+
         $labProcedure->update($v);
-        return response()->json(['success' => true, 'data' => $labProcedure->fresh()]);
+        $l = $labProcedure->fresh();
+
+        // ── Ajustement facturation si le coût a changé ───────────────────
+        $nouveauCout = (float) ($l->cost ?? 0);
+        $this->mettreAJourLigneFacture(
+            $visite,
+            $l->lab_procedure_id,
+            'LAB',
+            $ancienCout,
+            $nouveauCout,
+            $l->lab_test_name ?? $ancienNom
+        );
+
+        return response()->json(['success' => true, 'data' => $l]);
     }
 
     /** DELETE /consultations/{adt_id}/lab-procedures/{labProcedure} */
     public function destroyLabProcedure(VisiteAdt $visite, LabProcedure $labProcedure): JsonResponse
     {
+        // ── Retirer la ligne de facturation avant suppression ────────────
+        $this->retirerLigneFacture(
+            $visite,
+            $labProcedure->lab_procedure_id,
+            'LAB'
+        );
+
         $labProcedure->delete();
         return response()->json(['success' => true, 'message' => 'Examen labo supprimé.']);
     }
@@ -680,5 +767,144 @@ class ConsultationController extends Controller
     {
         $medication->delete();
         return response()->json(['success' => true, 'message' => 'Traitement chronique supprimé.']);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  HELPERS FACTURATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Crée une ligne gen_mst_facture et met à jour BillHeader + VisiteAdt.
+     * Appelé quand un examen/procédure avec coût > 0 est ajouté.
+     *
+     * @param VisiteAdt $visite
+     * @param string    $description   Libellé de l'acte (lab_test_name, procedure_name…)
+     * @param float     $cout          Montant de l'acte
+     * @param string    $typeService   Code type : 'LAB', 'IMAGERIE', 'BILAN', etc.
+     * @param int       $procedureId   PK de l'enregistrement (pour retrouver la ligne)
+     */
+    private function ajouterLigneFacture(
+        VisiteAdt $visite,
+        string    $description,
+        float     $cout,
+        string    $typeService,
+        int       $procedureId
+    ): void {
+        if ($cout <= 0) return;
+
+        $now = now();
+
+        // ── Calcul de la part patient / part compagnie depuis les ratios de la visite ──
+        $totalVisite = (float) ($visite->Total_a_payer ?? 0);
+        $pctCie      = $totalVisite > 0
+            ? ((float) ($visite->montant_compagny ?? 0) / $totalVisite)
+            : 0;
+
+        $partCie     = round($cout * $pctCie, 3);
+        $partPatient = round($cout - $partCie, 3);
+
+        // ── Récupérer le BillHeader de la visite ──────────────────────────
+        $billHd = BillHeader::where('adt_id', $visite->adt_id)->first();
+
+        // ── Créer la ligne gen_mst_facture ────────────────────────────────
+        $facture = Facture::create([
+            'NomDescription'         => $description,
+            'PrixService'            => $cout,
+            'IDService'              => null,
+            'adt_id'                 => $visite->adt_id,
+            'patient_id'             => $visite->patient_pin,
+            'MontantPayer'           => 0,
+            'MontantRestant'         => $partPatient,
+            'compagny_id'            => $visite->ID_Compagny,
+            'MontantTotalFacture'    => $cout,
+            'StatutPaiement'         => 'EN_ATTENTE',
+            'DateCreation'           => $now,
+            'docteur_id'             => $visite->consulting_doctor_id,
+            'MontantPartenaire'      => $partCie,
+            'TypeService'            => $typeService,
+            'patient_payable'        => $partPatient,
+            'bill_id'                => $billHd?->bill_hd_id,
+            'ID_Procedure'           => $procedureId,
+            'MontantpayerPartenaire' => 0,
+        ]);
+
+        // ── Mettre à jour BillHeader ──────────────────────────────────────
+        if ($billHd) {
+            $billHd->increment('bill_amount',    $cout);
+            $billHd->increment('net_amount',     $cout);
+            $billHd->increment('pending_amount', $partPatient);
+        }
+
+        // ── Mettre à jour VisiteAdt ───────────────────────────────────────
+        $visite->increment('bill_amount',      $cout);
+        $visite->increment('Total_a_payer',    $cout);
+        $visite->increment('montant_patient',  $partPatient);
+        $visite->increment('montant_compagny', $partCie);
+    }
+
+    /**
+     * Supprime la ligne gen_mst_facture liée à un acte et corrige les totaux.
+     * Appelé lors de la suppression d'un examen/procédure.
+     *
+     * @param VisiteAdt $visite
+     * @param int       $procedureId  PK de l'enregistrement
+     * @param string    $typeService  Filtre pour éviter collisions entre tables
+     */
+    private function retirerLigneFacture(
+        VisiteAdt $visite,
+        int       $procedureId,
+        string    $typeService
+    ): void {
+        $facture = Facture::where('adt_id',      $visite->adt_id)
+            ->where('ID_Procedure', $procedureId)
+            ->where('TypeService',  $typeService)
+            ->first();
+
+        if (!$facture) return;
+
+        $cout        = (float) $facture->MontantTotalFacture;
+        $partPatient = (float) $facture->patient_payable;
+        $partCie     = (float) $facture->MontantPartenaire;
+
+        $facture->delete();
+
+        // ── Corriger BillHeader ───────────────────────────────────────────
+        $billHd = BillHeader::where('adt_id', $visite->adt_id)->first();
+        if ($billHd) {
+            $billHd->decrement('bill_amount',    $cout);
+            $billHd->decrement('net_amount',     $cout);
+            $billHd->decrement('pending_amount', $partPatient);
+        }
+
+        // ── Corriger VisiteAdt ────────────────────────────────────────────
+        $visite->decrement('bill_amount',      $cout);
+        $visite->decrement('Total_a_payer',    $cout);
+        $visite->decrement('montant_patient',  $partPatient);
+        $visite->decrement('montant_compagny', $partCie);
+    }
+
+    /**
+     * Ajuste la ligne gen_mst_facture et les totaux quand le coût change.
+     *
+     * @param VisiteAdt $visite
+     * @param int       $procedureId
+     * @param string    $typeService
+     * @param float     $ancienCout
+     * @param float     $nouveauCout
+     * @param string    $description   Nouveau libellé (si renommé)
+     */
+    private function mettreAJourLigneFacture(
+        VisiteAdt $visite,
+        int       $procedureId,
+        string    $typeService,
+        float     $ancienCout,
+        float     $nouveauCout,
+        string    $description
+    ): void {
+        if (abs($ancienCout - $nouveauCout) < 0.001) return; // rien à faire
+
+        // Retirer l'ancienne ligne et en créer une nouvelle avec le bon montant
+        $this->retirerLigneFacture($visite, $procedureId, $typeService);
+        $this->ajouterLigneFacture($visite, $description, $nouveauCout, $typeService, $procedureId);
     }
 }
