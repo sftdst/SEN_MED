@@ -21,6 +21,9 @@ import EspaceMedecinPage from './pages/espaceMedecin/EspaceMedecinPage'
 import TarificationPage from './pages/tarification/TarificationPage'
 import TransfertsPage from './pages/transferts/TransfertsPage'
 import ConsultationPage from './pages/consultation/ConsultationPage'
+import GestionCongesPage from './pages/ressourcesHumaines/GestionCongesPage'
+import GestionAbsencesRetardsPage from './pages/ressourcesHumaines/GestionAbsencesRetardsPage'
+import GestionContratsPage from './pages/ressourcesHumaines/GestionContratsPage'
 
 export default function App() {
   return (
@@ -47,6 +50,9 @@ export default function App() {
           <Route path="rendezvous"      element={<RendezVousPage />} />
           <Route path="espace-medecin"  element={<EspaceMedecinPage />} />
           <Route path="transferts"      element={<TransfertsPage />} />
+          <Route path="ressources-humaines/conges" element={<GestionCongesPage />} />
+          <Route path="ressources-humaines/absences" element={<GestionAbsencesRetardsPage />} />
+          <Route path="ressources-humaines/contrats" element={<GestionContratsPage />} />
         </Route>
         {/* Consultation plein écran — hors Layout sidebar */}
         <Route path="/consultation"     element={<ConsultationPage />} />

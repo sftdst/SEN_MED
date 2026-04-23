@@ -51,6 +51,16 @@ const navItems = [
     ]
   },
   {
+    group: 'RESSOURCES HUMAINES',
+    icon: '👥',
+    items: [
+      { to: '/personnels', label: 'Gestion personnel' },
+      { to: '/ressources-humaines/conges', label: 'Gestion congés' },
+      { to: '/ressources-humaines/absences', label: 'Absences & retards' },
+      { to: '/ressources-humaines/contrats', label: 'Gestion contrats' },
+    ]
+  },
+  {
     group: 'CONFIGURATION',
     icon: '⚙️',
     items: [

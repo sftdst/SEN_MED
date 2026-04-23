@@ -11,6 +11,7 @@ import PageHeader from '../../components/ui/PageHeader'
 import { StatusBadge } from '../../components/ui/Badge'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
+import SearchBar from '../../components/ui/SearchBar'
 import Pagination from '../../components/ui/Pagination'
 
 const emptyForm = { NomDepartement: '', description: '', status: 1, Hospital_id: '' }
@@ -116,7 +117,7 @@ export default function DepartementsPage() {
         boxShadow: shadows.sm, padding: '16px 20px',
         display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap',
       }}>
-        <Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, minWidth: 200, marginBottom: 0 }} />
+        <SearchBar value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un département..." />
         <Select
           name="filterHospital" value={filterHospital}
           onChange={e => setFilterHospital(e.target.value)}

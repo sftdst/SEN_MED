@@ -11,6 +11,7 @@ import PageHeader from '../../components/ui/PageHeader'
 import { StatusBadge } from '../../components/ui/Badge'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
+import SearchBar from '../../components/ui/SearchBar'
 import Pagination from '../../components/ui/Pagination'
 
 const emptyForm = {
@@ -122,7 +123,7 @@ export default function ServicesPage() {
         background: colors.white, borderRadius: radius.md, boxShadow: shadows.sm,
         padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap',
       }}>
-        <Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, minWidth: 200, marginBottom: 0 }} />
+        <SearchBar value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un service..." />
         <Select name="filterType" value={filterType} onChange={e => setFilterType(e.target.value)}
           options={typeOptions} placeholder="Tous les types" style={{ minWidth: 220, marginBottom: 0 }}
         />

@@ -14,16 +14,18 @@ import Pagination from '../../components/ui/Pagination'
 // ── Données statiques ─────────────────────────────────────
 const emptyRapide = { first_name: '', last_name: '', gender_id: '', staff_type: '', contact_number: '', IDgen_mst_Departement: '' }
 
-const emptyComplet = {
-  first_name: '', last_name: '', second_name: '', gender_id: '', titre_id: '',
-  staff_type: '', specialization: '', contact_number: '', phone_number: '',
-  email_adress: '', email_pro: '', date_of_birth: '', nationality_id: '',
-  groupe_sanguin: '', IDgen_mst_Departement: '', status_id: 1,
-  address: '', autre_adress: '', city: '', code_postal: '',
-  ville_principal: '', ville_secondaire: '', country_id: '', type_adresse: '',
-  ID_pro: '', type_exercie: '', secteur: '', lieu_exercice: '',
-  Joining_date: '', End_of_service_date: '', personnel: 0, consult: 0,
-}
+  const emptyComplet = {
+    first_name: '', last_name: '', second_name: '', gender_id: '', titre_id: '',
+    staff_type: '', specialization: '', contact_number: '', phone_number: '',
+    email_adress: '', email_pro: '', date_of_birth: '', nationality_id: '',
+    groupe_sanguin: '', IDgen_mst_Departement: '', status_id: 1,
+    address: '', autre_adress: '', city: '', code_postal: '',
+    ville_principal: '', ville_secondaire: '', country_id: '', type_adresse: '',
+    ID_pro: '', type_exercice: '', secteur: '', lieu_exercice: '',
+    Joining_date: '', End_of_service_date: '', personnel: 0, consult: 0,
+    niveau_etudes: '', diplome_principal: '', etablissement: '', annee_obtention: '',
+    autre_diplome: '', qualification: '',
+  }
 
 const STAFF_TYPES = [
   { value: 'medecin',          label: 'Médecin' },
@@ -190,6 +192,7 @@ export default function PersonnelsPage() {
   const [saving,       setSaving]       = useState(false)
   const [confirm,      setConfirm]      = useState(null)
   const [detailModal,  setDetailModal]  = useState(null)
+  const [activeTab, setActiveTab] = useState('identite')
 
   const load = (p = page, pp = perPage) => {
     setLoading(true)
@@ -527,69 +530,113 @@ export default function PersonnelsPage() {
           </>
         }
       >
-        <form onSubmit={submitComplet}>
-          <div style={{ marginBottom: 20 }}>
-            <Section title="Identité" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-              <Input label="Prénom"          name="first_name"    value={formComplet.first_name}    onChange={changeComplet} required />
-              <Input label="Nom"             name="last_name"     value={formComplet.last_name}     onChange={changeComplet} required />
-              <Input label="2ème prénom"     name="second_name"   value={formComplet.second_name}   onChange={changeComplet} />
-              <Select label="Genre"          name="gender_id"     value={formComplet.gender_id}     onChange={changeComplet} required options={GENRES} placeholder="Sélectionner" />
-              <Select label="Titre"          name="titre_id"      value={formComplet.titre_id}      onChange={changeComplet}
-                options={[{ value: 'Dr', label: 'Dr' }, { value: 'Pr', label: 'Pr' }, { value: 'M', label: 'M.' }, { value: 'Mme', label: 'Mme' }]}
-              />
-              <Select label="Groupe sanguin" name="groupe_sanguin" value={formComplet.groupe_sanguin} onChange={changeComplet} options={GROUPES_SANGUINS} />
-              <Input label="Date de naissance" name="date_of_birth" value={formComplet.date_of_birth} onChange={changeComplet} type="date" />
-              <Input label="Nationalité"     name="nationality_id" value={formComplet.nationality_id} onChange={changeComplet} />
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 8, borderBottom: `2px solid ${colors.gray200}`, paddingBottom: 12 }}>
+            {['identite', 'professionnel', 'contacts', 'adresse', 'diplomes'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '8px 16px', border: 'none', borderRadius: radius.sm,
+                  background: activeTab === tab ? colors.bleu : 'transparent',
+                  color: activeTab === tab ? colors.white : colors.gray600,
+                  fontWeight: activeTab === tab ? 700 : 500, fontSize: 13,
+                  cursor: 'pointer', transition: 'all 0.15s',
+                  textTransform: 'uppercase', letterSpacing: '0.5px',
+                }}
+              >
+                {tab === 'identite' ? 'Identité' :
+                 tab === 'professionnel' ? 'Professionnel' :
+                 tab === 'contacts' ? 'Contacts' :
+                 tab === 'adresse' ? 'Adresse' :
+                 'Diplômes'}
+              </button>
+            ))}
           </div>
 
-          <div style={{ marginBottom: 20 }}>
-            <Section title="Informations professionnelles" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <Select label="Fonction"        name="staff_type"    value={formComplet.staff_type}    onChange={changeComplet} required options={STAFF_TYPES} />
-              <Input  label="Spécialisation"  name="specialization" value={formComplet.specialization} onChange={changeComplet} />
-              <Select label="Département"     name="IDgen_mst_Departement" value={String(formComplet.IDgen_mst_Departement)} onChange={changeComplet} required options={depOptions} />
-              <Input  label="ID Professionnel" name="ID_pro"        value={formComplet.ID_pro}        onChange={changeComplet} />
-              <Select label="Type d'exercice" name="type_exercie"   value={formComplet.type_exercie}  onChange={changeComplet}
-                options={[{ value: 'liberal', label: 'Libéral' }, { value: 'salarie', label: 'Salarié' }, { value: 'benevole', label: 'Bénévole' }]}
-              />
-              <Input  label="Secteur"         name="secteur"        value={formComplet.secteur}       onChange={changeComplet} />
-              <Input  label="Lieu d'exercice" name="lieu_exercice"  value={formComplet.lieu_exercice} onChange={changeComplet} />
-              <Input  label="Date d'entrée"   name="Joining_date"   value={formComplet.Joining_date}  onChange={changeComplet} type="date" />
-              <Input  label="Fin de service"  name="End_of_service_date" value={formComplet.End_of_service_date} onChange={changeComplet} type="date" />
-              <Select label="Statut"          name="status_id"      value={String(formComplet.status_id)} onChange={changeComplet}
-                options={[{ value: '1', label: 'Actif' }, { value: '0', label: 'Inactif' }]}
-              />
-            </div>
-          </div>
+          <form onSubmit={submitComplet}>
+            {/* Identité */}
+            {activeTab === 'identite' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+                <Input label="Prénom"          name="first_name"    value={formComplet.first_name}    onChange={changeComplet} required />
+                <Input label="Nom"             name="last_name"     value={formComplet.last_name}     onChange={changeComplet} required />
+                <Input label="2ème prénom"     name="second_name"   value={formComplet.second_name}   onChange={changeComplet} />
+                <Select label="Genre"          name="gender_id"     value={formComplet.gender_id}     onChange={changeComplet} required options={GENRES} placeholder="Sélectionner" />
+                <Select label="Titre"          name="titre_id"      value={formComplet.titre_id}      onChange={changeComplet}
+                  options={[{ value: 'Dr', label: 'Dr' }, { value: 'Pr', label: 'Pr' }, { value: 'M', label: 'M.' }, { value: 'Mme', label: 'Mme' }]}
+                />
+                <Select label="Groupe sanguin" name="groupe_sanguin" value={formComplet.groupe_sanguin} onChange={changeComplet} options={GROUPES_SANGUINS} placeholder="Sélectionner" />
+                <Input label="Date de naissance" name="date_of_birth" value={formComplet.date_of_birth} onChange={changeComplet} type="date" />
+                <Input label="Nationalité"       name="nationality_id" value={formComplet.nationality_id} onChange={changeComplet} />
+              </div>
+            )}
 
-          <div style={{ marginBottom: 20 }}>
-            <Section title="Contacts" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <Input label="Téléphone principal"  name="contact_number" value={formComplet.contact_number} onChange={changeComplet} required />
-              <Input label="Téléphone secondaire" name="phone_number"   value={formComplet.phone_number}   onChange={changeComplet} />
-              <Input label="Email personnel"      name="email_adress"   value={formComplet.email_adress}   onChange={changeComplet} type="email" />
-              <Input label="Email professionnel"  name="email_pro"      value={formComplet.email_pro}      onChange={changeComplet} type="email" />
-            </div>
-          </div>
+            {/* Professionnel */}
+            {activeTab === 'professionnel' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <Select label="Fonction"        name="staff_type"    value={formComplet.staff_type}    onChange={changeComplet} required options={STAFF_TYPES} placeholder="Sélectionner" />
+                <Input  label="Spécialisation"  name="specialization" value={formComplet.specialization} onChange={changeComplet} />
+                <Select label="Département"     name="IDgen_mst_Departement" value={String(formComplet.IDgen_mst_Departement)} onChange={changeComplet} required options={depOptions} placeholder="Sélectionner" />
+                <Input  label="ID Professionnel" name="ID_pro"        value={formComplet.ID_pro}        onChange={changeComplet} />
+                <Select label="Type d'exercice" name="type_exercice"   value={formComplet.type_exercice}  onChange={changeComplet}
+                  options={[{ value: 'liberal', label: 'Libéral' }, { value: 'salarie', label: 'Salarié' }, { value: 'benevole', label: 'Bénévole' }]}
+                />
+                <Input  label="Secteur"         name="secteur"        value={formComplet.secteur}       onChange={changeComplet} />
+                <Input  label="Lieu d'exercice" name="lieu_exercice"  value={formComplet.lieu_exercice} onChange={changeComplet} />
+                <Input  label="Date d'entrée"   name="Joining_date"   value={formComplet.Joining_date} onChange={changeComplet} type="date" />
+                <Input  label="Fin de service"  name="End_of_service_date" value={formComplet.End_of_service_date} onChange={changeComplet} type="date" />
+                <Select label="Statut"          name="status_id"      value={String(formComplet.status_id)} onChange={changeComplet}
+                  options={[{ value: '1', label: 'Actif' }, { value: '0', label: 'Inactif' }]}
+                />
+              </div>
+            )}
 
-          <div>
-            <Section title="Adresse" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <Input label="Adresse principale" name="address"         value={formComplet.address}         onChange={changeComplet} style={{ gridColumn: '1/-1' }} />
-              <Input label="Autre adresse"      name="autre_adress"    value={formComplet.autre_adress}    onChange={changeComplet} />
-              <Input label="Ville"              name="city"            value={formComplet.city}            onChange={changeComplet} />
-              <Input label="Code postal"        name="code_postal"     value={formComplet.code_postal}     onChange={changeComplet} />
-              <Input label="Ville principale"   name="ville_principal" value={formComplet.ville_principal} onChange={changeComplet} />
-              <Input label="Ville secondaire"   name="ville_secondaire" value={formComplet.ville_secondaire} onChange={changeComplet} />
-              <Input label="Pays"               name="country_id"      value={formComplet.country_id}      onChange={changeComplet} />
-              <Select label="Type d'adresse"    name="type_adresse"    value={formComplet.type_adresse}    onChange={changeComplet}
-                options={[{ value: 'domicile', label: 'Domicile' }, { value: 'travail', label: 'Travail' }, { value: 'autre', label: 'Autre' }]}
-              />
-            </div>
-          </div>
-        </form>
+            {/* Contacts */}
+            {activeTab === 'contacts' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <Input label="Téléphone principal"  name="contact_number" value={formComplet.contact_number} onChange={changeComplet} required />
+                <Input label="Téléphone secondaire" name="phone_number"   value={formComplet.phone_number}   onChange={changeComplet} />
+                <Input label="Email personnel"      name="email_adress"   value={formComplet.email_adress}   onChange={changeComplet} type="email" />
+                <Input label="Email professionnel"  name="email_pro"      value={formComplet.email_pro}      onChange={changeComplet} type="email" />
+              </div>
+            )}
+
+            {/* Adresse */}
+            {activeTab === 'adresse' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <Input label="Adresse principale" name="address"         value={formComplet.address}         onChange={changeComplet} style={{ gridColumn: '1/-1' }} />
+                <Input label="Autre adresse"      name="autre_adress"    value={formComplet.autre_adress}    onChange={changeComplet} />
+                <Input label="Ville"              name="city"            value={formComplet.city}            onChange={changeComplet} />
+                <Input label="Ville principale"   name="ville_principal"  value={formComplet.ville_principal}  onChange={changeComplet} />
+                <Input label="Ville secondaire"   name="ville_secondaire" value={formComplet.ville_secondaire} onChange={changeComplet} />
+                <Input label="Code postal"        name="code_postal"     value={formComplet.code_postal}     onChange={changeComplet} />
+                <Input label="Pays"              name="country_id"      value={formComplet.country_id}      onChange={changeComplet} />
+                <Select label="Type d'adresse"    name="type_adresse"    value={formComplet.type_adresse}    onChange={changeComplet}
+                  options={[{ value: 'domicile', label: 'Domicile' }, { value: 'travail', label: 'Travail' }, { value: 'autre', label: 'Autre' }]}
+                />
+              </div>
+            )}
+
+            {/* Diplômes et qualifications */}
+            {activeTab === 'diplomes' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ padding: '16px', background: colors.gray50, borderRadius: radius.md, border: `1px solid ${colors.gray200}` }}>
+                  <h4 style={{ margin: '0 0 12px', fontSize: 14, color: colors.gray700 }}>Diplômes et certifications</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <Input label="Niveau d'études" name="niveau_etudes" value={formComplet.niveau_etudes} onChange={changeComplet} placeholder="ex: Master, Doctorat" />
+                    <Input label="Diplôme principal" name="diplome_principal" value={formComplet.diplome_principal} onChange={changeComplet} placeholder="ex: Doctorat en médecine" />
+                    <Input label="Établissement" name="etablissement" value={formComplet.etablissement} onChange={changeComplet} placeholder="ex: UCAD" />
+                    <Input label="Année d'obtention" name="annee_obtention" value={formComplet.annee_obtention} onChange={changeComplet} type="number" />
+                    <Input label="Autre diplôme" name="autre_diplome" value={formComplet.autre_diplome} onChange={changeComplet} placeholder="ex: Spécialisation" />
+                    <Input label="Qualification" name="qualification" value={formComplet.qualification} onChange={changeComplet} placeholder="ex: Professeur des universités" />
+                  </div>
+                </div>
+                <p style={{ fontSize: 12, color: colors.gray500, fontStyle: 'italic' }}>Ajoutez les diplômes et qualifications du personnel.</p>
+              </div>
+            )}
+          </form>
+        </div>
       </Modal>
 
       {/* ══════════════════════════════════════════════════
