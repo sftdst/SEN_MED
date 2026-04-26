@@ -61,7 +61,7 @@ class CommandeController extends Controller
         $validated['numero_commande'] = 'CMD-' . date('Ymd') . '-' . rand(1000, 9999);
         $validated['statut'] = $validated['statut'] ?? 'en_attente';
         $validated['montant_total'] = 0;
-        $validated['created_user_id'] = auth()->user()?->user_id ?? 'SYSTEM';
+        $validated['created_user_id'] = auth()->id() ?? null;
 
         $produits = $validated['produits'] ?? [];
         unset($validated['produits']);
@@ -87,7 +87,7 @@ class CommandeController extends Controller
                         'tva' => $tva,
                         'montant_ht' => $montantHT,
                         'montant_ttc' => $montantTTC,
-                        'created_user_id' => auth()->user()?->user_id ?? 'SYSTEM',
+                        'created_user_id' => auth()->id() ?? null,
                     ]);
                     
                     $montantTotal += $montantTTC;

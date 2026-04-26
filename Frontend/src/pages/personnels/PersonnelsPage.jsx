@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { personnelApi, departementApi } from '../../api'
-import { colors, radius, shadows } from '../../theme'
+import { colors, radius, shadows, spacing } from '../../theme'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Select from '../../components/ui/Select'
@@ -10,6 +10,7 @@ import { StatusBadge } from '../../components/ui/Badge'
 import { showToast } from '../../components/ui/Toast'
 import { FullPageSpinner } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
+import AccessCard from '../../components/AccessCard'
 
 // ── Données statiques ─────────────────────────────────────
 const emptyRapide = { first_name: '', last_name: '', gender_id: '', staff_type: '', contact_number: '', IDgen_mst_Departement: '' }
@@ -184,37 +185,47 @@ export default function PersonnelsPage() {
   const [filterType, setFilterType]         = useState('')
   const [filterGenre, setFilterGenre]       = useState('')
 
-  const [modalRapide,  setModalRapide]  = useState(false)
-  const [modalComplet, setModalComplet] = useState(false)
-  const [formRapide,   setFormRapide]   = useState(emptyRapide)
-  const [formComplet,  setFormComplet]  = useState(emptyComplet)
-  const [editing,      setEditing]      = useState(null)
-  const [saving,       setSaving]       = useState(false)
-  const [confirm,      setConfirm]      = useState(null)
-  const [detailModal,  setDetailModal]  = useState(null)
-  const [activeTab, setActiveTab] = useState('identite')
+const [modalRapide,  setModalRapide]  = useState(false)
+   const [modalComplet, setModalComplet] = useState(false)
+   const [formRapide,   setFormRapide]   = useState(emptyRapide)
+   const [formComplet,  setFormComplet]  = useState(emptyComplet)
+   const [editing,      setEditing]      = useState(null)
+   const [saving,       setSaving]       = useState(false)
+    const [confirm,      setConfirm]      = useState(null)
+    const [detailModal,  setDetailModal]  = useState(null)
+    const [accessCardModal, setAccessCardModal] = useState(null)
+    const printRef = useRef(null)
+    const [activeTab, setActiveTab] = useState('identite')
 
-  const load = (p = page, pp = perPage) => {
-    setLoading(true)
-    const params = { page: p, per_page: pp }
-    if (filterDep)   params.IDgen_mst_Departement = filterDep
-    if (filterType)  params.staff_type = filterType
-    if (filterGenre) params.gender_id  = filterGenre
-    if (search)      params.search     = search
+   const load = useCallback((p = page, pp = perPage) => {
+     setLoading(true)
+     const params = { page: p, per_page: pp }
+     if (filterDep)   params.IDgen_mst_Departement = filterDep
+     if (filterType)  params.staff_type = filterType
+     if (filterGenre) params.gender_id  = filterGenre
+     if (search)      params.search     = search
 
-    Promise.all([
-      personnelApi.liste(params),
-      departementApi.liste(),
-    ]).then(([res, d]) => {
-      const result = res.data.data
-      setData(result?.data || [])
-      setPaginationMeta(result?.last_page ? result : null)
-      const toArray = (v) => Array.isArray(v) ? v : (v?.data ?? [])
-      setDeps(toArray(d.data.data))
-    }).finally(() => setLoading(false))
-  }
+     Promise.all([
+       personnelApi.liste(params),
+       departementApi.liste(),
+     ]).then(([res, d]) => {
+       const result = res.data.data
+       setData(result?.data || [])
+       setPaginationMeta(result?.last_page ? result : null)
+       const toArray = (v) => Array.isArray(v) ? v : (v?.data ?? [])
+       setDeps(toArray(d.data.data))
+     }).finally(() => setLoading(false))
+   }, [filterDep, filterType, filterGenre, search, page, perPage])
 
-  useEffect(() => { setPage(1); load(1, perPage) }, [filterDep, filterType, filterGenre, search])
+    // Reset page to 1 when filters change
+    useEffect(() => {
+      setPage(1)
+    }, [filterDep, filterType, filterGenre, search])
+
+    // Load data when page or filters change
+    useEffect(() => {
+      load(page, perPage)
+    }, [load, page, perPage])
 
   const depOptions = departements.map(d => ({ value: String(d.IDgen_mst_Departement), label: d.NomDepartement }))
   const hasFilters = filterDep || filterType || filterGenre || search
@@ -274,6 +285,36 @@ export default function PersonnelsPage() {
       showToast('Personnel supprimé.'); setConfirm(null); load()
     } catch { showToast('Erreur lors de la suppression.', 'error') }
   }
+
+  const handlePrint = () => {
+    const printContent = printRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Carte d'accès - ${accessCardModal?.staff_name}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
 
   // ── Stats ──
   const total   = paginationMeta?.total ?? data.length
@@ -456,13 +497,13 @@ export default function PersonnelsPage() {
                 gap: 16, marginBottom: 20,
               }}>
                 {data.map(row => (
-                  <PersonnelCard
-                    key={row.id}
-                    row={row}
-                    onView={() => setDetailModal(row)}
-                    onEdit={() => openEditComplet(row)}
-                    onDelete={() => setConfirm(row)}
-                  />
+               <PersonnelCard
+                     key={row.id}
+                     row={row}
+                     onView={() => setAccessCardModal(row)}
+                     onEdit={() => openEditComplet(row)}
+                     onDelete={() => setConfirm(row)}
+                   />
                 ))}
               </div>
             )}
@@ -722,10 +763,31 @@ export default function PersonnelsPage() {
         })()}
       </Modal>
 
-      <ConfirmDialog
-        open={!!confirm} onCancel={() => setConfirm(null)} onConfirm={handleDelete}
-        message={`Supprimer le dossier de "${confirm?.staff_name}" ? Cette action est irréversible.`}
-      />
-    </div>
-  )
-}
+       <ConfirmDialog
+         open={!!confirm} onCancel={() => setConfirm(null)} onConfirm={handleDelete}
+         message={`Supprimer le dossier de "${confirm?.staff_name}" ? Cette action est irréversible.`}
+       />
+       
+        {/* Modal for Access Card */}
+        <Modal
+          open={!!accessCardModal} onClose={() => setAccessCardModal(null)}
+          title={`🪪 Carte d'accès - ${accessCardModal?.staff_name}`}
+          width={420}
+          footer={
+            <div style={{ display: 'flex', gap: spacing.sm, justifyContent: 'space-between', width: '100%' }}>
+              <Button variant="ghost" onClick={() => setAccessCardModal(null)}>
+                Fermer
+              </Button>
+              <Button onClick={handlePrint}>
+                Imprimer la carte
+              </Button>
+            </div>
+          }
+        >
+          <div ref={printRef} style={{ padding: spacing.md }}>
+            {accessCardModal && <AccessCard personnel={accessCardModal} />}
+          </div>
+        </Modal>
+     </div>
+   )
+ }

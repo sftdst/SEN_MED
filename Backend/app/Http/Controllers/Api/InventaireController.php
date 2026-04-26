@@ -39,7 +39,7 @@ class InventaireController extends Controller
 
         $validated['numero_inventaire'] = 'INV-' . date('Ymd') . '-' . rand(1000, 9999);
         $validated['statut'] = 'en_cours';
-        $validated['created_user_id'] = auth()->user()?->user_id ?? 'SYSTEM';
+        $validated['created_user_id'] = auth()->id() ?? null;
 
         $id = DB::table('ph_mst_inventaire')->insertGetId($validated);
 

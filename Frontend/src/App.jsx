@@ -50,9 +50,9 @@ export default function App() {
           <Route path="rendezvous"      element={<RendezVousPage />} />
           <Route path="espace-medecin"  element={<EspaceMedecinPage />} />
           <Route path="transferts"      element={<TransfertsPage />} />
-          <Route path="ressources-humaines/conges" element={<GestionCongesPage />} />
-          <Route path="ressources-humaines/absences" element={<GestionAbsencesRetardsPage />} />
-          <Route path="ressources-humaines/contrats" element={<GestionContratsPage />} />
+            <Route path="ressources-humaines/conges" element={<GestionCongesPage />} />
+            <Route path="ressources-humaines/absences" element={<GestionAbsencesRetardsPage />} />
+            <Route path="ressources-humaines/contrats" element={<GestionContratsPage />} />
         </Route>
         {/* Consultation plein écran — hors Layout sidebar */}
         <Route path="/consultation"     element={<ConsultationPage />} />

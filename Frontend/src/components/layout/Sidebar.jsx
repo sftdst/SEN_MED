@@ -15,51 +15,18 @@ const navItems = [
       { to: '/transferts',     label: 'Transferts' },
       { to: '/planning',        label: 'Espace médical' },
       { to: '/rendezvous',      label: 'Gestion des RDV' },
-    ]
-  },
-  {
-    group: 'ESPACE MÉDECIN',
-    icon: '👨‍⚕️',
-    items: [
-      { to: '/espace-medecin', label: 'Tableau de bord' },
-    ]
-  },
-  {
-    group: 'GESTION PHARMACEUTIQUE',
-    icon: '💊',
-    items: [
-      { to: '/pharmacie', label: 'Pharmacie' },
-    ]
-  },
-  {
-    group: 'COMPTABILITÉ',
-    icon: '💰',
-    items: [
-      { to: '/comptabilite', label: 'Comptabilité' },
-    ]
-  },
-  {
-    group: 'ADMINISTRATION',
-    icon: '🏢',
-    items: [
-      { to: '/personnels', label: 'Utilisateurs' },
-      { to: '/departements', label: 'Départements' },
-      { to: '/type-services', label: 'Types de service' },
-      { to: '/services', label: 'Services' },
-      { to: '/hopitaux', label: 'Hôpitaux' },
-      { to: '/partenaires', label: 'Partenaires' },
-    ]
+    ],
   },
   {
     group: 'RESSOURCES HUMAINES',
-    icon: '👥',
-    items: [
-      { to: '/personnels', label: 'Gestion personnel' },
-      { to: '/ressources-humaines/conges', label: 'Gestion congés' },
-      { to: '/ressources-humaines/absences', label: 'Absences & retards' },
-      { to: '/ressources-humaines/contrats', label: 'Gestion contrats' },
-    ]
-  },
+     icon: '👥',
+      items: [
+        { to: '/personnels', label: 'Gestion personnel' },
+        { to: '/ressources-humaines/conges', label: 'Gestion congés' },
+        { to: '/ressources-humaines/absences', label: 'Absences & retards' },
+        { to: '/ressources-humaines/contrats', label: 'Gestion contrats' },
+      ]
+   },
   {
     group: 'CONFIGURATION',
     icon: '⚙️',

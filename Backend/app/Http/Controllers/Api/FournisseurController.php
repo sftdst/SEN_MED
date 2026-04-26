@@ -64,7 +64,7 @@ class FournisseurController extends Controller
             'produits.*.remise' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $validated['created_user_id'] = auth()->user()?->user_id ?? 'SYSTEM';
+        $validated['created_user_id'] = auth()->id() ?? null;
         $validated['actif'] = $validated['actif'] ?? true;
         $validated['monnaie'] = $validated['monnaie'] ?? 'FCFA';
 

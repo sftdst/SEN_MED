@@ -53,80 +53,21 @@ class ProductItemController extends Controller
             'PrixVente' => 'nullable|integer',
         ]);
 
-        $validated['created_user_id'] = auth()->user()?->user_id ?? 'SYSTEM';
+        $validated['created_user_id'] = auth()->id() ? (string)auth()->id() : 'SYSTEM';
         $validated['created_dttm'] = now();
         $validated['status_id'] = 1;
 
+        // Champs NOT NULL: remplacer null par 0 (default de la migration)
+        $intFields = ['duration', 'renew', 'subustitution', 'for_all_prescription',
+                      'qty_vrac', 'dddadulte', 'dddpediatr', 'max_prise',
+                      'prixcAchat', 'PrixVente'];
+        foreach ($intFields as $field) {
+            if (!isset($validated[$field]) || $validated[$field] === null) {
+                $validated[$field] = 0;
+            }
+        }
+
         $id = DB::table('ph_mst_item')->insertGetId($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Produit créé avec succès',
-            'data' => DB::table('ph_mst_item')->where('id_Rep', $id)->first()
-        ], 201);
-    }
-
-    public function show($id)
-    {
-        $item = DB::table('ph_mst_item')->where('id_Rep', $id)->first();
-
-        if (!$item) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Produit non trouvé'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $item
-        ]);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $item = DB::table('ph_mst_item')->where('id_Rep', $id)->first();
-
-        if (!$item) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Produit non trouvé'
-            ], 404);
-        }
-
-        $validated = $request->validate([
-            'item_id' => 'sometimes|string|max:20|unique:ph_mst_item,item_id,' . $id . ',id_Rep',
-            'description' => 'nullable|string|max:255',
-            'days' => 'nullable|integer',
-            'default_qty' => 'nullable|integer',
-            'duration' => 'nullable|integer',
-            'duration_type' => 'nullable|string|max:20',
-            'food_type' => 'nullable|string|max:20',
-            'vidal_id' => 'nullable|string|max:15',
-            'code_CpHa_id' => 'nullable|string|max:50',
-            'posologie' => 'nullable|string|max:50',
-            'renew' => 'nullable|integer',
-            'subustitution' => 'nullable|integer',
-            'for_all_prescription' => 'nullable|integer',
-            'ucd' => 'nullable|string|max:50',
-            'voie_administration' => 'nullable|string|max:50',
-            'remarques' => 'nullable|string|max:50',
-            'preference_substitution' => 'nullable|string|max:50',
-            'midi' => 'nullable|string|max:50',
-            'soir' => 'nullable|string|max:50',
-            'couche' => 'nullable|string|max:50',
-            'qty_vrac' => 'nullable|integer',
-            'dddadulte' => 'nullable|integer',
-            'dddpediatr' => 'nullable|integer',
-            'max_prise' => 'nullable|integer',
-            'matin' => 'nullable|string|max:50',
-            'prixcAchat' => 'nullable|integer',
-            'PrixVente' => 'nullable|integer',
-        ]);
-
-        $validated['modified_dttm'] = now();
-
-        DB::table('ph_mst_item')->where('id_Rep', $id)->update($validated);
 
         return response()->json([
             'success' => true,

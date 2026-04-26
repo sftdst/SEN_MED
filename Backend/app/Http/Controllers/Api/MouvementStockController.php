@@ -58,7 +58,7 @@ class MouvementStockController extends Controller
             $validated['stock_apres'] = max(0, $stockAvant - $validated['quantite']);
         }
 
-        $validated['created_user_id'] = auth()->user()?->user_id ?? 'SYSTEM';
+        $validated['created_user_id'] = auth()->id() ?? null;
 
         $id = DB::table('ph_mst_mouvement_stock')->insertGetId($validated);
 
