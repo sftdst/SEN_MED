@@ -21,7 +21,7 @@ class VisiteController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = VisiteAdt::with(['patient'])
+        $query = VisiteAdt::with(['patient', 'medecin:user_id,first_name,last_name,staff_name,specialization'])
             ->orderByDesc('created_dttm');
 
         if ($request->filled('search')) {

@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+// Models liés
+// (Ordonnance, ConsultationMedication, etc. dans le même namespace App\Models)
 
 class VisiteAdt extends Model
 {
@@ -115,5 +117,10 @@ class VisiteAdt extends Model
     public function labProcedures(): HasMany
     {
         return $this->hasMany(LabProcedure::class, 'adt_id', 'adt_id');
+    }
+
+    public function ordonnance(): HasOne
+    {
+        return $this->hasOne(Ordonnance::class, 'adt_id', 'adt_id');
     }
 }

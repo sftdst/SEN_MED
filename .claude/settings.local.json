@@ -42,7 +42,8 @@
       "Bash(xargs grep *)",
       "Bash(taskkill /F /FI \"WINDOWTITLE eq php*\")",
       "Bash(taskkill /F /FI \"IMAGENAME eq php.exe\")",
-      "Bash(taskkill //F //FI \"IMAGENAME eq php.exe\")"
+      "Bash(taskkill //F //FI \"IMAGENAME eq php.exe\")",
+      "Bash(php -l app/Http/Controllers/Api/ConsultationController.php)"
     ]
   }
 }

@@ -24,6 +24,7 @@ import ConsultationPage from './pages/consultation/ConsultationPage'
 import GestionCongesPage from './pages/ressourcesHumaines/GestionCongesPage'
 import GestionAbsencesRetardsPage from './pages/ressourcesHumaines/GestionAbsencesRetardsPage'
 import GestionContratsPage from './pages/ressourcesHumaines/GestionContratsPage'
+import FormulairePage from './pages/formulaire/FormulairePage'
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="comptabilite"       element={<ComptabilitePage />} />
           <Route path="config-systeme"    element={<ConfigSystemePage />} />
           <Route path="config-sanitaire" element={<ConfigSanitairePage />} />
+          <Route path="formulaires"      element={<FormulairePage />} />
           <Route path="tarification"     element={<TarificationPage />} />
           <Route path="hospitalisation" element={<HospitalisationPage />} />
           <Route path="rendezvous"      element={<RendezVousPage />} />

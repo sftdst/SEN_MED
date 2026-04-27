@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { colors, radius, shadows } from '../../theme'
-import { comptabiliteApi } from '../../api'
+import { comptabiliteApi, paiementApi } from '../../api'
 import PaiementModal from './PaiementModal'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ export default function FacturesTab() {
   const [meta,       setMeta]       = useState({ total: 0, current_page: 1, last_page: 1, per_page: 20 })
 
   // Filtres
-  const [dateDebut,    setDateDebut]    = useState(monthStart())
+  const [dateDebut,    setDateDebut]    = useState(today())
   const [dateFin,      setDateFin]      = useState(today())
   const [partenaire,   setPartenaire]   = useState('')
   const [search,       setSearch]       = useState('')
@@ -96,8 +96,9 @@ export default function FacturesTab() {
   const [page,         setPage]         = useState(1)
   const [perPage]                       = useState(20)
 
-  // Détail facture (expand row)
-  const [expanded, setExpanded] = useState(null)
+  // Détail facture (expand row) + cache des détails chargés
+  const [expanded,   setExpanded]   = useState(null)
+  const [detailsMap, setDetailsMap] = useState({}) // { [billId]: { loading, data, error } }
 
   // Modal paiement
   const [paiementModal, setPaiementModal] = useState(null) // { billId, patientName }
@@ -153,8 +154,19 @@ export default function FacturesTab() {
     debounceRef.current = setTimeout(() => setSearch(v), 400)
   }
 
+  const handleToggleDetail = (billId) => {
+    if (expanded === billId) { setExpanded(null); return }
+    setExpanded(billId)
+    // Ne recharger que si pas encore en cache
+    if (detailsMap[billId]) return
+    setDetailsMap(prev => ({ ...prev, [billId]: { loading: true, data: null, error: null } }))
+    paiementApi.detail(billId)
+      .then(r => setDetailsMap(prev => ({ ...prev, [billId]: { loading: false, data: r.data?.data ?? null, error: null } })))
+      .catch(e => setDetailsMap(prev => ({ ...prev, [billId]: { loading: false, data: null, error: e.response?.data?.message || 'Erreur' } })))
+  }
+
   const handleReset = () => {
-    setDateDebut(monthStart())
+    setDateDebut(today())
     setDateFin(today())
     setPartenaire('')
     setSearch('')
@@ -162,7 +174,7 @@ export default function FacturesTab() {
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  const hasFilters = partenaire || search || dateDebut !== monthStart() || dateFin !== today()
+  const hasFilters = partenaire || search || dateDebut !== today() || dateFin !== today()
 
   return (
     <>
@@ -453,11 +465,16 @@ export default function FacturesTab() {
                   const montantPar = Number(row.montant_partenaire || 0)
                   const hasPartenaire = montantPar > 0
 
+                  const detail    = detailsMap[row.bill_id]
+                  const services  = detail?.data?.services ?? []
+                  const totDetail = detail?.data?.totaux   ?? null
+
                   return (
+                    <React.Fragment key={row.bill_id ?? idx}>
                     <tr
-                      key={row.bill_id ?? idx}
+                      key={`row-${row.bill_id ?? idx}`}
                       style={{
-                        borderBottom: `1px solid ${colors.gray100}`,
+                        borderBottom: isExp ? 'none' : `1px solid ${colors.gray100}`,
                         background: isExp ? `${colors.bleu}06` : idx % 2 === 0 ? '#fff' : colors.gray50,
                         transition: 'background 0.12s',
                       }}
@@ -567,7 +584,7 @@ export default function FacturesTab() {
                             label="Détail"
                             icon="👁"
                             color={colors.bleu}
-                            onClick={() => setExpanded(isExp ? null : row.bill_id)}
+                            onClick={() => handleToggleDetail(row.bill_id)}
                             active={isExp}
                           />
                           <ActionBtn
@@ -579,6 +596,98 @@ export default function FacturesTab() {
                         </div>
                       </td>
                     </tr>
+
+                    {/* ── Ligne de détail étendue ── */}
+                    {isExp && (
+                      <tr key={`detail-${row.bill_id}`} style={{ borderBottom: `2px solid ${colors.bleu}30` }}>
+                        <td colSpan={8} style={{ padding: 0, background: `${colors.bleu}04` }}>
+                          <div style={{ padding: '16px 20px' }}>
+
+                            {/* En-tête détail */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 14 }}>📋</span>
+                                <span style={{ fontWeight: 700, fontSize: 13, color: colors.bleu }}>
+                                  Détail de la facture {row.bill_no || ''}
+                                </span>
+                                <span style={{ fontSize: 11, color: colors.gray500 }}>— {row.patient_name}</span>
+                              </div>
+                              {totDetail && (
+                                <div style={{ display: 'flex', gap: 12, fontSize: 11 }}>
+                                  <span style={{ color: colors.warning, fontWeight: 700 }}>
+                                    Total : {Number(totDetail.total_brut || 0).toLocaleString('fr-FR')} F
+                                  </span>
+                                  <span style={{ color: '#c62828', fontWeight: 700 }}>
+                                    Patient : {Number(totDetail.total_patient || 0).toLocaleString('fr-FR')} F
+                                  </span>
+                                  {totDetail.total_partenaire > 0 && (
+                                    <span style={{ color: colors.success, fontWeight: 700 }}>
+                                      Partenaire : {Number(totDetail.total_partenaire || 0).toLocaleString('fr-FR')} F
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Corps */}
+                            {detail?.loading ? (
+                              <div style={{ textAlign: 'center', padding: '16px 0', color: colors.gray500, fontSize: 12 }}>
+                                Chargement des détails…
+                              </div>
+                            ) : detail?.error ? (
+                              <div style={{ color: '#c62828', fontSize: 12, padding: '8px 0' }}>⚠️ {detail.error}</div>
+                            ) : services.length === 0 ? (
+                              <div style={{ textAlign: 'center', color: colors.gray400, fontSize: 12, fontStyle: 'italic', padding: '12px 0' }}>
+                                Aucun service trouvé pour cette facture.
+                              </div>
+                            ) : (
+                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                <thead>
+                                  <tr style={{ background: '#f1f5f9', borderBottom: `1.5px solid ${colors.gray200}` }}>
+                                    {['#', 'Description / Service', 'Montant Total', 'Part Patient', 'Part Partenaire', 'Statut'].map(h => (
+                                      <th key={h} style={{ padding: '7px 10px', textAlign: h === '#' ? 'center' : 'left', fontSize: 10, fontWeight: 700, color: colors.gray500, textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {services.map((svc, si) => (
+                                    <tr key={svc.IDgen_mst_facture ?? si} style={{ borderBottom: `1px solid ${colors.gray100}`, background: si % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                                      <td style={{ padding: '7px 10px', textAlign: 'center', color: colors.gray500, fontSize: 11 }}>{si + 1}</td>
+                                      <td style={{ padding: '7px 10px', fontWeight: 600, color: colors.gray800 }}>
+                                        {svc.NomDescription || svc.IDService || '—'}
+                                      </td>
+                                      <td style={{ padding: '7px 10px', fontWeight: 700, color: colors.warning }}>
+                                        {Number(svc.MontantTotalFacture || 0).toLocaleString('fr-FR')} F
+                                      </td>
+                                      <td style={{ padding: '7px 10px', color: '#c62828', fontWeight: 600 }}>
+                                        {Number(svc.patient_payable || 0).toLocaleString('fr-FR')} F
+                                      </td>
+                                      <td style={{ padding: '7px 10px', color: colors.success }}>
+                                        {Number(svc.MontantPartenaire || 0) > 0
+                                          ? `${Number(svc.MontantPartenaire).toLocaleString('fr-FR')} F`
+                                          : <span style={{ color: colors.gray400 }}>—</span>
+                                        }
+                                      </td>
+                                      <td style={{ padding: '7px 10px' }}>
+                                        <span style={{
+                                          display: 'inline-block', padding: '2px 8px', borderRadius: 10,
+                                          fontSize: 10, fontWeight: 700,
+                                          background: svc.StatutPaiement === 'EN_ATTENTE' ? '#fff3e0' : '#e8f5e9',
+                                          color:      svc.StatutPaiement === 'EN_ATTENTE' ? '#f57c00'  : '#2e7d32',
+                                        }}>
+                                          {svc.StatutPaiement === 'EN_ATTENTE' ? 'En attente' : 'Payé'}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   )
                 })
               )}

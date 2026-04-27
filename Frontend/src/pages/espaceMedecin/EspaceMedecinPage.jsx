@@ -274,22 +274,29 @@ export default function EspaceMedecinPage() {
     setSelected(null)
     try {
       if (footerTab === 'salle-attente') {
-        const res = await salleAttenteApi.liste()
+        const res = await salleAttenteApi.liste({ date: todayISO() })
         const raw = res.data?.data || res.data || []
         const arr = Array.isArray(raw) ? raw : (raw.data || [])
         setPatients(arr.map(item => {
           const p = item.patient || {}
+          // adt_id est la clé primaire de VisiteAdt (pas 'id')
+          const adtId = item.adt_id
           return {
-            id:         item.id,
-            patient_id: p.patient_id || p.id || item.patient_id,
+            id:         adtId,
+            adt_id:     adtId,
+            patient_id: p.patient_id || item.patient_pin || '—',
             nom:        p.patient_name
               || `${p.first_name || ''} ${p.last_name || ''}`.trim()
-              || item.nom || '—',
-            telephone:  p.mobile_number || p.contact_number || item.telephone || '—',
-            service:    item.motif || item.service || item.type_consultation || 'Consultation',
+              || '—',
+            telephone:  p.mobile_number || p.contact_number || '—',
+            service:    item.visit_type === 'OPD'  ? 'Consultation externe'
+                      : item.visit_type === 'IPD'  ? 'Hospitalisation'
+                      : item.visit_type === 'EMRG' ? 'Urgence'
+                      : item.visit_type || 'Consultation',
             paiement:   item.paiement || 'Non payé',
-            statut:     (item.statut === 1 || item.statut === 'vu') ? 'Terminé' : 'En attente',
-            heure:      item.created_at ? fmtTime(item.created_at) : '—',
+            // doctor_seen: 0 = En attente, 1 = Vu
+            statut:     item.doctor_seen === 1 ? 'Terminé' : 'En attente',
+            heure:      item.created_dttm ? fmtTime(item.created_dttm) : '—',
           }
         }))
       } else {
@@ -319,17 +326,20 @@ export default function EspaceMedecinPage() {
     setLoadingR(true)
     try {
       const [vRes, rRes] = await Promise.all([
-        visiteApi.liste({ patient_id: pid, per_page: 20 }),
+        visiteApi.liste({ patient_pin: pid, per_page: 20 }),
         rendezVousApi.liste({ patient_id: pid, date_debut: todayISO(), date_fin: todayISO() }),
       ])
       const visites = vRes.data?.data?.data || vRes.data?.data || []
       const rdvs    = rRes.data?.data?.data || rRes.data?.data || []
       setHistorique(visites.map(v => ({
-        id:           v.id,
-        date:         fmtDate(v.date_visite || v.created_at),
-        consultation: v.motif || v.type_visite || v.consultation || '—',
-        prix:         v.prix  != null ? `${Number(v.prix).toLocaleString('fr-FR')} F` : '—',
-        solde:        v.solde != null ? `${Number(v.solde).toLocaleString('fr-FR')} F` : '0 F',
+        id:           v.adt_id || v.id,
+        adt_id:       v.adt_id,
+        date:         fmtDate(v.visit_datetime || v.date_visite || v.created_at),
+        consultation: v.motif || v.type_visite || v.consultation || 'Consultation',
+        prix:         v.Total_a_payer != null ? `${Number(v.Total_a_payer).toLocaleString('fr-FR')} F`
+                      : v.prix != null ? `${Number(v.prix).toLocaleString('fr-FR')} F` : '—',
+        solde:        v.montant_patient != null ? `${Number(v.montant_patient).toLocaleString('fr-FR')} F`
+                      : v.solde != null ? `${Number(v.solde).toLocaleString('fr-FR')} F` : '0 F',
       })))
       setRdvDuJour(rdvs.map(r => {
         const rp = r.patient || {}
@@ -781,6 +791,7 @@ export default function EspaceMedecinPage() {
                     prenom:        parts.slice(0, -1).join(' ') || parts[0] || '',
                     nom:           parts.slice(-1)[0] || '',
                     nom_complet:   selected.nom,
+                    patient_id:    selected.patient_id,
                     code_patient:  selected.patient_id,
                     sexe:          selected.sexe || '',
                     date_naissance:selected.date_naissance || null,
@@ -788,7 +799,7 @@ export default function EspaceMedecinPage() {
                     telephone:     selected.telephone,
                     service:       selected.service,
                   }
-                  navigate('/consultation', { state: { patient: patientData } })
+                  navigate('/consultation', { state: { patient: patientData, adt_id: selected.adt_id } })
                 }}
               />
               <div style={{ flex: 1 }} />
@@ -844,12 +855,30 @@ export default function EspaceMedecinPage() {
                 { key: 'solde',        label: 'Solde' },
                 {
                   key: 'fiche', label: 'Fiche',
-                  render: () => (
-                    <button style={{
-                      padding: '2px 8px', borderRadius: radius.sm, cursor: 'pointer',
-                      border: `1px solid ${colors.bleu}`, background: `${colors.bleu}0d`,
-                      color: colors.bleu, fontSize: 9, fontWeight: 700,
-                    }}>Voir</button>
+                  render: (row) => (
+                    <button
+                      onClick={() => {
+                        if (!row.adt_id) return
+                        const parts = (selected?.nom || '').trim().split(' ')
+                        navigate('/consultation', {
+                          state: {
+                            patient: {
+                              prenom:       parts.slice(0, -1).join(' ') || parts[0] || '',
+                              nom:          parts.slice(-1)[0] || '',
+                              nom_complet:  selected?.nom,
+                              patient_id:   selected?.patient_id,
+                              code_patient: selected?.patient_id,
+                              telephone:    selected?.telephone,
+                            },
+                            adt_id: row.adt_id,
+                          },
+                        })
+                      }}
+                      style={{
+                        padding: '2px 8px', borderRadius: radius.sm, cursor: 'pointer',
+                        border: `1px solid ${colors.bleu}`, background: `${colors.bleu}0d`,
+                        color: colors.bleu, fontSize: 9, fontWeight: 700,
+                      }}>Voir</button>
                   ),
                 },
               ]}

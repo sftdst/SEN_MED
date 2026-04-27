@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\ConsultationController;
 use App\Http\Controllers\Api\FicheAttController;
 use App\Http\Controllers\Api\ComptabiliteController;
 use App\Http\Controllers\Api\PaiementController;
+use App\Http\Controllers\Api\DocumentTemplateController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -151,7 +152,17 @@ Route::prefix('v1')->group(function () {
         Route::post('/lab-procedures',                   [ConsultationController::class, 'storeLabProcedure']);
         Route::put('/lab-procedures/{labProcedure}',     [ConsultationController::class, 'updateLabProcedure']);
         Route::delete('/lab-procedures/{labProcedure}',  [ConsultationController::class, 'destroyLabProcedure']);
+
+        // Ordonnance (1 seule par visite — upsert)
+        Route::get('/ordonnance',  [ConsultationController::class, 'getOrdonnance']);
+        Route::post('/ordonnance', [ConsultationController::class, 'saveOrdonnance']);
+
+        // Factures de la visite
+        Route::get('/factures', [ConsultationController::class, 'getFactures']);
     });
+
+    // Matrix comparatif multi-visites (par patient)
+    Route::get('patients/{patientId}/matrix', [ConsultationController::class, 'getMatrix']);
 
     // Traitements chroniques (rattachés au patient, pas à une visite)
     Route::prefix('patients/{patientId}/long-term-medications')->group(function () {
@@ -365,5 +376,20 @@ Route::prefix('v1')->group(function () {
     Route::put('pharmacie/inventaires/detail/{detail}', [InventaireController::class, 'updateDetail']);
     Route::apiResource('pharmacie/inventaires', InventaireController::class)
         ->parameters(['pharmacie/inventaires' => 'inventaire']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Formulaires — Modèles de documents & variables
+    |--------------------------------------------------------------------------
+    */
+    // Variables (avant apiResource pour éviter conflit)
+    Route::get('formulaires/variables',                    [DocumentTemplateController::class, 'variables']);
+    Route::post('formulaires/variables',                   [DocumentTemplateController::class, 'storeVariable']);
+    Route::put('formulaires/variables/{variable}',         [DocumentTemplateController::class, 'updateVariable']);
+    Route::delete('formulaires/variables/{variable}',      [DocumentTemplateController::class, 'destroyVariable']);
+
+    // Templates CRUD
+    Route::apiResource('formulaires', DocumentTemplateController::class)
+        ->parameters(['formulaires' => 'template']);
 
 });

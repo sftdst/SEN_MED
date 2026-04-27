@@ -66,6 +66,7 @@ const navItems = [
     items: [
       { to: '/config-systeme',   label: 'Configuration système' },
       { to: '/config-sanitaire', label: 'Config. sanitaire'     },
+      { to: '/formulaires',      label: 'Formulaires'           },
       { to: '/tarification',     label: 'Tarification'          },
       { to: '/laboratoire',      label: 'Laboratoire'           },
     ]

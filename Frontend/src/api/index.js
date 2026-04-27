@@ -265,6 +265,43 @@ export const paiementApi = {
   solderPatient: (patientId, data) => api.post(`/paiements/patient/${patientId}/solder`, data),
 }
 
+// ── Consultation ─────────────────────────────────────────────
+export const consultationApi = {
+  charger:      (adtId)        => api.get(`/consultations/${adtId}`),
+  sauvegarder:  (adtId, data)  => api.post(`/consultations/${adtId}/sauvegarder`, data),
+  // Vitaux
+  vitaux:       (adtId)        => api.get(`/consultations/${adtId}/vitalsigns`),
+  storeVital:   (adtId, data)  => api.post(`/consultations/${adtId}/vitalsigns`, data),
+  // Médications
+  medications:  (adtId)        => api.get(`/consultations/${adtId}/medications`),
+  // Procédures (imagerie, bilans, clinique)
+  procedures:   (adtId)        => api.get(`/consultations/${adtId}/procedures`),
+  // Labo
+  labProcedures:(adtId)        => api.get(`/consultations/${adtId}/lab-procedures`),
+  // Ordonnance (1 par visite — upsert)
+  getOrdonnance:  (adtId)        => api.get(`/consultations/${adtId}/ordonnance`),
+  saveOrdonnance: (adtId, data)  => api.post(`/consultations/${adtId}/ordonnance`, data),
+  // Factures de la visite
+  getFactures:    (adtId)        => api.get(`/consultations/${adtId}/factures`),
+  // Matrix comparatif multi-visites
+  getMatrix:      (patientId)    => api.get(`/patients/${patientId}/matrix`),
+}
+
+// ── Formulaires (Modèles de documents) ───────────────────────
+export const formulaireApi = {
+  // Templates
+  liste:          (params)      => api.get('/formulaires', { params }),
+  detail:         (id)          => api.get(`/formulaires/${id}`),
+  creer:          (data)        => api.post('/formulaires', data),
+  modifier:       (id, data)    => api.put(`/formulaires/${id}`, data),
+  supprimer:      (id)          => api.delete(`/formulaires/${id}`),
+  // Variables
+  variables:      ()            => api.get('/formulaires/variables'),
+  ajouterVariable:(data)        => api.post('/formulaires/variables', data),
+  modifierVariable:(id, data)   => api.put(`/formulaires/variables/${id}`, data),
+  supprimerVariable:(id)        => api.delete(`/formulaires/variables/${id}`),
+}
+
 // ── Fiches ATT ───────────────────────────────────────────────
 export const ficheAttApi = {
   liste:     (params) => api.get('/fiches-att', { params }),

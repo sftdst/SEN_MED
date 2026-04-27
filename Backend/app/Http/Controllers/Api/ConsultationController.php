@@ -10,6 +10,7 @@ use App\Models\ConsultationProcedure;
 use App\Models\Facture;
 use App\Models\LabProcedure;
 use App\Models\LongTermMedication;
+use App\Models\Ordonnance;
 use App\Models\Patient;
 use App\Models\PatientNote;
 use App\Models\VisiteAdt;
@@ -104,6 +105,21 @@ class ConsultationController extends Controller
         try {
             DB::beginTransaction();
 
+            // ── 0. Supprimer les enregistrements existants (re-sauvegarde idempotente) ──
+            // Retirer les lignes de facturation liées avant suppression des procédures
+            foreach ($visite->procedures()->get() as $proc) {
+                $this->retirerLigneFacture($visite, $proc->procedure_id, $proc->procedure_type ?? 'BILAN');
+            }
+            foreach ($visite->labProcedures()->get() as $lab) {
+                $this->retirerLigneFacture($visite, $lab->lab_procedure_id, 'LAB');
+            }
+            // Supprimer les notes, médications, procédures, labo (PAS les signes vitaux — on garde l'historique)
+            $visite->adtNotes()->whereIn('adt_note_template_id', range(101, 115))->delete();
+            $visite->patientNotes()->whereIn('adt_note_template_id', range(201, 210))->delete();
+            $visite->medications()->delete();
+            $visite->procedures()->delete();
+            $visite->labProcedures()->delete();
+
             // ── 1. Signes vitaux ──────────────────────────────────────────
             if ($request->has('vitalsigns') && is_array($request->vitalsigns)) {
                 $vs = $request->vitalsigns;
@@ -134,7 +150,7 @@ class ConsultationController extends Controller
                 ]);
             }
 
-            // ── 2. Notes ADT ──────────────────────────────────────────────
+            // ── 2. Notes ADT (template_ids 101–115 = champs cliniques du formulaire) ──
             if ($request->has('adt_notes') && is_array($request->adt_notes)) {
                 foreach ($request->adt_notes as $note) {
                     if (empty($note['adt_notes'])) continue;
@@ -150,7 +166,7 @@ class ConsultationController extends Controller
                 }
             }
 
-            // ── 3. Notes patient ──────────────────────────────────────────
+            // ── 3. Notes patient (template_ids 201–210 = antécédents persistants) ──
             if ($request->has('patient_notes') && is_array($request->patient_notes)) {
                 foreach ($request->patient_notes as $note) {
                     if (empty($note['patient_notes'])) continue;
@@ -906,5 +922,206 @@ class ConsultationController extends Controller
         // Retirer l'ancienne ligne et en créer une nouvelle avec le bon montant
         $this->retirerLigneFacture($visite, $procedureId, $typeService);
         $this->ajouterLigneFacture($visite, $description, $nouveauCout, $typeService, $procedureId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  ORDONNANCE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * GET /consultations/{adt_id}/factures
+     * Retourne la/les facture(s) de la visite avec leurs lignes de détail.
+     */
+    public function getFactures(VisiteAdt $visite): JsonResponse
+    {
+        $bills = BillHeader::where('adt_id', $visite->adt_id)
+            ->orderByDesc('bill_hd_id')
+            ->get();
+
+        $result = $bills->map(function ($bill) {
+            $services = Facture::where('bill_id', $bill->bill_hd_id)
+                ->select([
+                    'IDgen_mst_facture', 'NomDescription', 'PrixService',
+                    'MontantTotalFacture', 'patient_payable', 'MontantPartenaire',
+                    'MontantPayer', 'MontantRestant', 'StatutPaiement',
+                ])
+                ->get();
+
+            $statusLabel = match ((int) $bill->bill_status_id) {
+                3       => 'Payé',
+                2       => 'Partiellement payé',
+                default => 'En attente',
+            };
+
+            return [
+                'bill_hd_id'      => $bill->bill_hd_id,
+                'bill_no'         => $bill->bill_no,
+                'bill_date'       => $bill->bill_date,
+                'bill_amount'     => $bill->bill_amount,
+                'net_amount'      => $bill->net_amount,
+                'paid_amount'     => $bill->paid_amount,
+                'pending_amount'  => $bill->pending_amount,
+                'discount_amount' => $bill->discount_amount,
+                'bill_status_id'  => $bill->bill_status_id,
+                'status_label'    => $statusLabel,
+                'mode_paye'       => $bill->mode_paye,
+                'services'        => $services,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data'    => $result,
+        ]);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  MATRIX — COMPARATIF MULTI-VISITES
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * GET /patients/{patientId}/matrix
+     * Retourne toutes les visites du patient avec leurs données de consultation
+     * structurées pour la vue comparative Matrix.
+     */
+    public function getMatrix(string $patientId): JsonResponse
+    {
+        $patient = Patient::where('patient_id', $patientId)->first();
+
+        $visites = VisiteAdt::where('patient_pin', $patientId)
+            ->with([
+                'medecin:user_id,first_name,last_name,staff_name,specialization',
+                'adtNotes',
+                'patientNotes',
+                'medications',
+                'procedures',
+                'labProcedures',
+            ])
+            ->orderByDesc('created_dttm')
+            ->get();
+
+        $result = $visites->map(function ($visite) {
+            // Indexer les notes par template_id
+            $adtMap = [];
+            foreach ($visite->adtNotes as $note) {
+                $adtMap[$note->adt_note_template_id] = $note->adt_notes;
+            }
+            $patMap = [];
+            foreach ($visite->patientNotes as $note) {
+                $patMap[$note->adt_note_template_id] = $note->patient_notes;
+            }
+
+            return [
+                'adt_id'           => $visite->adt_id,
+                'date_visite'      => $visite->created_dttm,
+                'doctor_seen'      => $visite->doctor_seen,
+                'medecin'          => $visite->medecin,
+                // Champs cliniques (adt_notes)
+                'motif'            => $adtMap[101] ?? null,  // motifConsultation
+                'histoire_maladie' => $adtMap[103] ?? null,  // histoireMaladie
+                'etat_general'     => $adtMap[104] ?? null,  // etatGeneral
+                'signes_physiques' => $adtMap[106] ?? null,  // signesPhysiques
+                'discussion'       => $adtMap[107] ?? null,  // discussion/Diagnostic
+                'conduite_a_tenir' => $adtMap[108] ?? null,  // conduiteATenir/Plan
+                'cim'              => $adtMap[111] ?? null,  // CIM JSON
+                // Antécédents persistants (patient_notes)
+                'histoire_sociale' => $patMap[203] ?? null,  // histoireSociale
+                // Listes
+                'medications'      => $visite->medications->map(fn($m) => [
+                    'item_name' => $m->item_name,
+                    'dosage'    => $m->dosage,
+                    'frequency' => $m->frequency,
+                ])->values(),
+                'lab_procedures'   => $visite->labProcedures->map(fn($l) => [
+                    'lab_test_name' => $l->lab_test_name,
+                    'result'        => $l->result,
+                    'lab_category'  => $l->lab_category,
+                ])->values(),
+                'bilans'           => $visite->procedures
+                    ->filter(fn($p) => $p->procedure_type === 'BILAN')
+                    ->map(fn($p) => ['procedure_name' => $p->procedure_name, 'result' => $p->result])
+                    ->values(),
+                'imagerie'         => $visite->procedures
+                    ->filter(fn($p) => $p->procedure_type === 'IMAGERIE')
+                    ->map(fn($p) => ['procedure_name' => $p->procedure_name, 'result' => $p->result])
+                    ->values(),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'patient' => $patient,
+                'visites' => $result,
+            ],
+        ]);
+    }
+
+    /**
+     * GET /consultations/{adt_id}/ordonnance
+     * Retourne l'ordonnance de la visite avec le médecin prescripteur.
+     */
+    public function getOrdonnance(VisiteAdt $visite): JsonResponse
+    {
+        // Médecin assigné à la visite (toujours disponible, même sans ordonnance)
+        $visite->load('medecin:user_id,first_name,last_name,staff_name,specialization');
+        $medecinVisite = $visite->medecin;
+
+        $ordonnance = Ordonnance::where('adt_id', $visite->adt_id)
+            ->with('medecin:user_id,first_name,last_name,staff_name,specialization')
+            ->first();
+
+        return response()->json([
+            'success'        => true,
+            'data'           => $ordonnance,
+            'medecin_visite' => $medecinVisite,
+            'message'        => $ordonnance ? null : 'Aucune ordonnance pour cette visite.',
+        ]);
+    }
+
+    /**
+     * POST /consultations/{adt_id}/ordonnance
+     * Crée ou met à jour l'ordonnance de la visite (upsert).
+     *
+     * Body :
+     * {
+     *   "contenu_html"  : "<p>…</p>",
+     *   "contenu_texte" : "texte brut…",
+     *   "statut"        : "validee" | "brouillon"
+     * }
+     */
+    public function saveOrdonnance(Request $request, VisiteAdt $visite): JsonResponse
+    {
+        $request->validate([
+            'contenu_html'  => 'required|string',
+            'contenu_texte' => 'nullable|string',
+            'statut'        => 'nullable|in:brouillon,validee,annulee',
+        ]);
+
+        $userId    = auth()?->user()?->id ?? 'SYSTEM';
+        $medecinId = $visite->consulting_doctor_id ?? $userId;
+        $statut    = $request->input('statut', 'validee');
+
+        $ordonnance = Ordonnance::updateOrCreate(
+            ['adt_id' => $visite->adt_id],
+            [
+                'patient_id'       => $visite->patient_pin,
+                'medecin_id'       => $medecinId,
+                'contenu_html'     => $request->input('contenu_html'),
+                'contenu_texte'    => $request->input('contenu_texte'),
+                'statut'           => $statut,
+                'date_prescription'=> $statut === 'validee' ? now() : null,
+                'created_user_id'  => $userId,
+                'hospital_id'      => $visite->hospital_id,
+            ]
+        );
+
+        $ordonnance->load('medecin:user_id,first_name,last_name,staff_name,specialization');
+
+        return response()->json([
+            'success' => true,
+            'data'    => $ordonnance,
+            'message' => 'Ordonnance enregistrée avec succès.',
+        ]);
     }
 }
