@@ -281,13 +281,13 @@ class PaiementController extends Controller
             ]);
 
         if ($request->filled('date_debut')) {
-            $q->whereRaw('b.bill_date::date >= ?', [$request->date_debut]);
+            $q->whereRaw('DATE(b.bill_date) >= ?', [$request->date_debut]);
         }
         if ($request->filled('date_fin')) {
-            $q->whereRaw('b.bill_date::date <= ?', [$request->date_fin]);
+            $q->whereRaw('DATE(b.bill_date) <= ?', [$request->date_fin]);
         }
         if ($request->filled('bill_no')) {
-            $q->where('b.bill_no', 'ilike', '%' . $request->bill_no . '%');
+            $q->where('b.bill_no', 'like', '%' . $request->bill_no . '%');
         }
         if ($request->filled('statut')) {
             $q->where('b.bill_status_id', $request->statut);
@@ -295,11 +295,11 @@ class PaiementController extends Controller
         if ($request->filled('search')) {
             $s = '%' . $request->search . '%';
             $q->where(function ($w) use ($s) {
-                $w->whereRaw("COALESCE(p.patient_name,'') ILIKE ?", [$s])
-                  ->orWhereRaw("COALESCE(p.first_name,'')  ILIKE ?", [$s])
-                  ->orWhereRaw("COALESCE(p.last_name,'')   ILIKE ?", [$s])
-                  ->orWhereRaw("COALESCE(p.ssn_no,'')      ILIKE ?", [$s])
-                  ->orWhereRaw("COALESCE(p.mobile_number,'') ILIKE ?", [$s]);
+                $w->whereRaw("COALESCE(p.patient_name,'') LIKE ?", [$s])
+                  ->orWhereRaw("COALESCE(p.first_name,'') LIKE ?", [$s])
+                  ->orWhereRaw("COALESCE(p.last_name,'') LIKE ?", [$s])
+                  ->orWhereRaw("COALESCE(p.ssn_no,'') LIKE ?", [$s])
+                  ->orWhereRaw("COALESCE(p.mobile_number,'') LIKE ?", [$s]);
             });
         }
 

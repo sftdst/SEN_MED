@@ -52,7 +52,7 @@ class ApprovisionnementController extends Controller
 
         $validated['type'] = $validated['type'] ?? 'commande';
         $validated['montant_total'] = $validated['montant_total'] ?? 0;
-        $validated['created_user_id'] = auth()->user()?->user_id ?? 'SYSTEM';
+        $validated['created_user_id'] = auth()->id() ?? null;
 
         $id = DB::table('ph_mst_approvisionnement')->insertGetId($validated);
 

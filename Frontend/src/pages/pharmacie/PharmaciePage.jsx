@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { colors, radius, shadows, spacing } from '../../theme'
-import { produitApi, fournisseurApi, commandeApi, approvisionnementApi, mouvementStockApi, inventaireApi } from '../../api'
+import { produitApi, fournisseurApi, commandeApi, approvisionnementApi, mouvementStockApi, inventaireApi, hospitalApi } from '../../api'
 import { showToast } from '../../components/ui/Toast'
+import { ReceptionCommandeTab } from './ReceptionCommandeTab'
 
 // ── Sous-menu interne ────────────────────────────────────────────────────────
 const MENU_ITEMS = [
@@ -885,12 +886,11 @@ export default function PharmaciePage() {
             />
           )}
           {activeTab === 'reception' && (
-            <MouvementsTab
-              mouvements={mouvements}
-              loading={loadingMouvements}
+            <ReceptionCommandeTab
+              fournisseurs={fournisseurs}
+              commandes={commandes}
               produits={produits}
-              typeFilter="entree"
-              onDelete={handleDeleteMouvement}
+              hops={hops}
             />
           )}
           {activeTab === 'inventaire' && (
