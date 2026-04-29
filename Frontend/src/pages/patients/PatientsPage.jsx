@@ -145,9 +145,10 @@ export default function PatientsPage() {
    const [loadingMeta,     setLoadingMeta]    = useState(true)
    const [saving,         setSaving]         = useState(false)
 
-   const [formRapide,      setFormRapide]     = useState(EMPTY_RAPIDE)
-   const [formComplet,     setFormComplet]    = useState(EMPTY_COMPLET)
-   const [formErrors,      setFormErrors]     = useState({})
+    const [formRapide,      setFormRapide]     = useState(EMPTY_RAPIDE)
+    const [formComplet,     setFormComplet]    = useState(EMPTY_COMPLET)
+    const [form,            setForm]           = useState({})
+    const [formErrors,      setFormErrors]     = useState({})
 
    const [modalRapide,     setModalRapide]    = useState(false)
    const [modalComplet,    setModalComplet]   = useState(false)
