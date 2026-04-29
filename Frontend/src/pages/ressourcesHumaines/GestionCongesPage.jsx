@@ -31,6 +31,9 @@ export default function GestionCongesPage() {
       } else if (Array.isArray(d)) {
         list = d
       }
+ 
+      console.log('Personnels extraits:', list.length, list)
+ 
       setPersonnels(list)
     } catch (error) {
       console.error('Erreur chargement personnels:', error)

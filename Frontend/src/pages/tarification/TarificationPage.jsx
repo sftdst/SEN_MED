@@ -44,6 +44,65 @@ const inputSt = {
   background: '#fff', outline: 'none',
 }
 
+// ── Modal générique ──────────────────────────────────────────────────────────
+function Modal({ open, onClose, title, subtitle, accentColor = colors.bleu, children, footer }) {
+  if (!open) return null
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 2000,
+        background: 'rgba(0,0,0,0.45)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#fff', borderRadius: radius.lg,
+          boxShadow: shadows.xl, width: '100%', maxWidth: 540,
+          overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
+          padding: '14px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <div>
+            <div style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>{title}</div>
+            {subtitle && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, marginTop: 2 }}>{subtitle}</div>}
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.3)',
+              background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >✕</button>
+        </div>
+        {/* Body */}
+        <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>{children}</div>
+        {/* Footer */}
+        {footer && (
+          <div style={{
+            padding: '12px 20px', borderTop: `1px solid ${colors.gray200}`,
+            background: colors.gray50, display: 'flex', gap: 8, justifyContent: 'flex-end',
+            flexShrink: 0,
+          }}>
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Onglets principaux ────────────────────────────────────────────────────────
 const TABS = [
   { key: 'hopital',  label: '🏥 Tarifs Hôpital',     desc: "Tarifs de référence définis par l'établissement" },
@@ -233,93 +292,61 @@ function TarifsHopital({ services, search, setSearch, onRefresh }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-      {/* Formulaire d'édition inline */}
-      {editing && (
-        <div style={{
-          background: '#fff', borderRadius: radius.lg,
-          border: `2px solid ${colors.bleu}`,
-          boxShadow: `0 4px 20px ${colors.bleu}18`,
-          overflow: 'hidden',
-        }}>
-          {/* Header formulaire */}
-          <div style={{
-            background: `linear-gradient(135deg, ${colors.bleu}, #003f7a)`,
-            padding: '12px 20px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <div>
-              <div style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>
-                ✏️ Modifier le tarif — {editing.short_name}
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, marginTop: 2 }}>
-                Ce tarif s'applique par défaut pour tous les médecins sans tarif personnalisé.
-              </div>
-            </div>
-            <button
-              onClick={() => setEditing(null)}
-              style={{
-                width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
-                border: '1px solid rgba(255,255,255,0.3)',
-                background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: 16,
-              }}
-            >✕</button>
+      {/* Modal d'édition tarif hôpital */}
+      <Modal
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        title={`✏️ Modifier le tarif — ${editing?.short_name}`}
+        subtitle="Ce tarif s'applique par défaut pour tous les médecins sans tarif personnalisé."
+        accentColor={colors.bleu}
+        footer={<>
+          <button
+            onClick={() => setEditing(null)}
+            style={{
+              padding: '8px 18px', borderRadius: radius.sm, cursor: 'pointer',
+              border: `1px solid ${colors.gray300}`, background: '#fff',
+              color: colors.gray700, fontSize: 12, fontWeight: 700,
+            }}
+          >Annuler</button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              padding: '8px 20px', borderRadius: radius.sm, cursor: 'pointer',
+              border: 'none', background: colors.orange,
+              color: '#fff', fontSize: 12, fontWeight: 700,
+              opacity: saving ? 0.7 : 1,
+            }}
+          >{saving ? 'Enregistrement...' : '✓ Enregistrer'}</button>
+        </>}
+      >
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <FieldLabel required>Tarif de base (FCFA)</FieldLabel>
+            <input
+              type="number" min="0"
+              value={form.valeur_cts ?? ''}
+              onChange={e => setForm(p => ({ ...p, valeur_cts: e.target.value }))}
+              placeholder="ex: 5000"
+              style={inputSt}
+              onFocus={e => e.target.style.borderColor = colors.bleu}
+              onBlur={e  => e.target.style.borderColor = colors.gray300}
+            />
           </div>
-
-          {/* Champs */}
-          <div style={{ padding: '18px 20px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 200px' }}>
-              <FieldLabel required>Tarif de base (FCFA)</FieldLabel>
-              <input
-                type="number" min="0"
-                value={form.valeur_cts ?? ''}
-                onChange={e => setForm(p => ({ ...p, valeur_cts: e.target.value }))}
-                placeholder="ex: 5000"
-                style={inputSt}
-                onFocus={e => e.target.style.borderColor = colors.bleu}
-                onBlur={e  => e.target.style.borderColor = colors.gray300}
-              />
-            </div>
-            <div style={{ flex: '1 1 200px' }}>
-              <FieldLabel>Majoration jours fériés (%)</FieldLabel>
-              <input
-                type="number" min="0" max="100"
-                value={form.majoration_ferie ?? ''}
-                onChange={e => setForm(p => ({ ...p, majoration_ferie: e.target.value }))}
-                placeholder="ex: 20"
-                style={inputSt}
-                onFocus={e => e.target.style.borderColor = colors.bleu}
-                onBlur={e  => e.target.style.borderColor = colors.gray300}
-              />
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div style={{
-            padding: '12px 20px', borderTop: `1px solid ${colors.gray200}`,
-            background: colors.gray50,
-            display: 'flex', gap: 8, justifyContent: 'flex-end',
-          }}>
-            <button
-              onClick={() => setEditing(null)}
-              style={{
-                padding: '8px 18px', borderRadius: radius.sm, cursor: 'pointer',
-                border: `1px solid ${colors.gray300}`, background: '#fff',
-                color: colors.gray700, fontSize: 12, fontWeight: 700,
-              }}
-            >Annuler</button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                padding: '8px 20px', borderRadius: radius.sm, cursor: 'pointer',
-                border: 'none', background: colors.orange,
-                color: '#fff', fontSize: 12, fontWeight: 700,
-                opacity: saving ? 0.7 : 1,
-              }}
-            >{saving ? 'Enregistrement...' : '✓ Enregistrer'}</button>
+          <div style={{ flex: '1 1 200px' }}>
+            <FieldLabel>Majoration jours fériés (%)</FieldLabel>
+            <input
+              type="number" min="0" max="100"
+              value={form.majoration_ferie ?? ''}
+              onChange={e => setForm(p => ({ ...p, majoration_ferie: e.target.value }))}
+              placeholder="ex: 20"
+              style={inputSt}
+              onFocus={e => e.target.style.borderColor = colors.bleu}
+              onBlur={e  => e.target.style.borderColor = colors.gray300}
+            />
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Tableau des services */}
       <div style={{
@@ -394,13 +421,9 @@ function TarifsHopital({ services, search, setSearch, onRefresh }) {
                 <tr
                   key={svc.id_service}
                   style={{
-                    background: editing?.id_service === svc.id_service
-                      ? `${colors.bleu}08`
-                      : i % 2 === 0 ? '#fff' : colors.gray50,
+                    background: i % 2 === 0 ? '#fff' : colors.gray50,
                     borderBottom: `1px solid ${colors.gray100}`,
-                    borderLeft: editing?.id_service === svc.id_service
-                      ? `3px solid ${colors.bleu}`
-                      : '3px solid transparent',
+                    borderLeft: '3px solid transparent',
                   }}
                 >
                   <td style={{ padding: '11px 14px', fontSize: 11, color: colors.gray500 }}>{svc.id_service}</td>
@@ -424,16 +447,16 @@ function TarifsHopital({ services, search, setSearch, onRefresh }) {
                   </td>
                   <td style={{ padding: '11px 14px', textAlign: 'right' }}>
                     <button
-                      onClick={() => editing?.id_service === svc.id_service ? setEditing(null) : openEdit(svc)}
+                      onClick={() => openEdit(svc)}
                       style={{
                         padding: '4px 12px', borderRadius: radius.sm, cursor: 'pointer',
-                        border: `1.5px solid ${editing?.id_service === svc.id_service ? colors.orange : colors.bleu}`,
-                        background: editing?.id_service === svc.id_service ? `${colors.orange}15` : `${colors.bleu}0d`,
-                        color: editing?.id_service === svc.id_service ? colors.orange : colors.bleu,
+                        border: `1.5px solid ${colors.bleu}`,
+                        background: `${colors.bleu}0d`,
+                        color: colors.bleu,
                         fontSize: 10, fontWeight: 700, transition: 'all 0.13s',
                       }}
                     >
-                      {editing?.id_service === svc.id_service ? '✕ Fermer' : '✏️ Modifier tarif'}
+                      ✏️ Modifier tarif
                     </button>
                   </td>
                 </tr>
@@ -593,157 +616,113 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
 
       {medecinId && (
         <>
-          {/* Formulaire inline ajout / édition */}
-          {panel && (
-            <div style={{
-              background: '#fff', borderRadius: radius.lg,
-              border: `2px solid ${colors.orange}`,
-              boxShadow: `0 4px 20px ${colors.orange}18`,
-              overflow: 'hidden',
-            }}>
-              {/* Header */}
-              <div style={{
-                background: `linear-gradient(135deg, ${colors.orange}, #d96000)`,
-                padding: '12px 20px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
+          {/* Modal ajout / édition tarif médecin */}
+          <Modal
+            open={!!panel}
+            onClose={closePanel}
+            title={panel === 'add' ? '＋ Nouveau tarif pour ce médecin' : `✏️ Modifier — ${editTarif?.serviceNom}`}
+            subtitle="Laissez le tarif vide pour utiliser le tarif hôpital par défaut"
+            accentColor={colors.orange}
+            footer={<>
+              <button
+                onClick={closePanel}
+                style={{
+                  padding: '8px 18px', borderRadius: radius.sm, cursor: 'pointer',
+                  border: `1px solid ${colors.gray300}`, background: '#fff',
+                  color: colors.gray700, fontSize: 12, fontWeight: 700,
+                }}
+              >Annuler</button>
+              <button
+                onClick={handleSave}
+                disabled={saving || (panel === 'add' && !form.service_id)}
+                style={{
+                  padding: '8px 20px', borderRadius: radius.sm, cursor: 'pointer',
+                  border: 'none', background: colors.orange,
+                  color: '#fff', fontSize: 12, fontWeight: 700,
+                  opacity: (saving || (panel === 'add' && !form.service_id)) ? 0.6 : 1,
+                }}
+              >{saving ? 'Enregistrement...' : '✓ Enregistrer'}</button>
+            </>}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {panel === 'add' && (
                 <div>
-                  <div style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>
-                    {panel === 'add' ? '＋ Nouveau tarif pour ce médecin' : `✏️ Modifier — ${editTarif?.serviceNom}`}
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, marginTop: 2 }}>
-                    Laissez le tarif vide pour utiliser le tarif hôpital par défaut
-                  </div>
+                  <FieldLabel required>Service</FieldLabel>
+                  <select
+                    value={form.service_id}
+                    onChange={e => setForm(p => ({ ...p, service_id: e.target.value }))}
+                    style={{ ...inputSt, cursor: 'pointer' }}
+                    onFocus={e => e.target.style.borderColor = colors.orange}
+                    onBlur={e  => e.target.style.borderColor = colors.gray300}
+                  >
+                    <option value="">— Sélectionner un service —</option>
+                    {servicesSansTarif.map(s => (
+                      <option key={s.id_service} value={s.id_service}>
+                        {s.short_name}{s.valeur_cts ? ` (Hôpital: ${Number(s.valeur_cts).toLocaleString('fr-FR')} F)` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <button
-                  onClick={closePanel}
-                  style={{
-                    width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 16,
-                  }}
-                >✕</button>
-              </div>
-
-              {/* Champs */}
-              <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-                {/* Service (uniquement en mode ajout) */}
-                {panel === 'add' && (
-                  <div>
-                    <FieldLabel required>Service</FieldLabel>
-                    <select
-                      value={form.service_id}
-                      onChange={e => setForm(p => ({ ...p, service_id: e.target.value }))}
-                      style={{ ...inputSt, cursor: 'pointer' }}
-                      onFocus={e => e.target.style.borderColor = colors.orange}
-                      onBlur={e  => e.target.style.borderColor = colors.gray300}
-                    >
-                      <option value="">— Sélectionner un service —</option>
-                      {servicesSansTarif.map(s => (
-                        <option key={s.id_service} value={s.id_service}>
-                          {s.short_name}{s.valeur_cts ? ` (Hôpital: ${Number(s.valeur_cts).toLocaleString('fr-FR')} F)` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  {/* Tarif personnalisé */}
-                  <div style={{ flex: '1 1 180px' }}>
-                    <FieldLabel>Tarif personnalisé (FCFA)</FieldLabel>
-                    <input
-                      type="number" min="0"
-                      value={form.prix_service ?? ''}
-                      onChange={e => setForm(p => ({ ...p, prix_service: e.target.value }))}
-                      placeholder="Vide = tarif hôpital"
-                      style={inputSt}
-                      onFocus={e => e.target.style.borderColor = colors.orange}
-                      onBlur={e  => e.target.style.borderColor = colors.gray300}
-                    />
-                  </div>
-
-                  {/* Majoration */}
-                  <div style={{ flex: '1 1 130px' }}>
-                    <FieldLabel>Majoration fériée</FieldLabel>
-                    <input
-                      type="number" min="0"
-                      value={form.majoration_ferie ?? 0}
-                      onChange={e => setForm(p => ({ ...p, majoration_ferie: e.target.value }))}
-                      placeholder="ex: 20"
-                      style={inputSt}
-                      onFocus={e => e.target.style.borderColor = colors.orange}
-                      onBlur={e  => e.target.style.borderColor = colors.gray300}
-                    />
-                  </div>
-
-                  {/* Type majoration */}
-                  <div style={{ flex: '1 1 160px' }}>
-                    <FieldLabel>Type de majoration</FieldLabel>
-                    <select
-                      value={form.type_majoration || 'pourcentage'}
-                      onChange={e => setForm(p => ({ ...p, type_majoration: e.target.value }))}
-                      style={{ ...inputSt, cursor: 'pointer' }}
-                    >
-                      <option value="pourcentage">Pourcentage (%)</option>
-                      <option value="montant_fixe">Montant fixe (F)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Note */}
-                <div>
-                  <FieldLabel>Note</FieldLabel>
+              )}
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 180px' }}>
+                  <FieldLabel>Tarif personnalisé (FCFA)</FieldLabel>
                   <input
-                    value={form.note ?? ''}
-                    onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
-                    placeholder="Remarque optionnelle..."
+                    type="number" min="0"
+                    value={form.prix_service ?? ''}
+                    onChange={e => setForm(p => ({ ...p, prix_service: e.target.value }))}
+                    placeholder="Vide = tarif hôpital"
                     style={inputSt}
                     onFocus={e => e.target.style.borderColor = colors.orange}
                     onBlur={e  => e.target.style.borderColor = colors.gray300}
                   />
                 </div>
-
-                {/* Info logique fallback */}
-                <div style={{
-                  padding: '8px 14px', borderRadius: radius.sm,
-                  background: colors.infoBg, border: `1px solid ${colors.info}20`,
-                }}>
-                  <div style={{ fontSize: 10, color: colors.info, lineHeight: 1.5 }}>
-                    <strong>Logique de résolution :</strong> Tarif médecin → si absent, tarif hôpital.
-                    La majoration s'applique automatiquement les jours fériés.
-                  </div>
+                <div style={{ flex: '1 1 130px' }}>
+                  <FieldLabel>Majoration fériée</FieldLabel>
+                  <input
+                    type="number" min="0"
+                    value={form.majoration_ferie ?? 0}
+                    onChange={e => setForm(p => ({ ...p, majoration_ferie: e.target.value }))}
+                    placeholder="ex: 20"
+                    style={inputSt}
+                    onFocus={e => e.target.style.borderColor = colors.orange}
+                    onBlur={e  => e.target.style.borderColor = colors.gray300}
+                  />
+                </div>
+                <div style={{ flex: '1 1 160px' }}>
+                  <FieldLabel>Type de majoration</FieldLabel>
+                  <select
+                    value={form.type_majoration || 'pourcentage'}
+                    onChange={e => setForm(p => ({ ...p, type_majoration: e.target.value }))}
+                    style={{ ...inputSt, cursor: 'pointer' }}
+                  >
+                    <option value="pourcentage">Pourcentage (%)</option>
+                    <option value="montant_fixe">Montant fixe (F)</option>
+                  </select>
                 </div>
               </div>
-
-              {/* Actions */}
+              <div>
+                <FieldLabel>Note</FieldLabel>
+                <input
+                  value={form.note ?? ''}
+                  onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
+                  placeholder="Remarque optionnelle..."
+                  style={inputSt}
+                  onFocus={e => e.target.style.borderColor = colors.orange}
+                  onBlur={e  => e.target.style.borderColor = colors.gray300}
+                />
+              </div>
               <div style={{
-                padding: '12px 20px', borderTop: `1px solid ${colors.gray200}`,
-                background: colors.gray50,
-                display: 'flex', gap: 8, justifyContent: 'flex-end',
+                padding: '8px 14px', borderRadius: radius.sm,
+                background: colors.infoBg, border: `1px solid ${colors.info}20`,
               }}>
-                <button
-                  onClick={closePanel}
-                  style={{
-                    padding: '8px 18px', borderRadius: radius.sm, cursor: 'pointer',
-                    border: `1px solid ${colors.gray300}`, background: '#fff',
-                    color: colors.gray700, fontSize: 12, fontWeight: 700,
-                  }}
-                >Annuler</button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving || (panel === 'add' && !form.service_id)}
-                  style={{
-                    padding: '8px 20px', borderRadius: radius.sm, cursor: 'pointer',
-                    border: 'none', background: colors.orange,
-                    color: '#fff', fontSize: 12, fontWeight: 700,
-                    opacity: (saving || (panel === 'add' && !form.service_id)) ? 0.6 : 1,
-                  }}
-                >{saving ? 'Enregistrement...' : '✓ Enregistrer'}</button>
+                <div style={{ fontSize: 10, color: colors.info, lineHeight: 1.5 }}>
+                  <strong>Logique de résolution :</strong> Tarif médecin → si absent, tarif hôpital.
+                  La majoration s'applique automatiquement les jours fériés.
+                </div>
               </div>
             </div>
-          )}
+          </Modal>
 
           {/* Tableau des tarifs du médecin */}
           <div style={{
@@ -766,19 +745,18 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
                 </span>
               </div>
               <button
-                onClick={panel === 'add' ? closePanel : openAdd}
-                disabled={servicesSansTarif.length === 0 && panel !== 'add'}
+                onClick={openAdd}
+                disabled={servicesSansTarif.length === 0}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '6px 14px', borderRadius: radius.sm,
-                  border: 'none',
-                  background: panel === 'add' ? 'rgba(255,255,255,0.25)' : colors.orange,
+                  border: 'none', background: colors.orange,
                   color: '#fff', fontSize: 11, fontWeight: 700,
-                  cursor: (servicesSansTarif.length === 0 && panel !== 'add') ? 'not-allowed' : 'pointer',
-                  opacity: (servicesSansTarif.length === 0 && panel !== 'add') ? 0.5 : 1,
+                  cursor: servicesSansTarif.length === 0 ? 'not-allowed' : 'pointer',
+                  opacity: servicesSansTarif.length === 0 ? 0.5 : 1,
                 }}
               >
-                {panel === 'add' ? '✕ Annuler' : '＋ Ajouter un tarif'}
+                ＋ Ajouter un tarif
               </button>
             </div>
 
@@ -822,13 +800,9 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
                     <tr
                       key={t.id}
                       style={{
-                        background: editTarif?.id === t.id
-                          ? `${colors.orange}08`
-                          : i % 2 === 0 ? '#fff' : colors.gray50,
+                        background: i % 2 === 0 ? '#fff' : colors.gray50,
                         borderBottom: `1px solid ${colors.gray100}`,
-                        borderLeft: editTarif?.id === t.id
-                          ? `3px solid ${colors.orange}`
-                          : '3px solid transparent',
+                        borderLeft: '3px solid transparent',
                       }}
                     >
                       <td style={{ padding: '11px 14px', fontSize: 12, fontWeight: 700, color: colors.bleu }}>{t.serviceNom}</td>
@@ -851,9 +825,9 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
                       <td style={{ padding: '11px 14px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 5, justifyContent: 'flex-end' }}>
                           <BtnAction
-                            label={editTarif?.id === t.id ? '✕' : '✏️'}
+                            label="✏️"
                             color={colors.bleu}
-                            onClick={() => editTarif?.id === t.id ? closePanel() : openEdit(t)}
+                            onClick={() => openEdit(t)}
                           />
                           <BtnAction
                             label={deleting === t.id ? '...' : '🗑'}

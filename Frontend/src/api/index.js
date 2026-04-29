@@ -303,6 +303,42 @@ export const formulaireApi = {
   supprimerVariable:(id)        => api.delete(`/formulaires/variables/${id}`),
 }
 
+// ── Certificats générés ──────────────────────────────────────
+export const certificatGenereApi = {
+  parVisite: (adtId)   => api.get('/generated-certificates', { params: { adt_id: adtId } }),
+  enregistrer: (data)  => api.post('/generated-certificates', data),
+}
+
+// ── Dossier de Soins Infirmiers (DSI) ────────────────────────
+export const nursingApi = {
+  // Dossiers
+  dashboard:           ()             => api.get('/nursing-dossiers/dashboard'),
+  liste:               (params)       => api.get('/nursing-dossiers', { params }),
+  detail:              (id)           => api.get(`/nursing-dossiers/${id}`),
+  creer:               (data)         => api.post('/nursing-dossiers', data),
+  modifier:            (id, data)     => api.put(`/nursing-dossiers/${id}`, data),
+  supprimer:           (id)           => api.delete(`/nursing-dossiers/${id}`),
+  // Contacts & Intervenants
+  updateContacts:      (id, data)     => api.put(`/nursing-dossiers/${id}/contacts`, data),
+  updateIntervenants:  (id, data)     => api.put(`/nursing-dossiers/${id}/intervenants`, data),
+  // Traitements
+  storeTreatment:      (id, data)     => api.post(`/nursing-dossiers/${id}/treatments`, data),
+  updateTreatment:     (id, tId, data)=> api.put(`/nursing-dossiers/${id}/treatments/${tId}`, data),
+  deleteTreatment:     (id, tId)      => api.delete(`/nursing-dossiers/${id}/treatments/${tId}`),
+  // Diagramme de soins
+  getCareDiagram:      (id, params)   => api.get(`/nursing-dossiers/${id}/care-diagram`, { params }),
+  storeCareRecord:     (id, data)     => api.post(`/nursing-dossiers/${id}/care-records`, data),
+  // Transmissions
+  storeTransmission:   (id, data)     => api.post(`/nursing-dossiers/${id}/transmissions`, data),
+  deleteTransmission:  (id, tId)      => api.delete(`/nursing-dossiers/${id}/transmissions/${tId}`),
+  // Échelles d'évaluation
+  getAssessments:      (id)           => api.get(`/nursing-dossiers/${id}/assessments`),
+  storeAssessment:     (id, data)     => api.post(`/nursing-dossiers/${id}/assessments`, data),
+  // Surveillances (plaie / diabète)
+  getSurveillances:    (id, params)   => api.get(`/nursing-dossiers/${id}/surveillances`, { params }),
+  storeSurveillance:   (id, data)     => api.post(`/nursing-dossiers/${id}/surveillances`, data),
+}
+
 // ── Fiches ATT ───────────────────────────────────────────────
 export const ficheAttApi = {
   liste:     (params) => api.get('/fiches-att', { params }),

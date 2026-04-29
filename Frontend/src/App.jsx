@@ -25,6 +25,8 @@ import GestionCongesPage from './pages/ressourcesHumaines/GestionCongesPage'
 import GestionAbsencesRetardsPage from './pages/ressourcesHumaines/GestionAbsencesRetardsPage'
 import GestionContratsPage from './pages/ressourcesHumaines/GestionContratsPage'
 import FormulairePage from './pages/formulaire/FormulairePage'
+import DossierSoinsPage from './pages/dossierSoins/DossierSoinsPage'
+import DossierSoinsDetailPage from './pages/dossierSoins/DossierSoinsDetailPage'
 
 export default function App() {
   return (
@@ -55,10 +57,13 @@ export default function App() {
             <Route path="ressources-humaines/conges" element={<GestionCongesPage />} />
             <Route path="ressources-humaines/absences" element={<GestionAbsencesRetardsPage />} />
             <Route path="ressources-humaines/contrats" element={<GestionContratsPage />} />
+            <Route path="dossier-soins" element={<DossierSoinsPage />} />
         </Route>
         {/* Consultation plein écran — hors Layout sidebar */}
         <Route path="/consultation"     element={<ConsultationPage />} />
         <Route path="/consultation/:id" element={<ConsultationPage />} />
+        {/* DSI plein écran — hors Layout sidebar */}
+        <Route path="/dossier-soins/:id" element={<DossierSoinsDetailPage />} />
       </Routes>
     </BrowserRouter>
   )

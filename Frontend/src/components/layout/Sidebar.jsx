@@ -11,54 +11,43 @@ const navItems = [
       { to: '/patients', label: 'Patients' },
       { to: '/visites', label: 'Visites' },
       { to: '/salle-attente', label: "Salle d'attente" },
-      { to: '/hospitalisation', label: 'Hospitalisation' },
-      { to: '/transferts',     label: 'Transferts' },
-      { to: '/planning',        label: 'Espace médical' },
+      { to: '/hospitalisation',  label: 'Hospitalisation' },
+      { to: '/transferts',      label: 'Transferts' },
+      { to: '/planning',        label: 'Planning médical' },
+      { to: '/espace-medecin',  label: 'Espace médecin'  },
       { to: '/rendezvous',      label: 'Gestion des RDV' },
-    ]
+    ],
   },
   {
-    group: 'ESPACE MÉDECIN',
-    icon: '👨‍⚕️',
+    group: 'SOINS INFIRMIERS',
+    icon: '🩺',
     items: [
-      { to: '/espace-medecin', label: 'Tableau de bord' },
-    ]
+      { to: '/dossier-soins', label: 'Dossier de Soins Infirmiers' },
+    ],
   },
   {
-    group: 'GESTION PHARMACEUTIQUE',
+    group: 'PHARMACIE',
     icon: '💊',
     items: [
       { to: '/pharmacie', label: 'Pharmacie' },
-    ]
+    ],
   },
   {
     group: 'COMPTABILITÉ',
     icon: '💰',
     items: [
       { to: '/comptabilite', label: 'Comptabilité' },
-    ]
-  },
-  {
-    group: 'ADMINISTRATION',
-    icon: '🏢',
-    items: [
-      { to: '/personnels', label: 'Utilisateurs' },
-      { to: '/departements', label: 'Départements' },
-      { to: '/type-services', label: 'Types de service' },
-      { to: '/services', label: 'Services' },
-      { to: '/hopitaux', label: 'Hôpitaux' },
-      { to: '/partenaires', label: 'Partenaires' },
-    ]
+    ],
   },
   {
     group: 'RESSOURCES HUMAINES',
     icon: '👥',
     items: [
-      { to: '/personnels', label: 'Gestion Personnel' },
+      { to: '/personnels', label: 'Gestion personnel' },
       { to: '/ressources-humaines/conges', label: 'Gestion congés' },
       { to: '/ressources-humaines/absences', label: 'Absences & retards' },
       { to: '/ressources-humaines/contrats', label: 'Gestion contrats' },
-    ]
+    ],
   },
   {
     group: 'CONFIGURATION',
@@ -69,7 +58,12 @@ const navItems = [
       { to: '/formulaires',      label: 'Formulaires'           },
       { to: '/tarification',     label: 'Tarification'          },
       { to: '/laboratoire',      label: 'Laboratoire'           },
-    ]
+      { to: '/hopitaux',         label: 'Hôpitaux'              },
+      { to: '/departements',     label: 'Départements'          },
+      { to: '/type-services',    label: 'Types de services'     },
+      { to: '/services',         label: 'Services'              },
+      { to: '/partenaires',      label: 'Partenaires'           },
+    ],
   },
 ]
 
@@ -102,21 +96,21 @@ function NavItem({ item, collapsed }) {
         >
           <span style={{ fontSize: 16 }}>{item.icon}</span>
           <span style={{ flex: 1, textAlign: 'left' }}>{item.group}</span>
-          <span style={{
+          <span style={{ 
             transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s', fontSize: 10, color: colors.white
+            transition: 'transform 0.2s', fontSize: 10, color: colors.white 
           }}>▼</span>
         </button>
         {expanded && (
-          <div style={{
+          <div style={{ 
             display: 'block',
-            marginLeft: 16, paddingLeft: 12,
+            marginLeft: 16, paddingLeft: 12, 
             borderLeft: `2px solid ${colors.orange}`,
           }}>
             {item.items?.map((sub, i) => (
               sub.children ? (
                 <div key={i}>
-                  <div style={{
+                  <div style={{ 
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '10px 20px 10px 28px',
                     margin: '2px 4px', borderRadius: 6,

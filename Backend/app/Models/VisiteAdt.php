@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\Departement;
 // Models liés
 // (Ordonnance, ConsultationMedication, etc. dans le même namespace App\Models)
 
@@ -70,6 +71,11 @@ class VisiteAdt extends Model
     public function medecin(): BelongsTo
     {
         return $this->belongsTo(Personnel::class, 'consulting_doctor_id', 'user_id');
+    }
+
+    public function departement(): BelongsTo
+    {
+        return $this->belongsTo(Departement::class, 'IDgen_mst_Departement', 'IDgen_mst_Departement');
     }
 
     public function factures(): HasMany
