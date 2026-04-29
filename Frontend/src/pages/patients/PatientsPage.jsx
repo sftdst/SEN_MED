@@ -527,6 +527,18 @@ export default function PatientsPage() {
             <Button
               onClick={() => {
                 if (!selected) { showToast('Sélectionnez d\'abord un patient dans la liste', 'error'); return }
+                // Ouvrir le DPE (Dossier Patient Électronique)
+                window.open(`/dpe/${selected.id_Rep}`, '_blank')
+              }}
+              variant="success"
+              size="lg"
+              style={{ flex: '1 1 0', minWidth: '140px', opacity: selected ? 1 : 0.65 }}
+            >
+              📋 DPE
+            </Button>
+            <Button
+              onClick={() => {
+                if (!selected) { showToast('Sélectionnez d\'abord un patient dans la liste', 'error'); return }
                 setModalHistorique(true)
               }}
               variant="warning" size="lg"
