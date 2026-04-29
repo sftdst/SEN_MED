@@ -71,6 +71,7 @@ const navItems = [
       { to: '/laboratoire',      label: 'Laboratoire'           },
       { to: '/planning',         label: 'Planning médical'      },
       { to: '/services',         label: 'Services'              },
+      { to: '/type-services',    label: 'Types de services'     },
     ],
   },
   {
@@ -78,7 +79,6 @@ const navItems = [
     icon: '🏢',
     items: [
       { to: '/departements',     label: 'Départements'          },
-      { to: '/type-services',    label: 'Types de services'     },
       { to: '/hopitaux',         label: 'Hôpitaux'              },
       { to: '/partenaires',      label: 'Partenaires'           },
     ],
