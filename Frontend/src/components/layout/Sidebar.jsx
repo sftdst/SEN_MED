@@ -69,6 +69,8 @@ const navItems = [
       { to: '/formulaires',      label: 'Formulaires'           },
       { to: '/tarification',     label: 'Tarification'          },
       { to: '/laboratoire',      label: 'Laboratoire'           },
+      { to: '/planning',         label: 'Planning médical'      },
+      { to: '/services',         label: 'Services'              },
     ],
   },
   {
@@ -77,7 +79,6 @@ const navItems = [
     items: [
       { to: '/departements',     label: 'Départements'          },
       { to: '/type-services',    label: 'Types de services'     },
-      { to: '/services',         label: 'Services'              },
       { to: '/hopitaux',         label: 'Hôpitaux'              },
       { to: '/partenaires',      label: 'Partenaires'           },
     ],
