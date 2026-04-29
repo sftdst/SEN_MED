@@ -14,8 +14,14 @@ const navItems = [
       { to: '/hospitalisation',  label: 'Hospitalisation' },
       { to: '/transferts',      label: 'Transferts' },
       { to: '/planning',        label: 'Planning médical' },
-      { to: '/espace-medecin',  label: 'Espace médecin'  },
       { to: '/rendezvous',      label: 'Gestion des RDV' },
+    ],
+  },
+  {
+    group: 'ESPACE MÉDECIN',
+    icon: '👨‍⚕️',
+    items: [
+      { to: '/espace-medecin', label: 'Tableau de bord' },
     ],
   },
   {

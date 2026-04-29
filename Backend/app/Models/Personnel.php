@@ -74,6 +74,8 @@ class Personnel extends Model
         'photo',
     ];
 
+    protected $appends = ['photo_url'];
+
     protected $casts = [
         'status_id'           => 'integer',
         'nationality_id'      => 'integer',
