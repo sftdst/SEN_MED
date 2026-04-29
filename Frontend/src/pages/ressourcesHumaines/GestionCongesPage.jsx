@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { colors, radius, shadows, spacing } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
 import Button from '../../components/ui/Button'
@@ -45,41 +45,41 @@ export default function GestionCongesPage() {
     loadPersonnels()
   }, [])
 
-  const loadConges = async () => {
-    setLoading(true)
-    try {
-      const response = await exceptionApi.liste({ Type: 'conge', per_page: 200 })
-      const d = response.data
-      let list = []
-      if (d?.data?.data && Array.isArray(d.data.data)) {
-        list = d.data.data.map(item => ({
-          id: item.IDmedecin_exception,
-          IDMedecin: item.IDMedecin,
-          Type: item.Type,
-          DateDebut: item.DateDebut?.split('T')[0] || item.DateDebut,
-          DateFin: item.DateFin?.split('T')[0] || item.DateFin,
-          Description: item.Description,
-          personnel: item.medecin?.staff_name || item.medecin?.nom || `${item.medecin?.first_name || ''} ${item.medecin?.last_name || ''}`.trim() || 'Personnel #' + item.IDMedecin
-        }))
-      }
-      const filtered = search
-        ? list.filter(c =>
-            !search || c.personnel.toLowerCase().includes(search.toLowerCase()) ||
-            (c.Description || '').toLowerCase().includes(search.toLowerCase())
-          )
-        : list
-      setConges(filtered)
-    } catch (error) {
-      console.error('Erreur chargement congés:', error)
-      showToast('Erreur chargement congés', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
+   const loadConges = useCallback(async () => {
+     setLoading(true)
+     try {
+       const response = await exceptionApi.liste({ Type: 'conge', per_page: 200 })
+       const d = response.data
+       let list = []
+       if (d?.data?.data && Array.isArray(d.data.data)) {
+         list = d.data.data.map(item => ({
+           id: item.IDmedecin_exception,
+           IDMedecin: item.IDMedecin,
+           Type: item.Type,
+           DateDebut: item.DateDebut?.split('T')[0] || item.DateDebut,
+           DateFin: item.DateFin?.split('T')[0] || item.DateFin,
+           Description: item.Description,
+           personnel: item.medecin?.staff_name || item.medecin?.nom || `${item.medecin?.first_name || ''} ${item.medecin?.last_name || ''}`.trim() || 'Personnel #' + item.IDMedecin
+         }))
+       }
+       const filtered = search
+         ? list.filter(c =>
+             !search || c.personnel.toLowerCase().includes(search.toLowerCase()) ||
+             (c.Description || '').toLowerCase().includes(search.toLowerCase())
+           )
+         : list
+       setConges(filtered)
+     } catch (err) {
+       console.error('Erreur chargement congés:', err)
+       showToast('Erreur chargement congés', 'error')
+     } finally {
+       setLoading(false)
+     }
+   }, [search])
 
-  useEffect(() => {
-    loadConges()
-  }, [search])
+   useEffect(() => {
+     loadConges()
+   }, [loadConges])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -135,13 +135,14 @@ export default function GestionCongesPage() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Supprimer ce congé ?')) return
-    try {
-      await exceptionApi.supprimer(id)
-      showToast('Congé supprimé', 'success')
-      loadConges()
-    } catch (error) {
-      showToast('Erreur suppression', 'error')
-    }
+     try {
+       await exceptionApi.supprimer(id)
+       showToast('Congé supprimé', 'success')
+       loadConges()
+     } catch (err) {
+       console.error('Erreur suppression congé:', err)
+       showToast('Erreur suppression', 'error')
+     }
   }
 
   const openCreate = () => {
