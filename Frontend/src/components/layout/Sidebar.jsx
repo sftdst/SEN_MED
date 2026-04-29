@@ -68,10 +68,13 @@ const navItems = [
       { to: '/config-systeme',   label: 'Configuration système' },
       { to: '/config-sanitaire', label: 'Config. sanitaire'     },
       { to: '/formulaires',      label: 'Formulaires'           },
-      { to: '/laboratoire',      label: 'Laboratoire'           },
-      { to: '/planning',         label: 'Planning médical'      },
-      { to: '/services',         label: 'Services'              },
-      { to: '/type-services',    label: 'Types de services'     },
+    ],
+  },
+  {
+    group: 'LABORATOIRE',
+    icon: '🧪',
+    items: [
+      { to: '/laboratoire', label: 'Laboratoire' },
     ],
   },
   {
