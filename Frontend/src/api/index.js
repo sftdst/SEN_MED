@@ -265,6 +265,7 @@ export const paiementApi = {
   solderPatient: (patientId, data) => api.post(`/paiements/patient/${patientId}/solder`, data),
 }
 
+ 
 // ── Consultation ─────────────────────────────────────────────
 export const consultationApi = {
   charger:      (adtId)        => api.get(`/consultations/${adtId}`),
@@ -310,3 +311,7 @@ export const ficheAttApi = {
   supprimer: (id)     => api.delete(`/fiches-att/${id}`),
   serveUrl:  (id)     => `${api.defaults.baseURL}/fiches-att/${id}/serve`,
 }
+ 
+ 
+
+ 

@@ -7,6 +7,7 @@ use App\Models\Personnel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class PersonnelController extends Controller
 {
@@ -49,7 +50,7 @@ class PersonnelController extends Controller
             'ville_principal'     => 'nullable|string|max:50',
             'ville_secondaire'    => 'nullable|string|max:50',
             'ID_pro'              => 'nullable|string|max:50',
-            'type_exercie'        => 'nullable|string|max:50',
+            'type_exercice'       => 'nullable|string|max:50',
             'secteur'             => 'nullable|string|max:50',
             'lieu_exercice'       => 'nullable|string|max:50',
             'country_id'          => 'nullable|string|max:50',
@@ -58,6 +59,7 @@ class PersonnelController extends Controller
             'consult'             => 'nullable|boolean',
             'titre_id'            => 'nullable|string|max:50',
             'status_id'           => 'nullable|integer',
+            'photo'               => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
     }
 
@@ -151,6 +153,12 @@ class PersonnelController extends Controller
             $validated['status_id'] = 1;
         }
 
+        // Gestion upload photo
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('personnel_photos', 'public');
+            $validated['photo'] = $path;
+        }
+
         $personnel = Personnel::create($validated);
 
         return response()->json([
@@ -202,14 +210,24 @@ class PersonnelController extends Controller
             $validated['staff_name'] = trim($prenom . ' ' . $nom);
         }
 
+        // Gestion upload photo
+        if ($request->hasFile('photo')) {
+            // Supprimer l'ancienne photo si existante
+            if ($personnel->photo && \Storage::disk('public')->exists($personnel->photo)) {
+                \Storage::disk('public')->delete($personnel->photo);
+            }
+            $path = $request->file('photo')->store('personnel_photos', 'public');
+            $validated['photo'] = $path;
+        }
+
         $validated['modified_dttm'] = now();
 
         $personnel->update($validated);
 
         return response()->json([
             'success' => true,
-            'message' => 'Dossier personnel mis à jour avec succès.',
-            'data'    => $personnel->fresh()->load('departement'),
+            'message' => 'Personnel mis à jour avec succès.',
+            'data'    => $personnel->load('departement'),
         ]);
     }
 

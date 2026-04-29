@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Personnel extends Model
 {
@@ -70,6 +71,7 @@ class Personnel extends Model
         'consult',
         'titre_id',
         'IDgen_mst_Departement',
+        'photo',
     ];
 
     protected $casts = [
@@ -130,5 +132,21 @@ class Personnel extends Model
     public function departement(): BelongsTo
     {
         return $this->belongsTo(Departement::class, 'IDgen_mst_Departement', 'IDgen_mst_Departement');
+    }
+
+    /**
+     * Accesseur pour l'URL complète de la photo
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (!$this->photo) {
+            return null;
+        }
+        // Si la photo est déjà une URL complète (commence par http), la renvoyer telle quelle
+        if (str_starts_with($this->photo, 'http')) {
+            return $this->photo;
+        }
+        // Sinon, générer l'URL via le disque public (storage/app/public)
+        return \Storage::disk('public')->url($this->photo);
     }
 }

@@ -122,8 +122,19 @@ function PersonnelCard({ row, onView, onEdit, onDelete }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 800, fontSize: 18,
             border: `2px solid ${avatarBorder}`,
+            overflow: 'hidden',
           }}>
-            {initials}
+            {row.photo_url ? (
+              <img
+                src={row.photo_url}
+                alt={row.staff_name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+              />
+            ) : null}
+            <div style={{ display: row.photo_url ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+              {initials}
+            </div>
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -196,6 +207,8 @@ const [modalRapide,  setModalRapide]  = useState(false)
     const [accessCardModal, setAccessCardModal] = useState(null)
     const printRef = useRef(null)
     const [activeTab, setActiveTab] = useState('identite')
+    const [photoFile, setPhotoFile] = useState(null)
+    const [photoPreview, setPhotoPreview] = useState('')
 
    const load = useCallback((p = page, pp = perPage) => {
      setLoading(true)
@@ -251,23 +264,51 @@ const [modalRapide,  setModalRapide]  = useState(false)
   }
 
   // ── Handlers Complet ──
-  const openCreateComplet = () => { setEditing(null); setFormComplet(emptyComplet); setModalComplet(true) }
+  const openCreateComplet = () => { setEditing(null); setFormComplet(emptyComplet); setPhotoFile(null); setPhotoPreview(''); setModalComplet(true) }
   const openEditComplet   = (row) => {
     setEditing(row)
     setFormComplet({ ...emptyComplet, ...row, IDgen_mst_Departement: String(row.IDgen_mst_Departement || '') })
+    setPhotoFile(null)
+    setPhotoPreview(row.photo_url || '')
     setModalComplet(true)
   }
-  const closeComplet  = () => { setModalComplet(false); setEditing(null) }
+  const closeComplet  = () => { setModalComplet(false); setEditing(null); setPhotoFile(null); setPhotoPreview('') }
   const changeComplet = e => setFormComplet(f => ({ ...f, [e.target.name]: e.target.value }))
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setPhotoFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setPhotoFile(null)
+      setPhotoPreview('')
+    }
+  }
 
   const submitComplet = async e => {
     e.preventDefault(); setSaving(true)
     try {
+      const formData = new FormData()
+      // Append all scalar form fields (skip objects like departement)
+      Object.entries(formComplet).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && typeof value !== 'object') {
+          formData.append(key, value)
+        }
+      })
+      if (photoFile) {
+        formData.append('photo', photoFile)
+      }
+
       if (editing) {
-        await personnelApi.modifier(editing.id, formComplet)
+        await personnelApi.modifier(editing.id, formData)
         showToast('Dossier mis à jour.')
       } else {
-        await personnelApi.creer(formComplet)
+        await personnelApi.creer(formData)
         showToast('Dossier créé.')
       }
       closeComplet(); load()
@@ -598,20 +639,45 @@ const [modalRapide,  setModalRapide]  = useState(false)
 
           <form onSubmit={submitComplet}>
             {/* Identité */}
-            {activeTab === 'identite' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-                <Input label="Prénom"          name="first_name"    value={formComplet.first_name}    onChange={changeComplet} required />
-                <Input label="Nom"             name="last_name"     value={formComplet.last_name}     onChange={changeComplet} required />
-                <Input label="2ème prénom"     name="second_name"   value={formComplet.second_name}   onChange={changeComplet} />
-                <Select label="Genre"          name="gender_id"     value={formComplet.gender_id}     onChange={changeComplet} required options={GENRES} placeholder="Sélectionner" />
-                <Select label="Titre"          name="titre_id"      value={formComplet.titre_id}      onChange={changeComplet}
-                  options={[{ value: 'Dr', label: 'Dr' }, { value: 'Pr', label: 'Pr' }, { value: 'M', label: 'M.' }, { value: 'Mme', label: 'Mme' }]}
-                />
-                <Select label="Groupe sanguin" name="groupe_sanguin" value={formComplet.groupe_sanguin} onChange={changeComplet} options={GROUPES_SANGUINS} placeholder="Sélectionner" />
-                <Input label="Date de naissance" name="date_of_birth" value={formComplet.date_of_birth} onChange={changeComplet} type="date" />
-                <Input label="Nationalité"       name="nationality_id" value={formComplet.nationality_id} onChange={changeComplet} />
-              </div>
-            )}
+             {activeTab === 'identite' && (
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+                 <Input label="Prénom"          name="first_name"    value={formComplet.first_name}    onChange={changeComplet} required />
+                 <Input label="Nom"             name="last_name"     value={formComplet.last_name}     onChange={changeComplet} required />
+                 <Input label="2ème prénom"     name="second_name"   value={formComplet.second_name}   onChange={changeComplet} />
+                 <Select label="Genre"          name="gender_id"     value={formComplet.gender_id}     onChange={changeComplet} required options={GENRES} placeholder="Sélectionner" />
+                 <Select label="Titre"          name="titre_id"      value={formComplet.titre_id}      onChange={changeComplet}
+                   options={[{ value: 'Dr', label: 'Dr' }, { value: 'Pr', label: 'Pr' }, { value: 'M', label: 'M.' }, { value: 'Mme', label: 'Mme' }]}
+                 />
+                 <Select label="Groupe sanguin" name="groupe_sanguin" value={formComplet.groupe_sanguin} onChange={changeComplet} options={GROUPES_SANGUINS} placeholder="Sélectionner" />
+                 <Input label="Date de naissance" name="date_of_birth" value={formComplet.date_of_birth} onChange={changeComplet} type="date" />
+                 <Input label="Nationalité"       name="nationality_id" value={formComplet.nationality_id} onChange={changeComplet} />
+
+                 {/* Photo */}
+                 <div style={{ gridColumn: '1/-1' }}>
+                   <div style={{ fontSize: '11px', fontWeight: 700, color: colors.gray700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                     Photo (optionnelle)
+                   </div>
+                   <input
+                     type="file"
+                     accept="image/*"
+                     name="photo"
+                     onChange={handlePhotoChange}
+                     style={{ width: '100%', fontSize: 13 }}
+                   />
+                   {photoPreview && (
+                     <div style={{ marginTop: 8, width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: `1px solid ${colors.gray200}` }}>
+                       <img src={photoPreview} alt="Aperçu" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                     </div>
+                   )}
+                   {editing && !photoFile && formComplet.photo_url && (
+                     <div style={{ marginTop: 8 }}>
+                       <img src={formComplet.photo_url} alt="Photo actuelle" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8 }} />
+                       <div style={{ fontSize: 11, color: colors.gray500, marginTop: 2 }}>Photo actuelle</div>
+                     </div>
+                   )}
+                 </div>
+               </div>
+             )}
 
             {/* Professionnel */}
             {activeTab === 'professionnel' && (

@@ -59,10 +59,18 @@ const AccessCard = ({ personnel }) => {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
+            {personnel.photo_url ? (
+              <img
+                src={personnel.photo_url}
+                alt={fullName}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+              />
+            ) : null}
             <div style={{
+              display: personnel.photo_url ? 'none' : 'flex',
               width: '100%',
               height: '100%',
-              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               background: 'rgba(255,255,255,0.2)',
