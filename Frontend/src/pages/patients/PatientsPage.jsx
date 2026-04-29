@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useNavigate } from 'react'
 import { patientApi, partenaireApi } from '../../api'
 import CreerVisiteModal from '../visites/CreerVisiteModal'
 import { colors, radius, shadows, typography, spacing } from '../../theme'
@@ -151,28 +151,10 @@ export default function PatientsPage() {
   const [modalRdv,        setModalRdv]       = useState(false)
   const [modalConsult,    setModalConsult]    = useState(false)
   const [modalDevis,      setModalDevis]     = useState(false)
-  const [modalCard,       setModalCard]      = useState(false)
+   const [modalCard,       setModalCard]      = useState(false)
 
-   const [formRapide,      setFormRapide]     = useState(EMPTY_RAPIDE)
-   const [formComplet,     setFormComplet]    = useState(EMPTY_COMPLET)
-   const [form,            setForm]           = useState({})
-   const [formErrors,      setFormErrors]     = useState({})
-   const [saving,          setSaving]         = useState(false)
-   const [confirmDel,      setConfirmDel]     = useState(false)
-   const [patientVisite,   setPatientVisite]  = useState(null)
-   const [devisArticles, setDevisArticles] = useState([])
-   const [devisGenere, setDevisGenere] = useState(false)
-   const [nouvelleDescription, setNouvelleDescription] = useState('')
-   const [nouveauMontant, setNouveauMontant] = useState('')
-   const [devisEnCours, setDevisEnCours] = useState(false)
-   // État d'erreur de chargement photo par patient
-   const [photoErrors, setPhotoErrors] = useState({})
-   // Fichiers photo pour upload
-   const [photoFileRapide, setPhotoFileRapide] = useState(null)
-   const [photoFileComplet, setPhotoFileComplet] = useState(null)
-   const [photoFileEdit, setPhotoFileEdit] = useState(null)
-
-  const timer = useRef(null)
+   const timer = useRef(null)
+   const navigate = useNavigate()
 
   // ── Chargement initial ─────────────────────────────────
   useEffect(() => {
@@ -527,8 +509,7 @@ export default function PatientsPage() {
             <Button
               onClick={() => {
                 if (!selected) { showToast('Sélectionnez d\'abord un patient dans la liste', 'error'); return }
-                // Ouvrir le DPE (Dossier Patient Électronique)
-                window.open(`/dpe/${selected.id_Rep}`, '_blank')
+                navigate(`/dpe/${selected.id_Rep}`)
               }}
               variant="success"
               size="lg"
