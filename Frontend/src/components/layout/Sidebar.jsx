@@ -32,7 +32,7 @@ const navItems = [
     ],
   },
   {
-    group: 'PHARMACIE',
+    group: 'GESTION PHARMACEUTIQUE',
     icon: '💊',
     items: [
       { to: '/pharmacie', label: 'Pharmacie' },
@@ -56,6 +56,17 @@ const navItems = [
     ],
   },
   {
+    group: 'ADMINISTRATION',
+    icon: '🏢',
+    items: [
+      { to: '/departements', label: 'Départements' },
+      { to: '/type-services', label: 'Types de service' },
+      { to: '/services', label: 'Services' },
+      { to: '/hopitaux', label: 'Hôpitaux' },
+      { to: '/partenaires', label: 'Partenaires' },
+    ],
+  },
+  {
     group: 'CONFIGURATION',
     icon: '⚙️',
     items: [
@@ -64,11 +75,6 @@ const navItems = [
       { to: '/formulaires',      label: 'Formulaires'           },
       { to: '/tarification',     label: 'Tarification'          },
       { to: '/laboratoire',      label: 'Laboratoire'           },
-      { to: '/hopitaux',         label: 'Hôpitaux'              },
-      { to: '/departements',     label: 'Départements'          },
-      { to: '/type-services',    label: 'Types de services'     },
-      { to: '/services',         label: 'Services'              },
-      { to: '/partenaires',      label: 'Partenaires'           },
     ],
   },
 ]
