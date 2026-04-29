@@ -161,12 +161,17 @@ export default function PatientsPage() {
    const [confirmDel,      setConfirmDel]     = useState(false)
    const [modalCard,       setModalCard]      = useState(false)
 
-   const [photoFileRapide,  setPhotoFileRapide] = useState(null)
-   const [photoFileComplet, setPhotoFileComplet] = useState(null)
-   const [photoFileEdit,    setPhotoFileEdit]   = useState(null)
+    const [photoFileRapide,  setPhotoFileRapide] = useState(null)
+    const [photoFileComplet, setPhotoFileComplet] = useState(null)
+    const [photoFileEdit,    setPhotoFileEdit]   = useState(null)
 
-   const timer = useRef(null)
-   const navigate = useNavigate()
+    const [devisArticles,    setDevisArticles]   = useState([])
+    const [devisGenere,      setDevisGenere]     = useState(false)
+    const [nouvelleDescription, setNouvelleDescription] = useState('')
+    const [nouveauMontant,     setNouveauMontant]     = useState('')
+
+    const timer = useRef(null)
+    const navigate = useNavigate()
 
   // ── Chargement initial ─────────────────────────────────
   useEffect(() => {
@@ -268,20 +273,25 @@ export default function PatientsPage() {
   }
 
    // ── Modales ─────────────────────────────────────────────
-   const closeModals = () => {
-     setModalRapide(false)
-     setModalComplet(false)
-     setModalEdit(false)
-     setModalView(false)
-     setSelected(null)
-     setForm({})
-     setFormRapide(EMPTY_RAPIDE)
-     setFormComplet(EMPTY_COMPLET)
-     setFormErrors({})
-     setPhotoFileRapide(null)
-     setPhotoFileComplet(null)
-     setPhotoFileEdit(null)
-   }
+    const closeModals = () => {
+      setModalRapide(false)
+      setModalComplet(false)
+      setModalEdit(false)
+      setModalView(false)
+      setModalDevis(false)
+      setSelected(null)
+      setForm({})
+      setFormRapide(EMPTY_RAPIDE)
+      setFormComplet(EMPTY_COMPLET)
+      setFormErrors({})
+      setPhotoFileRapide(null)
+      setPhotoFileComplet(null)
+      setPhotoFileEdit(null)
+      setDevisArticles([])
+      setDevisGenere(false)
+      setNouvelleDescription('')
+      setNouveauMontant('')
+    }
 
    // ── Sauvegarde ─────────────────────────────────────────
    const handleSaveRapide = async () => {
