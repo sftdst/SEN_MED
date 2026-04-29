@@ -13,8 +13,6 @@ const navItems = [
       { to: '/salle-attente', label: "Salle d'attente" },
       { to: '/hospitalisation',  label: 'Hospitalisation' },
       { to: '/transferts',      label: 'Transferts' },
-      { to: '/planning',        label: 'Planning médical' },
-      { to: '/rendezvous',      label: 'Gestion des RDV' },
     ],
   },
   {
@@ -22,6 +20,13 @@ const navItems = [
     icon: '👨‍⚕️',
     items: [
       { to: '/espace-medecin', label: 'Tableau de bord' },
+    ],
+  },
+  {
+    group: 'GESTION RDV',
+    icon: '📅',
+    items: [
+      { to: '/rendezvous', label: 'Gestion des RDV' },
     ],
   },
   {
@@ -56,17 +61,6 @@ const navItems = [
     ],
   },
   {
-    group: 'ADMINISTRATION',
-    icon: '🏢',
-    items: [
-      { to: '/departements', label: 'Départements' },
-      { to: '/type-services', label: 'Types de service' },
-      { to: '/services', label: 'Services' },
-      { to: '/hopitaux', label: 'Hôpitaux' },
-      { to: '/partenaires', label: 'Partenaires' },
-    ],
-  },
-  {
     group: 'CONFIGURATION',
     icon: '⚙️',
     items: [
@@ -75,6 +69,17 @@ const navItems = [
       { to: '/formulaires',      label: 'Formulaires'           },
       { to: '/tarification',     label: 'Tarification'          },
       { to: '/laboratoire',      label: 'Laboratoire'           },
+    ],
+  },
+  {
+    group: 'ADMINISTRATION',
+    icon: '🏢',
+    items: [
+      { to: '/departements',     label: 'Départements'          },
+      { to: '/type-services',    label: 'Types de services'     },
+      { to: '/services',         label: 'Services'              },
+      { to: '/hopitaux',         label: 'Hôpitaux'              },
+      { to: '/partenaires',      label: 'Partenaires'           },
     ],
   },
 ]
