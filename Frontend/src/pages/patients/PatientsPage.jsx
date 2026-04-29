@@ -159,6 +159,10 @@ export default function PatientsPage() {
   const [modalDevis,      setModalDevis]     = useState(false)
    const [modalCard,       setModalCard]      = useState(false)
 
+   const [photoFileRapide,  setPhotoFileRapide] = useState(null)
+   const [photoFileComplet, setPhotoFileComplet] = useState(null)
+   const [photoFileEdit,    setPhotoFileEdit]   = useState(null)
+
    const timer = useRef(null)
    const navigate = useNavigate()
 
