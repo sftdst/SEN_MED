@@ -989,14 +989,21 @@ export default function PatientsPage() {
           </div>
           <Inp label="Email" name="email_adress" value={form.email_adress} onChange={e => setForm(f => ({ ...f, email_adress: e.target.value }))} type="email" />
 
-          <SectionTitle icon="🛡️">Couverture & Assurance</SectionTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
-            <Sel label="Partenaire" name="company_id" value={form.company_id} onChange={e => handleChangePartenaire(e, false)} options={partenaires.map(p => ({ value: p.id_Rep, label: p.Nom }))} placeholder="Sélectionner..." />
-            <Sel label="Type de couverture" name="type_couverture" value={form.type_couverture} onChange={e => setForm(f => ({ ...f, type_couverture: e.target.value }))} options={types.map(t => ({ value: t.Nom, label: t.Nom }))} placeholder="Sélectionner..." disabled={!form.company_id} />
-          </div>
+           <SectionTitle icon="🛡️">Couverture & Assurance</SectionTitle>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+             <Sel label="Partenaire" name="company_id" value={form.company_id} onChange={e => handleChangePartenaire(e, false)} options={partenaires.map(p => ({ value: p.id_Rep, label: p.Nom }))} placeholder="Sélectionner..." />
+             <Sel label="Type de couverture" name="type_couverture" value={form.type_couverture} onChange={e => setForm(f => ({ ...f, type_couverture: e.target.value }))} options={types.map(t => ({ value: t.Nom, label: t.Nom }))} placeholder="Sélectionner..." disabled={!form.company_id} />
+           </div>
            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
              <Inp label="Numéro de police" name="num_police" value={form.num_police} onChange={e => setForm(f => ({ ...f, num_police: e.target.value }))} />
              <Inp label="Valide jusqu'au" name="validate" value={form.validate?.substring(0, 10)} onChange={e => setForm(f => ({ ...f, validate: e.target.value }))} type="date" />
+           </div>
+
+           <SectionTitle icon="👨‍👩‍👧‍👦">Famille</SectionTitle>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+             <Inp label="ID Famille" name="family_id" value={form.family_id || ''} onChange={e => setForm(f => ({ ...f, family_id: e.target.value }))} placeholder="ID de la famille (optionnel)" />
+             <Inp label="Père" name="pere_name" value={form.pere_name || ''} onChange={e => setForm(f => ({ ...f, pere_name: e.target.value }))} placeholder="Nom du père" />
+             <Inp label="Mère" name="mere_name" value={form.mere_name || ''} onChange={e => setForm(f => ({ ...f, mere_name: e.target.value }))} placeholder="Nom de la mère" />
            </div>
 
            <SectionTitle icon="📷">Photo actuelle</SectionTitle>
