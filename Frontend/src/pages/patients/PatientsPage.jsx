@@ -156,8 +156,9 @@ export default function PatientsPage() {
   const [modalView,       setModalView]      = useState(false)
   const [modalHistorique, setModalHistorique] = useState(false)
   const [modalRdv,        setModalRdv]       = useState(false)
-  const [modalConsult,    setModalConsult]    = useState(false)
-  const [modalDevis,      setModalDevis]     = useState(false)
+   const [modalConsult,    setModalConsult]    = useState(false)
+   const [modalDevis,      setModalDevis]     = useState(false)
+   const [confirmDel,      setConfirmDel]     = useState(false)
    const [modalCard,       setModalCard]      = useState(false)
 
    const [photoFileRapide,  setPhotoFileRapide] = useState(null)
