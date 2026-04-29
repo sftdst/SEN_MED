@@ -39,13 +39,6 @@ export default function GestionCongesPage() {
       showToast('Erreur lors du chargement du personnel', 'error')
     }
   }
-      console.log('Personnels chargés:', list.length, list)
-      setPersonnels(list)
-    } catch (error) {
-      console.error('Erreur chargement personnels:', error)
-      showToast('Erreur lors du chargement du personnel', 'error')
-    }
-  }
 
   useEffect(() => {
     loadPersonnels()

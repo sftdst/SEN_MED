@@ -43,7 +43,14 @@
       "Bash(taskkill /F /FI \"WINDOWTITLE eq php*\")",
       "Bash(taskkill /F /FI \"IMAGENAME eq php.exe\")",
       "Bash(taskkill //F //FI \"IMAGENAME eq php.exe\")",
-      "Bash(php -l app/Http/Controllers/Api/ConsultationController.php)"
+      "Bash(php -l app/Http/Controllers/Api/ConsultationController.php)",
+      "Bash(grep -h \"public function\" \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Backend\\\\app\\\\Http\\\\Controllers\\\\Api\"/*.php)",
+      "Bash(grep -h \"Schema::create\\\\|Schema::table\" \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Backend\\\\database\\\\migrations\"/*.php)",
+      "Bash(grep -n 'protected $table' app/Models/Patient.php)",
+      "Bash(grep -n 'protected $fillable' 'e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Backend\\\\app\\\\Models\\\\NursingDossier.php')",
+      "Bash(Get-Content \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Backend\\\\storage\\\\logs\\\\laravel.log\" -Tail 40)",
+      "Bash(Select-String -Pattern \"patient_no|nursing|ERREUR|ERROR|Exception\")",
+      "Bash(Select-Object -Last 20)"
     ]
   }
 }

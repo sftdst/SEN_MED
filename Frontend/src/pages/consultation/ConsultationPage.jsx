@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { colors } from '../../theme'
-import { consultationApi, visiteApi, paiementApi } from '../../api'
+import { consultationApi, visiteApi, paiementApi, hospitalApi } from '../../api'
 import TransfertModal from '../transferts/TransfertModal'
 import FicheAttModal from '../espaceMedecin/FicheAttModal'
+import CertificatsModal from './CertificatsModal'
 import { showToast } from '../../components/ui/Toast'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 
@@ -1080,117 +1081,202 @@ function HistoriqueConsultationsModal({ patient, onClose }) {
 
   useEffect(() => {
     if (!patientId) { setLoading(false); return }
-    visiteApi.liste({ patient_pin: patientId, per_page: 30 })
+    visiteApi.liste({ patient_pin: patientId, per_page: 50 })
       .then(r => {
-        const list = r.data?.data?.data || r.data?.data || r.data || []
-        setVisites(Array.isArray(list) ? list : [])
+        const raw = r.data?.data?.data || r.data?.data || r.data || []
+        setVisites(Array.isArray(raw) ? raw : [])
       })
-      .catch(() => setError('Impossible de charger l\'historique.'))
+      .catch(() => setError("Impossible de charger l'historique."))
       .finally(() => setLoading(false))
   }, [patientId])
 
-  const fmtD = d => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
-  const fmtMnt = v => (v != null && !isNaN(parseFloat(v))) ? `${Number(v).toLocaleString('fr-FR')} F` : '—'
+  const fmtDate = d => {
+    if (!d) return '—'
+    const dt = new Date(d)
+    return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+  }
+  const fmtHeure = d => {
+    if (!d) return ''
+    try { return new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) }
+    catch { return '' }
+  }
+  const fmtMnt = v =>
+    (v != null && !isNaN(parseFloat(v))) ? `${Number(v).toLocaleString('fr-FR')} FCFA` : null
 
-  const medecinNom = v => {
+  const getMedecin = v => {
     const m = v.medecin
-    if (!m) return '—'
-    return m.staff_name || `${m.first_name || ''} ${m.last_name || ''}`.trim() || '—'
+    if (!m) return null
+    const nom = m.staff_name || `${m.first_name || ''} ${m.last_name || ''}`.trim()
+    return { nom: nom || null, spec: m.specialization || null }
   }
 
-  const statutBadge = v => {
-    const vu = v.doctor_seen === 1 || v.doctor_seen === '1'
-    const cfg = vu
-      ? { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0', label: 'Terminé' }
-      : { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa', label: 'En attente' }
-    return (
-      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 10px', borderRadius: 10, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, whiteSpace: 'nowrap' }}>
-        {cfg.label}
-      </span>
-    )
-  }
+  const getDept = v => v.departement?.NomDepartement || null
+
+  const nbTermine  = visites.filter(v => v.doctor_seen === 1 || v.doctor_seen === '1').length
+  const nbAttente  = visites.length - nbTermine
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(15,23,42,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(3px)', padding: 16 }}
       onClick={onClose}
     >
       <div
-        style={{ background: C.surface, borderRadius: 14, width: 560, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.4)', overflow: 'hidden' }}
+        style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.3)', overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.border}`, background: `linear-gradient(to right, ${C.indigo}14, ${C.indigo}04)`, borderLeft: `4px solid ${C.indigo}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <span style={{ fontSize: 22 }}>🗂️</span>
+
+        {/* ── En-tête ── */}
+        <div style={{ padding: '16px 22px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(135deg, #1a56db08, #fff)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🗂️</div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: C.indigo }}>Historique des Consultations</div>
-              <div style={{ fontSize: 10, color: C.textSm }}>
-                {patientName} — {!loading && !error ? `${visites.length} visite(s)` : ''}
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>Historique des consultations</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                <span style={{ fontWeight: 600, color: '#1a56db' }}>{patientName}</span>
+                {!loading && !error && (
+                  <span> · {visites.length} visite{visites.length !== 1 ? 's' : ''}</span>
+                )}
               </div>
             </div>
           </div>
-          <button onClick={onClose} style={{ border: 'none', background: '#f1f5f9', borderRadius: 8, width: 28, height: 28, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textMd }}>×</button>
+          <button
+            onClick={onClose}
+            style={{ width: 32, height: 32, border: 'none', background: '#f1f5f9', borderRadius: 8, cursor: 'pointer', fontSize: 18, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >×</button>
         </div>
 
-        {/* Corps */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* ── Compteurs synthèse ── */}
+        {!loading && !error && visites.length > 0 && (
+          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+            {[
+              { label: 'Total visites',  val: visites.length, color: '#1a56db', bg: '#eff6ff' },
+              { label: 'Terminées',      val: nbTermine,      color: '#16a34a', bg: '#f0fdf4' },
+              { label: 'En attente',     val: nbAttente,      color: '#ea580c', bg: '#fff7ed' },
+            ].map((s, i) => (
+              <div key={i} style={{ flex: 1, padding: '10px 0', textAlign: 'center', borderRight: i < 2 ? '1px solid #e2e8f0' : 'none' }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: s.color }}>{s.val}</div>
+                <div style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Corps ── */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
           {loading && (
-            <div style={{ padding: '40px 0', textAlign: 'center', color: C.textSm, fontSize: 12 }}>
-              <div style={{ display: 'inline-block', width: 20, height: 20, border: `2px solid ${C.indigo}40`, borderTopColor: C.indigo, borderRadius: '50%', animation: 'spin 0.7s linear infinite', marginBottom: 8 }} />
-              <div>Chargement de l'historique…</div>
+            <div style={{ padding: '48px 0', textAlign: 'center', color: '#64748b' }}>
+              <div style={{ width: 28, height: 28, border: '3px solid #1a56db40', borderTopColor: '#1a56db', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 10px' }} />
+              <div style={{ fontSize: 12 }}>Chargement…</div>
             </div>
           )}
+
           {error && (
-            <div style={{ padding: '32px 18px', textAlign: 'center', color: C.red, fontSize: 12 }}>⚠️ {error}</div>
+            <div style={{ padding: '32px', textAlign: 'center', color: '#dc2626', fontSize: 13 }}>⚠️ {error}</div>
           )}
+
           {!loading && !error && visites.length === 0 && (
-            <div style={{ padding: '40px 18px', textAlign: 'center', color: C.textSm, fontSize: 12, fontStyle: 'italic' }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>🗂️</div>
-              Aucune consultation enregistrée pour ce patient.
+            <div style={{ padding: '48px 0', textAlign: 'center', color: '#94a3b8' }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>Aucune consultation enregistrée</div>
+              <div style={{ fontSize: 11, marginTop: 4 }}>Ce patient n'a pas encore de visite dans le système.</div>
             </div>
           )}
-          {!loading && !error && visites.length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc' }}>
-                  {['Date', 'Médecin', 'Montant', 'Statut'].map(h => (
-                    <th key={h} style={{ padding: '9px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: C.textMd, textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${C.border}` }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {visites.map((v, i) => (
-                  <tr key={v.adt_id || v.id || i}
-                    style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.surface : '#fafbfc', transition: 'background 0.1s' }}
-                    onMouseOver={e => e.currentTarget.style.background = `${C.indigo}08`}
-                    onMouseOut={e => e.currentTarget.style.background = i % 2 === 0 ? C.surface : '#fafbfc'}
-                  >
-                    <td style={{ padding: '11px 14px', fontSize: 12, color: C.text, whiteSpace: 'nowrap', fontWeight: 600 }}>
-                      {fmtD(v.visit_datetime || v.date_visite || v.created_at)}
-                    </td>
-                    <td style={{ padding: '11px 14px', fontSize: 12, color: C.textMd }}>
-                      {medecinNom(v)}
-                    </td>
-                    <td style={{ padding: '11px 14px', fontSize: 12, fontWeight: 700, color: v.Total_a_payer > 0 ? C.green : C.textMd }}>
-                      {fmtMnt(v.Total_a_payer ?? v.montant_total)}
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      {statutBadge(v)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+
+          {!loading && !error && visites.map((v, i) => {
+            const med    = getMedecin(v)
+            const dept   = getDept(v)
+            const mnt    = fmtMnt(v.Total_a_payer ?? v.montant_total)
+            const done   = v.doctor_seen === 1 || v.doctor_seen === '1'
+            const urgent = v.urgence === true || v.urgence === 1
+            const dateStr = fmtDate(v.visit_datetime || v.created_dttm)
+            const heure   = fmtHeure(v.visit_datetime || v.created_dttm)
+
+            return (
+              <div key={v.adt_id || i} style={{
+                border: '1px solid #e2e8f0',
+                borderRadius: 12,
+                background: '#fff',
+                overflow: 'hidden',
+                transition: 'box-shadow 0.15s',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+              }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(26,86,219,0.1)'}
+                onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'}
+              >
+                {/* Barre supérieure colorée */}
+                <div style={{ height: 4, background: done ? '#16a34a' : urgent ? '#dc2626' : '#f59e0b' }} />
+
+                <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+
+                  {/* Numéro de visite */}
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, color: '#475569', flexShrink: 0 }}>
+                    {visites.length - i}
+                  </div>
+
+                  {/* Contenu principal */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+
+                    {/* Ligne 1 : date + badges */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{dateStr}</span>
+                      {heure && <span style={{ fontSize: 11, color: '#94a3b8' }}>{heure}</span>}
+                      {urgent && (
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 8px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                          🚨 Urgence
+                        </span>
+                      )}
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 8px', borderRadius: 8, background: done ? '#f0fdf4' : '#fff7ed', color: done ? '#16a34a' : '#c2410c', border: `1px solid ${done ? '#bbf7d0' : '#fed7aa'}`, marginLeft: 'auto' }}>
+                        {done ? '✓ Terminée' : '⏳ En attente'}
+                      </span>
+                    </div>
+
+                    {/* Ligne 2 : médecin + département */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#475569' }}>
+                        <span style={{ fontSize: 13 }}>👨‍⚕️</span>
+                        {med ? (
+                          <span>
+                            <span style={{ fontWeight: 600, color: '#1e293b' }}>Dr. {med.nom}</span>
+                            {med.spec && <span style={{ color: '#94a3b8', fontSize: 11 }}> — {med.spec}</span>}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Médecin non renseigné</span>
+                        )}
+                      </div>
+                      {dept && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#475569' }}>
+                          <span style={{ fontSize: 13 }}>🏥</span>
+                          <span style={{ fontWeight: 500, color: '#334155' }}>{dept}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ligne 3 : visite N° + montant */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 6, fontSize: 11 }}>
+                      <span style={{ color: '#94a3b8' }}>Visite N° <span style={{ fontWeight: 600, color: '#64748b' }}>{v.adt_id}</span></span>
+                      {mnt && (
+                        <span style={{ fontWeight: 700, color: '#16a34a', fontSize: 12 }}>{mnt}</span>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Footer */}
-        <div style={{ padding: '12px 18px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'flex-end', background: '#f8fafc' }}>
-          <button onClick={onClose} style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 22px', fontSize: 12, cursor: 'pointer', background: C.surface, color: C.textMd, fontWeight: 600 }}>
+        {/* ── Pied de page ── */}
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{ border: '1px solid #e2e8f0', borderRadius: 9, padding: '8px 24px', fontSize: 13, cursor: 'pointer', background: '#fff', color: '#475569', fontWeight: 600 }}
+          >
             Fermer
           </button>
         </div>
+
       </div>
     </div>
   )
@@ -2340,7 +2426,7 @@ function VitauxModal({ patient, adtId, onClose }) {
 const TOOLBAR_GROUPS = [
   { items: [
     { l: 'Ordonnance',    ic: '📄', action: 'ordonnance',     active: true  },
-    { l: 'CF',            ic: '📋', action: null,              active: false },
+    { l: 'CF',            ic: '📋', action: 'certificats',      active: true  },
     { l: 'FJ',            ic: '📎', action: 'fiches',           active: true  },
     { l: 'PMT',           ic: '💳', action: 'paiement',        active: true  },
     { l: 'TRF',           ic: '🔄', action: 'transfert',       active: true  },
@@ -3144,15 +3230,21 @@ export default function ConsultationPage({ patient: propPatient, onClose: propOn
   const [showFiches,      setShowFiches]      = useState(false)
   const [showMatrix,      setShowMatrix]      = useState(false)
   const [showVitaux,      setShowVitaux]      = useState(false)
+  const [showCertificats, setShowCertificats] = useState(false)
+
+  // ── Médecin et hôpital (chargés depuis l'API) ─────────────────────────────
+  const [medecin,  setMedecin]  = useState(null)
+  const [hopital,  setHopital]  = useState(null)
 
   const handleAction = action => {
-    if (action === 'ordonnance') setShowOrdonnance(true)
-    if (action === 'paiement')   setShowPaiement(true)
-    if (action === 'historique') setShowHistorique(true)
-    if (action === 'transfert')  setShowTransfert(true)
-    if (action === 'fiches')     setShowFiches(true)
-    if (action === 'matrix')     setShowMatrix(true)
-    if (action === 'vitaux')     setShowVitaux(true)
+    if (action === 'ordonnance')  setShowOrdonnance(true)
+    if (action === 'paiement')    setShowPaiement(true)
+    if (action === 'historique')  setShowHistorique(true)
+    if (action === 'transfert')   setShowTransfert(true)
+    if (action === 'fiches')      setShowFiches(true)
+    if (action === 'matrix')      setShowMatrix(true)
+    if (action === 'vitaux')      setShowVitaux(true)
+    if (action === 'certificats') setShowCertificats(true)
   }
 
   const onChange = useCallback(d => setData(d), [])
@@ -3164,11 +3256,35 @@ export default function ConsultationPage({ patient: propPatient, onClose: propOn
     consultationApi.charger(adtId)
       .then(r => {
         const apiData = r.data?.data
-        if (apiData) setData(apiToForm(apiData))
+        if (apiData) {
+          setData(apiToForm(apiData))
+          // Récupérer le médecin depuis la visite
+          if (apiData.objadtdetails?.medecin) {
+            setMedecin(apiData.objadtdetails.medecin)
+          }
+          // Charger l'hôpital si on a le hospital_id de la visite
+          const hospitalId = apiData.objadtdetails?.hospital_id
+          if (hospitalId && !hopital) {
+            hospitalApi.detail(hospitalId)
+              .then(hr => setHopital(hr.data))
+              .catch(() => {})
+          }
+        }
       })
       .catch(() => {/* pas encore de consultation = formulaire vierge */})
       .finally(() => setLoading(false))
   }, [adtId])
+
+  // ── Charger l'hôpital (fallback: premier de la liste) ─────────────────────
+  useEffect(() => {
+    if (hopital) return
+    hospitalApi.liste({ per_page: 1 })
+      .then(r => {
+        const list = r.data?.data || r.data || []
+        if (list.length > 0) setHopital(list[0])
+      })
+      .catch(() => {})
+  }, [])
 
   // ── Sauvegarde vers l'API ─────────────────────────────────────────────────
   const handleSave = async () => {
@@ -3256,6 +3372,16 @@ export default function ConsultationPage({ patient: propPatient, onClose: propOn
           onClose={() => setShowVitaux(false)}
         />
       )}
+
+      <CertificatsModal
+        open={showCertificats}
+        onClose={() => setShowCertificats(false)}
+        patient={patient}
+        data={data}
+        adtId={adtId}
+        medecin={medecin}
+        hopital={hopital}
+      />
 
       {/* Bandeau d'erreur */}
       {saveErr && (

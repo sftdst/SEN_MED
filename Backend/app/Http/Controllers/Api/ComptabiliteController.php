@@ -43,12 +43,12 @@ class ComptabiliteController extends Controller
                 'p.ssn_no',
                 'p.mobile_number',
                 'p.contact_number',
-                DB::raw('SUM(f.MontantTotalFacture) AS montant_total'),
-                DB::raw('SUM(f.patient_payable)       AS montant_patient'),
-                DB::raw('SUM(f.MontantPartenaire)   AS montant_partenaire'),
-                DB::raw('SUM(f.MontantpayerPartenaire) AS montant_paye_partenaire'),
-                DB::raw('SUM(f.MontantPayer)        AS montant_deja_paye'),
-                DB::raw('COUNT(f.IDgen_mst_facture) AS nb_services'),
+                DB::raw('SUM(f."MontantTotalFacture")     AS montant_total'),
+                DB::raw('SUM(f.patient_payable)           AS montant_patient'),
+                DB::raw('SUM(f."MontantPartenaire")       AS montant_partenaire'),
+                DB::raw('SUM(f."MontantpayerPartenaire")  AS montant_paye_partenaire'),
+                DB::raw('SUM(f."MontantPayer")            AS montant_deja_paye'),
+                DB::raw('COUNT(f."IDgen_mst_facture")     AS nb_services'),
                 'b.bill_no',
                 'b.bill_date',
                 'par.Nom AS partenaire_nom',
@@ -57,10 +57,10 @@ class ComptabiliteController extends Controller
 
         // ── Filtres ──────────────────────────────────────────────────────────
         if ($request->filled('date_debut')) {
-            $q->whereRaw('DATE(f.DateCreation) >= ?', [$request->date_debut]);
+            $q->whereRaw('DATE(f."DateCreation") >= ?', [$request->date_debut]);
         }
         if ($request->filled('date_fin')) {
-            $q->whereRaw('DATE(f.DateCreation) <= ?', [$request->date_fin]);
+            $q->whereRaw('DATE(f."DateCreation") <= ?', [$request->date_fin]);
         }
         if ($request->filled('partenaire_id')) {
             $q->where('f.compagny_id', $request->partenaire_id);
@@ -87,8 +87,8 @@ class ComptabiliteController extends Controller
             ->leftJoin('gen_mst_patient as p', 'f.patient_id', '=', 'p.patient_id')
             ->where('f.StatutPaiement', 'EN_ATTENTE')
             ->when($request->filled('partenaire_id'), fn($q) => $q->where('f.compagny_id', $request->partenaire_id))
-            ->when($request->filled('date_debut'),    fn($q) => $q->whereRaw('DATE(f.DateCreation) >= ?', [$request->date_debut]))
-            ->when($request->filled('date_fin'),      fn($q) => $q->whereRaw('DATE(f.DateCreation) <= ?', [$request->date_fin]))
+            ->when($request->filled('date_debut'),    fn($q) => $q->whereRaw('DATE(f."DateCreation") >= ?', [$request->date_debut]))
+            ->when($request->filled('date_fin'),      fn($q) => $q->whereRaw('DATE(f."DateCreation") <= ?', [$request->date_fin]))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $s = '%' . $request->search . '%';
                 $q->where(fn($w) => $w
@@ -99,10 +99,10 @@ class ComptabiliteController extends Controller
                 );
             })
             ->selectRaw('
-                COUNT(DISTINCT f.bill_id)            AS nb_factures,
-                SUM(f.MontantTotalFacture)         AS total_brut,
-                SUM(f.patient_payable)               AS total_patient,
-                SUM(f.MontantPartenaire)           AS total_partenaire
+                COUNT(DISTINCT f.bill_id)        AS nb_factures,
+                SUM(f."MontantTotalFacture")     AS total_brut,
+                SUM(f.patient_payable)           AS total_patient,
+                SUM(f."MontantPartenaire")       AS total_partenaire
             ')
             ->first();
 

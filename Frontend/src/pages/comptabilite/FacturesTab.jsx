@@ -96,9 +96,9 @@ export default function FacturesTab() {
   const [page,         setPage]         = useState(1)
   const [perPage]                       = useState(20)
 
-  // Détail facture (expand row) + cache des détails chargés
-  const [expanded,   setExpanded]   = useState(null)
-  const [detailsMap, setDetailsMap] = useState({}) // { [billId]: { loading, data, error } }
+  // Modal détail facture + cache
+  const [detailModal, setDetailModal] = useState(null) // { billId, billNo, patientName }
+  const [detailsMap,  setDetailsMap]  = useState({})   // { [billId]: { loading, data, error } }
 
   // Modal paiement
   const [paiementModal, setPaiementModal] = useState(null) // { billId, patientName }
@@ -154,15 +154,13 @@ export default function FacturesTab() {
     debounceRef.current = setTimeout(() => setSearch(v), 400)
   }
 
-  const handleToggleDetail = (billId) => {
-    if (expanded === billId) { setExpanded(null); return }
-    setExpanded(billId)
-    // Ne recharger que si pas encore en cache
-    if (detailsMap[billId]) return
-    setDetailsMap(prev => ({ ...prev, [billId]: { loading: true, data: null, error: null } }))
-    paiementApi.detail(billId)
-      .then(r => setDetailsMap(prev => ({ ...prev, [billId]: { loading: false, data: r.data?.data ?? null, error: null } })))
-      .catch(e => setDetailsMap(prev => ({ ...prev, [billId]: { loading: false, data: null, error: e.response?.data?.message || 'Erreur' } })))
+  const handleOpenDetail = (row) => {
+    setDetailModal({ billId: row.bill_id, billNo: row.bill_no, patientName: row.patient_name })
+    if (detailsMap[row.bill_id]) return
+    setDetailsMap(prev => ({ ...prev, [row.bill_id]: { loading: true, data: null, error: null } }))
+    paiementApi.detail(row.bill_id)
+      .then(r => setDetailsMap(prev => ({ ...prev, [row.bill_id]: { loading: false, data: r.data?.data ?? null, error: null } })))
+      .catch(e => setDetailsMap(prev => ({ ...prev, [row.bill_id]: { loading: false, data: null, error: e.response?.data?.message || 'Erreur' } })))
   }
 
   const handleReset = () => {
@@ -184,6 +182,18 @@ export default function FacturesTab() {
         patientName={paiementModal.patientName}
         onClose={() => setPaiementModal(null)}
         onSuccess={() => { setPaiementModal(null); load(page) }}
+      />
+    )}
+    {detailModal && (
+      <FactureDetailModal
+        billNo={detailModal.billNo}
+        patientName={detailModal.patientName}
+        detail={detailsMap[detailModal.billId]}
+        onClose={() => setDetailModal(null)}
+        onPay={() => {
+          setDetailModal(null)
+          setPaiementModal({ billId: detailModal.billId, patientName: detailModal.patientName })
+        }}
       />
     )}
 
@@ -458,28 +468,23 @@ export default function FacturesTab() {
                 </tr>
               ) : (
                 rows.map((row, idx) => {
-                  const num       = (meta.current_page - 1) * meta.per_page + idx + 1
-                  const isExp     = expanded === row.bill_id
+                  const num        = (meta.current_page - 1) * meta.per_page + idx + 1
                   const montantTot = Number(row.montant_total || 0)
                   const montantPat = Number(row.montant_patient || 0)
                   const montantPar = Number(row.montant_partenaire || 0)
                   const hasPartenaire = montantPar > 0
-
-                  const detail    = detailsMap[row.bill_id]
-                  const services  = detail?.data?.services ?? []
-                  const totDetail = detail?.data?.totaux   ?? null
 
                   return (
                     <React.Fragment key={row.bill_id ?? idx}>
                     <tr
                       key={`row-${row.bill_id ?? idx}`}
                       style={{
-                        borderBottom: isExp ? 'none' : `1px solid ${colors.gray100}`,
-                        background: isExp ? `${colors.bleu}06` : idx % 2 === 0 ? '#fff' : colors.gray50,
+                        borderBottom: `1px solid ${colors.gray100}`,
+                        background: idx % 2 === 0 ? '#fff' : colors.gray50,
                         transition: 'background 0.12s',
                       }}
-                      onMouseEnter={e => { if (!isExp) e.currentTarget.style.background = `${colors.orange}06` }}
-                      onMouseLeave={e => { if (!isExp) e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : colors.gray50 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `${colors.bleu}06` }}
+                      onMouseLeave={e => { e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : colors.gray50 }}
                     >
                       {/* # */}
                       <td style={{ padding: '12px 14px', textAlign: 'center' }}>
@@ -584,8 +589,7 @@ export default function FacturesTab() {
                             label="Détail"
                             icon="👁"
                             color={colors.bleu}
-                            onClick={() => handleToggleDetail(row.bill_id)}
-                            active={isExp}
+                            onClick={() => handleOpenDetail(row)}
                           />
                           <ActionBtn
                             label="Payer"
@@ -597,96 +601,6 @@ export default function FacturesTab() {
                       </td>
                     </tr>
 
-                    {/* ── Ligne de détail étendue ── */}
-                    {isExp && (
-                      <tr key={`detail-${row.bill_id}`} style={{ borderBottom: `2px solid ${colors.bleu}30` }}>
-                        <td colSpan={8} style={{ padding: 0, background: `${colors.bleu}04` }}>
-                          <div style={{ padding: '16px 20px' }}>
-
-                            {/* En-tête détail */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 14 }}>📋</span>
-                                <span style={{ fontWeight: 700, fontSize: 13, color: colors.bleu }}>
-                                  Détail de la facture {row.bill_no || ''}
-                                </span>
-                                <span style={{ fontSize: 11, color: colors.gray500 }}>— {row.patient_name}</span>
-                              </div>
-                              {totDetail && (
-                                <div style={{ display: 'flex', gap: 12, fontSize: 11 }}>
-                                  <span style={{ color: colors.warning, fontWeight: 700 }}>
-                                    Total : {Number(totDetail.total_brut || 0).toLocaleString('fr-FR')} F
-                                  </span>
-                                  <span style={{ color: '#c62828', fontWeight: 700 }}>
-                                    Patient : {Number(totDetail.total_patient || 0).toLocaleString('fr-FR')} F
-                                  </span>
-                                  {totDetail.total_partenaire > 0 && (
-                                    <span style={{ color: colors.success, fontWeight: 700 }}>
-                                      Partenaire : {Number(totDetail.total_partenaire || 0).toLocaleString('fr-FR')} F
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Corps */}
-                            {detail?.loading ? (
-                              <div style={{ textAlign: 'center', padding: '16px 0', color: colors.gray500, fontSize: 12 }}>
-                                Chargement des détails…
-                              </div>
-                            ) : detail?.error ? (
-                              <div style={{ color: '#c62828', fontSize: 12, padding: '8px 0' }}>⚠️ {detail.error}</div>
-                            ) : services.length === 0 ? (
-                              <div style={{ textAlign: 'center', color: colors.gray400, fontSize: 12, fontStyle: 'italic', padding: '12px 0' }}>
-                                Aucun service trouvé pour cette facture.
-                              </div>
-                            ) : (
-                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                                <thead>
-                                  <tr style={{ background: '#f1f5f9', borderBottom: `1.5px solid ${colors.gray200}` }}>
-                                    {['#', 'Description / Service', 'Montant Total', 'Part Patient', 'Part Partenaire', 'Statut'].map(h => (
-                                      <th key={h} style={{ padding: '7px 10px', textAlign: h === '#' ? 'center' : 'left', fontSize: 10, fontWeight: 700, color: colors.gray500, textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{h}</th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {services.map((svc, si) => (
-                                    <tr key={svc.IDgen_mst_facture ?? si} style={{ borderBottom: `1px solid ${colors.gray100}`, background: si % 2 === 0 ? '#fff' : '#f8fafc' }}>
-                                      <td style={{ padding: '7px 10px', textAlign: 'center', color: colors.gray500, fontSize: 11 }}>{si + 1}</td>
-                                      <td style={{ padding: '7px 10px', fontWeight: 600, color: colors.gray800 }}>
-                                        {svc.NomDescription || svc.IDService || '—'}
-                                      </td>
-                                      <td style={{ padding: '7px 10px', fontWeight: 700, color: colors.warning }}>
-                                        {Number(svc.MontantTotalFacture || 0).toLocaleString('fr-FR')} F
-                                      </td>
-                                      <td style={{ padding: '7px 10px', color: '#c62828', fontWeight: 600 }}>
-                                        {Number(svc.patient_payable || 0).toLocaleString('fr-FR')} F
-                                      </td>
-                                      <td style={{ padding: '7px 10px', color: colors.success }}>
-                                        {Number(svc.MontantPartenaire || 0) > 0
-                                          ? `${Number(svc.MontantPartenaire).toLocaleString('fr-FR')} F`
-                                          : <span style={{ color: colors.gray400 }}>—</span>
-                                        }
-                                      </td>
-                                      <td style={{ padding: '7px 10px' }}>
-                                        <span style={{
-                                          display: 'inline-block', padding: '2px 8px', borderRadius: 10,
-                                          fontSize: 10, fontWeight: 700,
-                                          background: svc.StatutPaiement === 'EN_ATTENTE' ? '#fff3e0' : '#e8f5e9',
-                                          color:      svc.StatutPaiement === 'EN_ATTENTE' ? '#f57c00'  : '#2e7d32',
-                                        }}>
-                                          {svc.StatutPaiement === 'EN_ATTENTE' ? 'En attente' : 'Payé'}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
                     </React.Fragment>
                   )
                 })
@@ -759,6 +673,258 @@ export default function FacturesTab() {
       </div>
     </div>
     </>
+  )
+}
+
+// ── Modal Détail Facture ───────────────────────────────────────────────────────
+function FactureDetailModal({ billNo, patientName, detail, onClose, onPay }) {
+  const services  = detail?.data?.services ?? []
+  const totDetail = detail?.data?.totaux   ?? null
+
+  // Fermer sur Escape
+  React.useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(15,23,42,0.55)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 20,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#fff', borderRadius: 16,
+          boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+          width: '100%', maxWidth: 860,
+          maxHeight: '90vh',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          background: `linear-gradient(135deg, ${colors.bleu} 0%, ${colors.bleuLight} 100%)`,
+          padding: '18px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: 'rgba(255,255,255,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 20,
+            }}>📋</div>
+            <div>
+              <div style={{ color: '#fff', fontWeight: 800, fontSize: 16, lineHeight: 1.2 }}>
+                Détail de la facture
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2 }}>
+                {billNo && (
+                  <span style={{
+                    fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.5px',
+                    background: 'rgba(255,255,255,0.15)', borderRadius: 4, padding: '1px 7px',
+                    marginRight: 8,
+                  }}>{billNo}</span>
+                )}
+                {patientName}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 36, height: 36, borderRadius: '50%', cursor: 'pointer',
+              background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)',
+              color: '#fff', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+          >×</button>
+        </div>
+
+        {/* Récap totaux */}
+        {totDetail && (
+          <div style={{
+            padding: '14px 24px',
+            background: colors.gray50,
+            borderBottom: `1px solid ${colors.gray100}`,
+            display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center',
+            flexShrink: 0,
+          }}>
+            <TotalPill label="Montant total" value={totDetail.total_brut} color={colors.warning} bg="#fff8e1" />
+            <TotalPill label="Part patient" value={totDetail.total_patient} color="#c62828" bg="#ffebee" />
+            {Number(totDetail.total_partenaire || 0) > 0 && (
+              <TotalPill label="Part partenaire" value={totDetail.total_partenaire} color={colors.success} bg="#e8f5e9" />
+            )}
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: colors.gray400 }}>
+              {services.length} service{services.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+
+        {/* Corps */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+          {detail?.loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '40px 0' }}>
+              <LoadingSpinner />
+              <span style={{ fontSize: 13, color: colors.gray500 }}>Chargement des détails…</span>
+            </div>
+          ) : detail?.error ? (
+            <div style={{
+              background: '#fff5f5', border: `1.5px solid ${colors.danger}40`,
+              borderLeft: `4px solid ${colors.danger}`,
+              borderRadius: 8, padding: '12px 16px',
+              fontSize: 13, color: colors.danger, display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              ⚠️ {detail.error}
+            </div>
+          ) : services.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>📂</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.gray600 }}>Aucun service trouvé</div>
+              <div style={{ fontSize: 12, color: colors.gray400, marginTop: 4 }}>Cette facture ne contient pas de lignes de service.</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {services.map((svc, si) => {
+                const isPaid = svc.StatutPaiement !== 'EN_ATTENTE'
+                return (
+                  <div
+                    key={svc.IDgen_mst_facture ?? si}
+                    style={{
+                      background: '#fff', border: `1.5px solid ${colors.gray100}`,
+                      borderLeft: `4px solid ${isPaid ? colors.success : colors.warning}`,
+                      borderRadius: 10, padding: '12px 16px',
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    {/* Numéro */}
+                    <div style={{
+                      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                      background: `${colors.bleu}12`, color: colors.bleu,
+                      fontSize: 11, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{si + 1}</div>
+
+                    {/* Description */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: colors.gray800, fontSize: 13 }}>
+                        {svc.NomDescription || svc.IDService || '—'}
+                      </div>
+                      <div style={{ fontSize: 11, color: colors.gray400, marginTop: 2 }}>
+                        Service facturable
+                      </div>
+                    </div>
+
+                    {/* Montants */}
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexShrink: 0 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: colors.gray400, letterSpacing: '0.4px' }}>Total</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: colors.warning }}>
+                          {Number(svc.MontantTotalFacture || 0).toLocaleString('fr-FR')} F
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: colors.gray400, letterSpacing: '0.4px' }}>Patient</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#c62828' }}>
+                          {Number(svc.patient_payable || 0).toLocaleString('fr-FR')} F
+                        </div>
+                      </div>
+                      {Number(svc.MontantPartenaire || 0) > 0 && (
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: colors.gray400, letterSpacing: '0.4px' }}>Partenaire</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: colors.success }}>
+                            {Number(svc.MontantPartenaire).toLocaleString('fr-FR')} F
+                          </div>
+                        </div>
+                      )}
+                      {/* Statut */}
+                      <span style={{
+                        padding: '4px 10px', borderRadius: 20,
+                        fontSize: 10, fontWeight: 700,
+                        background: isPaid ? '#e8f5e9' : '#fff3e0',
+                        color:      isPaid ? '#2e7d32' : '#f57c00',
+                        border: `1px solid ${isPaid ? '#2e7d3230' : '#f57c0030'}`,
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {isPaid ? '✓ Payé' : '⏳ En attente'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div style={{
+          padding: '14px 24px',
+          borderTop: `1px solid ${colors.gray100}`,
+          background: colors.gray50,
+          display: 'flex', justifyContent: 'flex-end', gap: 10,
+          flexShrink: 0,
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '9px 22px', borderRadius: 8, cursor: 'pointer',
+              border: `1.5px solid ${colors.gray200}`, background: '#fff',
+              color: colors.gray700, fontSize: 13, fontWeight: 600,
+              transition: 'border-color 0.12s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = colors.gray400}
+            onMouseLeave={e => e.currentTarget.style.borderColor = colors.gray200}
+          >
+            Fermer
+          </button>
+          <button
+            onClick={onPay}
+            style={{
+              padding: '9px 22px', borderRadius: 8, cursor: 'pointer',
+              border: 'none', background: colors.success,
+              color: '#fff', fontSize: 13, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 6,
+              boxShadow: `0 4px 12px ${colors.success}40`,
+              transition: 'opacity 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            💳 Enregistrer un paiement
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TotalPill({ label, value, color, bg }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 2,
+      padding: '6px 14px', borderRadius: 8,
+      background: bg, border: `1px solid ${color}20`,
+    }}>
+      <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: colors.gray500, letterSpacing: '0.4px' }}>
+        {label}
+      </span>
+      <span style={{ fontSize: 15, fontWeight: 800, color }}>
+        {Number(value || 0).toLocaleString('fr-FR')} F
+      </span>
+    </div>
   )
 }
 

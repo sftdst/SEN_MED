@@ -31,6 +31,8 @@ use App\Http\Controllers\Api\FicheAttController;
 use App\Http\Controllers\Api\ComptabiliteController;
 use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\DocumentTemplateController;
+use App\Http\Controllers\Api\GeneratedCertificateController;
+use App\Http\Controllers\Api\NursingDossierController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -391,5 +393,47 @@ Route::prefix('v1')->group(function () {
     // Templates CRUD
     Route::apiResource('formulaires', DocumentTemplateController::class)
         ->parameters(['formulaires' => 'template']);
+
+    // ── Certificats générés ───────────────────────────────────────────────────
+    Route::get('generated-certificates',  [GeneratedCertificateController::class, 'index']);
+    Route::post('generated-certificates', [GeneratedCertificateController::class, 'store']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module DSI — Dossier de Soins Infirmiers
+    |--------------------------------------------------------------------------
+    */
+
+    // Dashboard (avant apiResource pour éviter conflit de route)
+    Route::get('nursing-dossiers/dashboard', [NursingDossierController::class, 'dashboard']);
+
+    // CRUD principal
+    Route::apiResource('nursing-dossiers', NursingDossierController::class)
+        ->parameters(['nursing-dossiers' => 'dossier']);
+
+    // ── Contacts & Intervenants ───────────────────────────────────────────────
+    Route::put('nursing-dossiers/{dossier}/contacts',    [NursingDossierController::class, 'updateContacts']);
+    Route::put('nursing-dossiers/{dossier}/intervenants',[NursingDossierController::class, 'updateIntervenants']);
+
+    // ── Traitements ───────────────────────────────────────────────────────────
+    Route::post('nursing-dossiers/{dossier}/treatments',                      [NursingDossierController::class, 'storeTreatment']);
+    Route::put('nursing-dossiers/{dossier}/treatments/{treatment}',           [NursingDossierController::class, 'updateTreatment']);
+    Route::delete('nursing-dossiers/{dossier}/treatments/{treatment}',        [NursingDossierController::class, 'destroyTreatment']);
+
+    // ── Diagramme de soins ────────────────────────────────────────────────────
+    Route::get('nursing-dossiers/{dossier}/care-diagram',  [NursingDossierController::class, 'getCareDiagram']);
+    Route::post('nursing-dossiers/{dossier}/care-records', [NursingDossierController::class, 'storeCareRecord']);
+
+    // ── Transmissions ─────────────────────────────────────────────────────────
+    Route::post('nursing-dossiers/{dossier}/transmissions',                   [NursingDossierController::class, 'storeTransmission']);
+    Route::delete('nursing-dossiers/{dossier}/transmissions/{transmission}',  [NursingDossierController::class, 'destroyTransmission']);
+
+    // ── Évaluations (échelles) ────────────────────────────────────────────────
+    Route::get('nursing-dossiers/{dossier}/assessments',  [NursingDossierController::class, 'getAssessments']);
+    Route::post('nursing-dossiers/{dossier}/assessments', [NursingDossierController::class, 'storeAssessment']);
+
+    // ── Surveillances ─────────────────────────────────────────────────────────
+    Route::get('nursing-dossiers/{dossier}/surveillances',  [NursingDossierController::class, 'getSurveillances']);
+    Route::post('nursing-dossiers/{dossier}/surveillances', [NursingDossierController::class, 'storeSurveillance']);
 
 });
