@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useNavigate } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { patientApi, partenaireApi } from '../../api'
 import CreerVisiteModal from '../visites/CreerVisiteModal'
 import { colors, radius, shadows, typography, spacing } from '../../theme'
