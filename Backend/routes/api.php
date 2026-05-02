@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\DocumentTemplateController;
 use App\Http\Controllers\Api\GeneratedCertificateController;
 use App\Http\Controllers\Api\NursingDossierController;
+use App\Http\Controllers\Api\ChatController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -439,5 +440,18 @@ Route::prefix('v1')->group(function () {
     // ── Images de surveillance (plaie) ────────────────────────────────────────
     Route::post('nursing-dossiers/{dossier}/surveillances/{surveillance}/images',   [NursingDossierController::class, 'uploadSurveillanceImage']);
     Route::delete('nursing-dossiers/{dossier}/surveillances/{surveillance}/images', [NursingDossierController::class, 'deleteSurveillanceImage']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Chat & Messagerie interne
+    |--------------------------------------------------------------------------
+    */
+    Route::get('chat/users',                              [ChatController::class, 'users']);
+    Route::get('chat/conversations',                      [ChatController::class, 'conversations']);
+    Route::post('chat/conversations',                     [ChatController::class, 'createConversation']);
+    Route::get('chat/conversations/{conv}/messages',      [ChatController::class, 'messages']);
+    Route::post('chat/conversations/{conv}/messages',     [ChatController::class, 'sendMessage']);
+    Route::put('chat/conversations/{conv}/read',          [ChatController::class, 'markRead']);
+    Route::get('chat/unread-count',                       [ChatController::class, 'unreadCount']);
 
 });
