@@ -10,7 +10,9 @@ class ServiceSeeder extends Seeder
 {
     public function run(): void
     {
-        \DB::statement('TRUNCATE TABLE "gen_mst_service" RESTART IDENTITY CASCADE');
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        \DB::table('gen_mst_service')->truncate();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $services = [
             ['id_gen_mst_service' => 1, 'n_ordre' => 1, 'short_name' => 'Consultation Générale', 'tri_name' => 'CONSULTATION GENERALE', 'code_local' => 'CG001', 'cle_tarif_service' => 'TARIF001', 'groupe_id' => 1, 'categorie_id' => 1, 'type_categorie' => 'Consultation', 'status' => 1, 'valeur_cts' => 50000, 'majoration_ferie' => 0, 'code_snomed' => 'SN001', 'code_hl7' => 'HL001', 'IDgen_mst_Type_Service' => 1],

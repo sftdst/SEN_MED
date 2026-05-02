@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { colors, radius, shadows, spacing } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
 import Button from '../../components/ui/Button'
 import SearchBar from '../../components/ui/SearchBar'
 import Modal from '../../components/ui/Modal'
-import { personnelApi } from '../../api'
+import { personnelApi, exceptionApi } from '../../api'
 
 export default function GestionCongesPage() {
   const [conges, setConges] = useState([])
@@ -14,7 +14,7 @@ export default function GestionCongesPage() {
   const [editingId, setEditingId] = useState(null)
   const [search, setSearch] = useState('')
   const [form, setForm] = useState({
-    IDMedecin: '', Type: 'conge', DateDebut: '', DateFin: '', Description: '', Statut: 'en_attente'
+    IDMedecin: '', Type: 'conge', DateDebut: '', DateFin: '', Description: ''
   })
   const [certificatModal, setCertificatModal] = useState(null)
   const printRef = useRef(null)
@@ -23,7 +23,6 @@ export default function GestionCongesPage() {
     try {
       const response = await personnelApi.liste({ per_page: 200 })
       const d = response.data
-      console.log('Réponse API personnels:', d) // Debug
       let list = []
       if (d?.data?.data && Array.isArray(d.data.data)) {
         list = d.data.data
@@ -32,7 +31,9 @@ export default function GestionCongesPage() {
       } else if (Array.isArray(d)) {
         list = d
       }
+ 
       console.log('Personnels extraits:', list.length, list)
+ 
       setPersonnels(list)
     } catch (error) {
       console.error('Erreur chargement personnels:', error)
@@ -44,29 +45,41 @@ export default function GestionCongesPage() {
     loadPersonnels()
   }, [])
 
-  const loadConges = async () => {
-    setLoading(true)
-    try {
-      // TODO: implémenter avec ExceptionController API (Type = 'conge')
-      const filtered = search
-        ? [
-            { id: 1, IDMedecin: 1, Type: 'conge', DateDebut: '2026-04-01', DateFin: '2026-04-10', Description: 'Congé annuel', Statut: 'approuve', personnel: 'M. Diop' },
-            { id: 2, IDMedecin: 2, Type: 'conge', DateDebut: '2026-05-01', DateFin: '2026-07-01', Description: 'Congé maternité', Statut: 'en_attente', personnel: 'Mme. Fall' },
-          ].filter(c =>
-            !search || c.personnel.toLowerCase().includes(search.toLowerCase()) ||
-            (c.Description || '').toLowerCase().includes(search.toLowerCase())
-          )
-        : [
-            { id: 1, IDMedecin: 1, Type: 'conge', DateDebut: '2026-04-01', DateFin: '2026-04-10', Description: 'Congé annuel', Statut: 'approuve', personnel: 'M. Diop' },
-            { id: 2, IDMedecin: 2, Type: 'conge', DateDebut: '2026-05-01', DateFin: '2026-07-01', Description: 'Congé maternité', Statut: 'en_attente', personnel: 'Mme. Fall' },
-          ]
-      setConges(filtered)
-    } catch {
-      showToast('Erreur chargement congés', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
+   const loadConges = useCallback(async () => {
+     setLoading(true)
+     try {
+       const response = await exceptionApi.liste({ Type: 'conge', per_page: 200 })
+       const d = response.data
+       let list = []
+       if (d?.data?.data && Array.isArray(d.data.data)) {
+         list = d.data.data.map(item => ({
+           id: item.IDmedecin_exception,
+           IDMedecin: item.IDMedecin,
+           Type: item.Type,
+           DateDebut: item.DateDebut?.split('T')[0] || item.DateDebut,
+           DateFin: item.DateFin?.split('T')[0] || item.DateFin,
+           Description: item.Description,
+           personnel: item.medecin?.staff_name || item.medecin?.nom || `${item.medecin?.first_name || ''} ${item.medecin?.last_name || ''}`.trim() || 'Personnel #' + item.IDMedecin
+         }))
+       }
+       const filtered = search
+         ? list.filter(c =>
+             !search || c.personnel.toLowerCase().includes(search.toLowerCase()) ||
+             (c.Description || '').toLowerCase().includes(search.toLowerCase())
+           )
+         : list
+       setConges(filtered)
+     } catch (err) {
+       console.error('Erreur chargement congés:', err)
+       showToast('Erreur chargement congés', 'error')
+     } finally {
+       setLoading(false)
+     }
+   }, [search])
+
+   useEffect(() => {
+     loadConges()
+   }, [loadConges])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -74,34 +87,67 @@ export default function GestionCongesPage() {
   }
 
   const handleSave = async () => {
+    if (!form.IDMedecin) {
+      showToast('Veuillez sélectionner un membre du personnel', 'error')
+      return
+    }
+    if (!form.DateDebut || !form.DateFin) {
+      showToast('Veuillez remplir toutes les dates', 'error')
+      return
+    }
+    if (new Date(form.DateFin) < new Date(form.DateDebut)) {
+      showToast('La date de fin doit être après la date de début', 'error')
+      return
+    }
+
     try {
+      const payload = {
+        IDMedecin: parseInt(form.IDMedecin),
+        DateDebut: form.DateDebut,
+        DateFin: form.DateFin,
+        Type: form.Type,
+        Description: form.Description,
+      }
+      console.log('Saving congé with payload:', payload)
       if (editingId) {
+        await exceptionApi.modifier(editingId, payload)
         showToast('Congé modifié', 'success')
       } else {
+        await exceptionApi.creer(payload)
         showToast('Congé ajouté', 'success')
       }
       setShowModal(false)
       setEditingId(null)
-      setForm({ IDMedecin: '', Type: 'conge', DateDebut: '', DateFin: '', Description: '', Statut: 'en_attente' })
+      setForm({ IDMedecin: '', Type: 'conge', DateDebut: '', DateFin: '', Description: '' })
       loadConges()
-    } catch {
-      showToast('Erreur sauvegarde', 'error')
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error)
+      console.error('Response data:', error.response?.data)
+      if (error.response?.status === 422) {
+        const errors = error.response.data.errors
+        const messages = Object.values(errors).flat().join(', ')
+        showToast(`Erreur de validation: ${messages}`, 'error')
+      } else {
+        showToast('Erreur lors de la sauvegarde', 'error')
+      }
     }
   }
 
   const handleDelete = async (id) => {
     if (!window.confirm('Supprimer ce congé ?')) return
-    try {
-      showToast('Congé supprimé', 'success')
-      loadConges()
-    } catch {
-      showToast('Erreur suppression', 'error')
-    }
+     try {
+       await exceptionApi.supprimer(id)
+       showToast('Congé supprimé', 'success')
+       loadConges()
+     } catch (err) {
+       console.error('Erreur suppression congé:', err)
+       showToast('Erreur suppression', 'error')
+     }
   }
 
   const openCreate = () => {
     setEditingId(null)
-    setForm({ IDMedecin: '', Type: 'conge', DateDebut: '', DateFin: '', Description: '', Statut: 'en_attente' })
+    setForm({ IDMedecin: '', Type: 'conge', DateDebut: '', DateFin: '', Description: '' })
     setShowModal(true)
   }
 
@@ -113,7 +159,6 @@ export default function GestionCongesPage() {
       DateDebut: c.DateDebut || '',
       DateFin: c.DateFin || '',
       Description: c.Description || '',
-      Statut: c.Statut || 'en_attente'
     })
     setShowModal(true)
   }
@@ -181,7 +226,6 @@ export default function GestionCongesPage() {
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700 }}>Type</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700 }}>Début</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700 }}>Fin</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700 }}>Statut</th>
                 <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 700 }}>Actions</th>
               </tr>
             </thead>
@@ -194,20 +238,11 @@ export default function GestionCongesPage() {
                   </td>
                   <td style={{ padding: '12px 16px' }}>{c.DateDebut}</td>
                   <td style={{ padding: '12px 16px' }}>{c.DateFin}</td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <span style={{
-                      padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-                      background: c.Statut === 'approuve' ? colors.successBg : c.Statut === 'refuse' ? colors.dangerBg : colors.warningBg,
-                      color: c.Statut === 'approuve' ? colors.success : c.Statut === 'refuse' ? colors.danger : colors.warning,
-                    }}>
-                      {c.Statut}
-                    </span>
+                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                    <button onClick={() => openEdit(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid ${colors.bleu}40`, borderRadius: radius.sm, background: 'transparent', color: colors.bleu, cursor: 'pointer' }}>✏️</button>
+                    <button onClick={() => setCertificatModal(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid ${colors.orange}40`, borderRadius: radius.sm, background: 'transparent', color: colors.orange, cursor: 'pointer' }}>🖨️</button>
+                    <button onClick={() => handleDelete(c.id)} style={{ padding: '6px 10px', border: `1px solid ${colors.danger}40`, borderRadius: radius.sm, background: 'transparent', color: colors.danger, cursor: 'pointer' }}>🗑️</button>
                   </td>
-                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                     <button onClick={() => openEdit(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid ${colors.bleu}40`, borderRadius: radius.sm, background: 'transparent', color: colors.bleu, cursor: 'pointer' }}>✏️</button>
-                     <button onClick={() => setCertificatModal(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid ${colors.orange}40`, borderRadius: radius.sm, background: 'transparent', color: colors.orange, cursor: 'pointer' }}>🖨️</button>
-                     <button onClick={() => handleDelete(c.id)} style={{ padding: '6px 10px', border: `1px solid ${colors.danger}40`, borderRadius: radius.sm, background: 'transparent', color: colors.danger, cursor: 'pointer' }}>🗑️</button>
-                   </td>
                 </tr>
               ))}
             </tbody>
@@ -245,13 +280,6 @@ export default function GestionCongesPage() {
               <label>Date début<input name="DateDebut" type="date" value={form.DateDebut} onChange={handleChange} style={{ width: '100%', padding: 8, border: `1px solid ${colors.gray300}`, borderRadius: radius.sm }} /></label>
               <label>Date fin<input name="DateFin" type="date" value={form.DateFin} onChange={handleChange} style={{ width: '100%', padding: 8, border: `1px solid ${colors.gray300}`, borderRadius: radius.sm }} /></label>
               <label>Description<textarea name="Description" value={form.Description} onChange={handleChange} style={{ width: '100%', padding: 8, border: `1px solid ${colors.gray300}`, borderRadius: radius.sm }} /></label>
-              <label>Statut
-                <select name="Statut" value={form.Statut} onChange={handleChange} style={{ width: '100%', padding: 8, border: `1px solid ${colors.gray300}`, borderRadius: radius.sm }}>
-                  <option value="en_attente">En attente</option>
-                  <option value="approuve">Approuvé</option>
-                  <option value="refuse">Refusé</option>
-                </select>
-              </label>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
               <Button variant="secondary" onClick={() => setShowModal(false)}>Annuler</Button>

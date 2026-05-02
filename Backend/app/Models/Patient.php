@@ -87,7 +87,23 @@ class Patient extends Model
         'status_id'     => 'integer',
     ];
 
-    protected $appends = ['age'];
+    protected $appends = ['age', 'photo_url'];
+
+    /**
+     * Accesseur pour l'URL complète de la photo
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (!$this->photo) {
+            return null;
+        }
+        // Si la photo est déjà une URL complète (commence par http), la renvoyer telle quelle
+        if (str_starts_with($this->photo, 'http')) {
+            return $this->photo;
+        }
+        // Sinon, générer l'URL via le disque public (storage/app/public)
+        return \Storage::disk('public')->url($this->photo);
+    }
 
     /**
      * Relation avec le partenaire (compagnie d'assurance)

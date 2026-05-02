@@ -13,9 +13,20 @@ const navItems = [
       { to: '/salle-attente', label: "Salle d'attente" },
       { to: '/hospitalisation',  label: 'Hospitalisation' },
       { to: '/transferts',      label: 'Transferts' },
-      { to: '/planning',        label: 'Planning médical' },
-      { to: '/espace-medecin',  label: 'Espace médecin'  },
-      { to: '/rendezvous',      label: 'Gestion des RDV' },
+    ],
+  },
+  {
+    group: 'ESPACE MÉDECIN',
+    icon: '👨‍⚕️',
+    items: [
+      { to: '/espace-medecin', label: 'Tableau de bord' },
+    ],
+  },
+  {
+    group: 'GESTION RDV',
+    icon: '📅',
+    items: [
+      { to: '/rendezvous', label: 'Gestion des RDV' },
     ],
   },
   {
@@ -26,7 +37,7 @@ const navItems = [
     ],
   },
   {
-    group: 'PHARMACIE',
+    group: 'GESTION PHARMACEUTIQUE',
     icon: '💊',
     items: [
       { to: '/pharmacie', label: 'Pharmacie' },
@@ -37,6 +48,7 @@ const navItems = [
     icon: '💰',
     items: [
       { to: '/comptabilite', label: 'Comptabilité' },
+      { to: '/tarification', label: 'Tarification' },
     ],
   },
   {
@@ -56,12 +68,21 @@ const navItems = [
       { to: '/config-systeme',   label: 'Configuration système' },
       { to: '/config-sanitaire', label: 'Config. sanitaire'     },
       { to: '/formulaires',      label: 'Formulaires'           },
-      { to: '/tarification',     label: 'Tarification'          },
-      { to: '/laboratoire',      label: 'Laboratoire'           },
-      { to: '/hopitaux',         label: 'Hôpitaux'              },
+    ],
+  },
+  {
+    group: 'LABORATOIRE',
+    icon: '🧪',
+    items: [
+      { to: '/laboratoire', label: 'Laboratoire' },
+    ],
+  },
+  {
+    group: 'ADMINISTRATION',
+    icon: '🏢',
+    items: [
       { to: '/departements',     label: 'Départements'          },
-      { to: '/type-services',    label: 'Types de services'     },
-      { to: '/services',         label: 'Services'              },
+      { to: '/hopitaux',         label: 'Hôpitaux'              },
       { to: '/partenaires',      label: 'Partenaires'           },
     ],
   },

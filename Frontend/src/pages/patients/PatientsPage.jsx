@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { patientApi, partenaireApi } from '../../api'
 import CreerVisiteModal from '../visites/CreerVisiteModal'
 import { colors, radius, shadows, typography, spacing } from '../../theme'
@@ -21,14 +22,14 @@ const EMPTY_COMPLET = {
   country: 'Sénégal', city: '', address: '', address2: '', postal_code: '',
   contact_number: '', mobile_number: '', email_adress: '',
   emergency_contact_name: '', emergency_contact_number: '',
-  pere_name: '', mere_name: '', profession: '', emplos: '',
+  family_id: '', pere_name: '', mere_name: '', profession: '', emplos: '',
   socite: '', lieu_travail: '', company_id: '', type_couverture: '',
   num_police: '', validate: '', family_doctor: '', ssn_no: '',
 }
 
 const EMPTY_RAPIDE = {
   first_name: '', last_name: '', dob: '', gender_id: '', mobile_number: '',
-  company_id: '', type_couverture: '', emergency_contact_number: '',
+  family_id: '', company_id: '', type_couverture: '', emergency_contact_number: '',
 }
 
 // ── Formatage ────────────────────────────────────────────────
@@ -140,28 +141,37 @@ export default function PatientsPage() {
   const [search,          setSearch]         = useState('')
   const [filterPartenaire, setFilterPartenaire] = useState('')
   const [filterType,       setFilterType]     = useState('')
-  const [loadingList,     setLoadingList]    = useState(true)
-  const [loadingMeta,     setLoadingMeta]    = useState(true)
+   const [loadingList,     setLoadingList]    = useState(true)
+   const [loadingMeta,     setLoadingMeta]    = useState(true)
+   const [saving,         setSaving]         = useState(false)
 
-  const [modalRapide,     setModalRapide]    = useState(false)
-  const [modalComplet,    setModalComplet]   = useState(false)
+    const [formRapide,      setFormRapide]     = useState(EMPTY_RAPIDE)
+    const [formComplet,     setFormComplet]    = useState(EMPTY_COMPLET)
+    const [form,            setForm]           = useState({})
+    const [formErrors,      setFormErrors]     = useState({})
+
+   const [modalRapide,     setModalRapide]    = useState(false)
+   const [modalComplet,    setModalComplet]   = useState(false)
   const [modalEdit,       setModalEdit]      = useState(false)
   const [modalView,       setModalView]      = useState(false)
   const [modalHistorique, setModalHistorique] = useState(false)
   const [modalRdv,        setModalRdv]       = useState(false)
-  const [modalConsult,    setModalConsult]    = useState(false)
-  const [modalDevis,      setModalDevis]     = useState(false)
-  const [modalCard,       setModalCard]      = useState(false)
+   const [modalConsult,    setModalConsult]    = useState(false)
+   const [modalDevis,      setModalDevis]     = useState(false)
+   const [confirmDel,      setConfirmDel]     = useState(false)
+   const [modalCard,       setModalCard]      = useState(false)
 
-  const [formRapide,      setFormRapide]     = useState(EMPTY_RAPIDE)
-  const [formComplet,     setFormComplet]    = useState(EMPTY_COMPLET)
-  const [form,            setForm]           = useState({})
-  const [formErrors,      setFormErrors]     = useState({})
-  const [saving,          setSaving]         = useState(false)
-  const [confirmDel,      setConfirmDel]     = useState(false)
-  const [patientVisite,   setPatientVisite]  = useState(null)  // patient pour ouvrir visite après création rapide
+    const [photoFileRapide,  setPhotoFileRapide] = useState(null)
+    const [photoFileComplet, setPhotoFileComplet] = useState(null)
+    const [photoFileEdit,    setPhotoFileEdit]   = useState(null)
 
-  const timer = useRef(null)
+    const [devisArticles,    setDevisArticles]   = useState([])
+    const [devisGenere,      setDevisGenere]     = useState(false)
+    const [nouvelleDescription, setNouvelleDescription] = useState('')
+    const [nouveauMontant,     setNouveauMontant]     = useState('')
+
+    const timer = useRef(null)
+    const navigate = useNavigate()
 
   // ── Chargement initial ─────────────────────────────────
   useEffect(() => {
@@ -262,58 +272,85 @@ export default function PatientsPage() {
     }
   }
 
-  // ── Modales ─────────────────────────────────────────────
-  const closeModals = () => {
-    setModalRapide(false)
-    setModalComplet(false)
-    setModalEdit(false)
-    setModalView(false)
-    setSelected(null)
-    setForm({})
-    setFormRapide(EMPTY_RAPIDE)
-    setFormComplet(EMPTY_COMPLET)
-    setFormErrors({})
-  }
-
-  // ── Sauvegarde ─────────────────────────────────────────
-  const handleSaveRapide = async () => {
-    setSaving(true)
-    setFormErrors({})
-    try {
-      await patientApi.creerRapide(formRapide)
-      showToast('Patient créé rapidement.')
-      closeModals()
-      loadPatients()
-    } catch (err) {
-      setFormErrors(err.response?.data?.errors || {})
-      showToast(err.response?.data?.message || 'Erreur de validation.', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Créer patient rapide puis ouvrir directement la création de visite
-  const handleSaveRapideEtVisite = async () => {
-    setSaving(true)
-    setFormErrors({})
-    try {
-      const res = await patientApi.creerRapide(formRapide)
-      const nouveauPatient = res.data?.data
-      showToast('Patient créé — ouverture de la visite.')
+   // ── Modales ─────────────────────────────────────────────
+    const closeModals = () => {
       setModalRapide(false)
+      setModalComplet(false)
+      setModalEdit(false)
+      setModalView(false)
+      setModalDevis(false)
+      setSelected(null)
+      setForm({})
       setFormRapide(EMPTY_RAPIDE)
+      setFormComplet(EMPTY_COMPLET)
       setFormErrors({})
-      setPatientVisite(nouveauPatient)
-      setSelected(nouveauPatient)
-      setModalConsult(true)
-      loadPatients()
-    } catch (err) {
-      setFormErrors(err.response?.data?.errors || {})
-      showToast(err.response?.data?.message || 'Erreur de validation.', 'error')
-    } finally {
-      setSaving(false)
+      setPhotoFileRapide(null)
+      setPhotoFileComplet(null)
+      setPhotoFileEdit(null)
+      setDevisArticles([])
+      setDevisGenere(false)
+      setNouvelleDescription('')
+      setNouveauMontant('')
     }
-  }
+
+   // ── Sauvegarde ─────────────────────────────────────────
+   const handleSaveRapide = async () => {
+     setSaving(true)
+     setFormErrors({})
+     try {
+       const data = new FormData()
+       Object.keys(formRapide).forEach(key => {
+         if (formRapide[key] !== null && formRapide[key] !== undefined && formRapide[key] !== '') {
+           data.append(key, formRapide[key])
+         }
+       })
+       if (photoFileRapide) {
+         data.append('photo', photoFileRapide)
+       }
+       await patientApi.creerRapide(data)
+       showToast('Patient créé rapidement.')
+       closeModals()
+       loadPatients()
+     } catch (err) {
+       setFormErrors(err.response?.data?.errors || {})
+       showToast(err.response?.data?.message || 'Erreur de validation.', 'error')
+     } finally {
+       setSaving(false)
+     }
+   }
+
+   // Créer patient rapide puis ouvrir directement la création de visite
+   const handleSaveRapideEtVisite = async () => {
+     setSaving(true)
+     setFormErrors({})
+     try {
+       const data = new FormData()
+       Object.keys(formRapide).forEach(key => {
+         if (formRapide[key] !== null && formRapide[key] !== undefined && formRapide[key] !== '') {
+           data.append(key, formRapide[key])
+         }
+       })
+       if (photoFileRapide) {
+         data.append('photo', photoFileRapide)
+       }
+       const res = await patientApi.creerRapide(data)
+       const nouveauPatient = res.data?.data
+       showToast('Patient créé — ouverture de la visite.')
+       setModalRapide(false)
+       setFormRapide(EMPTY_RAPIDE)
+       setFormErrors({})
+       setPhotoFileRapide(null)
+       setPatientVisite(nouveauPatient)
+       setSelected(nouveauPatient)
+       setModalConsult(true)
+       loadPatients()
+     } catch (err) {
+       setFormErrors(err.response?.data?.errors || {})
+       showToast(err.response?.data?.message || 'Erreur de validation.', 'error')
+     } finally {
+       setSaving(false)
+     }
+   }
 
   // Basculer vers la fiche complète en pré-remplissant avec les données rapides
   const handleSwitchToComplete = () => {
@@ -324,6 +361,7 @@ export default function PatientsPage() {
       dob:            formRapide.dob,
       gender_id:      formRapide.gender_id,
       mobile_number:  formRapide.mobile_number,
+      family_id:      formRapide.family_id,
       company_id:     formRapide.company_id,
       type_couverture: formRapide.type_couverture,
     }))
@@ -332,60 +370,87 @@ export default function PatientsPage() {
     if (formRapide.company_id) loadTypesCouverture(formRapide.company_id)
   }
 
-  const handleSaveComplet = async () => {
-    setSaving(true)
-    setFormErrors({})
-    try {
-      await patientApi.creer(formComplet)
-      showToast('Fiche patient créée.')
-      closeModals()
-      loadPatients()
-    } catch (err) {
-      setFormErrors(err.response?.data?.errors || {})
-      showToast(err.response?.data?.message || 'Erreur de validation.', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
+   const handleSaveComplet = async () => {
+     setSaving(true)
+     setFormErrors({})
+     try {
+       const data = new FormData()
+       Object.keys(formComplet).forEach(key => {
+         if (formComplet[key] !== null && formComplet[key] !== undefined && formComplet[key] !== '') {
+           data.append(key, formComplet[key])
+         }
+       })
+       if (photoFileComplet) {
+         data.append('photo', photoFileComplet)
+       }
+       await patientApi.creer(data)
+       showToast('Fiche patient créée.')
+       closeModals()
+       loadPatients()
+     } catch (err) {
+       setFormErrors(err.response?.data?.errors || {})
+       showToast(err.response?.data?.message || 'Erreur de validation.', 'error')
+     } finally {
+       setSaving(false)
+     }
+   }
 
-  const handleSaveEdit = async () => {
-    setSaving(true)
-    setFormErrors({})
-    try {
-      await patientApi.modifier(selected.id_Rep, form)
-      showToast('Patient modifié.')
-      closeModals()
-      loadPatients()
-    } catch (err) {
-      setFormErrors(err.response?.data?.errors || {})
-      showToast(err.response?.data?.message || 'Erreur.', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
+   const handleSaveEdit = async () => {
+     setSaving(true)
+     setFormErrors({})
+     try {
+       const data = new FormData()
+       Object.keys(form).forEach(key => {
+         if (form[key] !== null && form[key] !== undefined && form[key] !== '') {
+           data.append(key, form[key])
+         }
+       })
+       if (photoFileEdit) {
+         data.append('photo', photoFileEdit)
+       }
+       await patientApi.modifier(selected.id_Rep, data)
+       showToast('Patient modifié.')
+       closeModals()
+       loadPatients()
+     } catch (err) {
+       setFormErrors(err.response?.data?.errors || {})
+       showToast(err.response?.data?.message || 'Erreur.', 'error')
+     } finally {
+       setSaving(false)
+     }
+   }
 
-  // Enregistrer les modifications puis ouvrir directement la création de visite
-  const handleSaveEditEtVisite = async () => {
-    setSaving(true)
-    setFormErrors({})
-    try {
-      const res = await patientApi.modifier(selected.id_Rep, form)
-      const patientMaj = res.data?.data ?? selected
-      showToast('Patient modifié — ouverture de la visite.')
-      setModalEdit(false)
-      setForm({})
-      setFormErrors({})
-      setPatientVisite(patientMaj)
-      setSelected(patientMaj)
-      setModalConsult(true)
-      loadPatients()
-    } catch (err) {
-      setFormErrors(err.response?.data?.errors || {})
-      showToast(err.response?.data?.message || 'Erreur.', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
+   // Enregistrer les modifications puis ouvrir directement la création de visite
+   const handleSaveEditEtVisite = async () => {
+     setSaving(true)
+     setFormErrors({})
+     try {
+       const data = new FormData()
+       Object.keys(form).forEach(key => {
+         if (form[key] !== null && form[key] !== undefined && form[key] !== '') {
+           data.append(key, form[key])
+         }
+       })
+       if (photoFileEdit) {
+         data.append('photo', photoFileEdit)
+       }
+       const res = await patientApi.modifier(selected.id_Rep, data)
+       const patientMaj = res.data?.data ?? selected
+       showToast('Patient modifié — ouverture de la visite.')
+       setModalEdit(false)
+       setForm({})
+       setFormErrors({})
+       setPatientVisite(patientMaj)
+       setSelected(patientMaj)
+       setModalConsult(true)
+       loadPatients()
+     } catch (err) {
+       setFormErrors(err.response?.data?.errors || {})
+       showToast(err.response?.data?.message || 'Erreur.', 'error')
+     } finally {
+       setSaving(false)
+     }
+   }
 
   // Ouvrir la visite directement sans sauvegarder les modifications en cours
   const handleVisiteDepuisEdit = () => {
@@ -408,15 +473,51 @@ export default function PatientsPage() {
     }
   }
 
-  const openEditModal = async (patient) => {
-    setSelected(patient)
-    setForm(patient)
-    setFormErrors({})
-    setModalEdit(true)
-    if (patient.company_id) {
-      await loadTypesCouverture(patient.company_id)
+  // --- DEVIS ---
+  const handleGenererDevis = async () => {
+    if (!selected || devisArticles.length === 0) {
+      showToast('Veuillez ajouter au moins un article au devis.', 'error')
+      return
+    }
+
+    // Calcul du montant total
+    const total = devisArticles.reduce((sum, article) => sum + article.montant, 0)
+
+    // Ici, on préparerait les données du devis mais on n'appellerait PAS
+    // une API qui comptabiliserait le devis, conformément à la demande
+    setDevisGenere(true)
+    
+    // Optionnel: on pourrait envoyer le devis à une API de notification
+    // ou de génération de document SANS l'enregistrer comme transaction comptable
+    try {
+      // Exemple d'appel qui génère juste le document PDF sans comptabilisation
+      // await patientApi.genererDevisDocument({
+      //   patient_id: selected.id_Rep,
+      //   articles: devisArticles,
+      //   total: total,
+      //   date: new Date().toISOString()
+      // })
+      // 
+      // NOTA : Comme demandé, le devis n'est PAS comptabilisé
+      // Donc on n'appelle PAS d'API qui créerait une facture ou écriture comptable
+      
+      showToast('Devis généré avec succès (non comptabilisé)', 'success')
+    } catch (err) {
+      showToast('Erreur lors de la génération du devis.', 'error')
+      console.error('Devis error:', err)
     }
   }
+
+   const openEditModal = async (patient) => {
+     setSelected(patient)
+     setForm(patient)
+     setFormErrors({})
+     setPhotoFileEdit(null)  // Réinitialiser le fichier photo
+     setModalEdit(true)
+     if (patient.company_id) {
+       await loadTypesCouverture(patient.company_id)
+     }
+   }
 
   if (loadingMeta) return <FullPageSpinner />
 
@@ -427,6 +528,17 @@ export default function PatientsPage() {
         subtitle="Gestion des dossiers patients et informations personnelles"
         actions={
           <div style={{ display: 'flex', gap: spacing.sm, flexWrap: 'wrap' }}>
+            <Button
+              onClick={() => {
+                if (!selected) { showToast('Sélectionnez d\'abord un patient dans la liste', 'error'); return }
+                navigate(`/dpe/${selected.id_Rep}`)
+              }}
+              variant="success"
+              size="lg"
+              style={{ flex: '1 1 0', minWidth: '140px', opacity: selected ? 1 : 0.65 }}
+            >
+              📋 DPE
+            </Button>
             <Button
               onClick={() => {
                 if (!selected) { showToast('Sélectionnez d\'abord un patient dans la liste', 'error'); return }
@@ -449,10 +561,10 @@ export default function PatientsPage() {
               🏥 Consultation{selected ? ` — ${selected.first_name}` : ''}
             </Button>
             <Button onClick={() => setModalDevis(true)} variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>Devis</Button>
-            <Button onClick={() => { setModalRapide(true); setFormRapide(EMPTY_RAPIDE); setFormErrors({}) }} icon="⚡" variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>
+            <Button onClick={() => { setModalRapide(true); setFormRapide(EMPTY_RAPIDE); setFormErrors({}); setPhotoFileRapide(null) }} icon="⚡" variant="warning" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>
               Création rapide
             </Button>
-            <Button onClick={() => { setModalComplet(true); setFormComplet(EMPTY_COMPLET); setFormErrors({}) }} icon="➕" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>
+            <Button onClick={() => { setModalComplet(true); setFormComplet(EMPTY_COMPLET); setFormErrors({}); setPhotoFileComplet(null) }} icon="➕" size="lg" style={{ flex: '1 1 0', minWidth: '140px' }}>
               Fiche complète
             </Button>
           </div>
@@ -554,19 +666,19 @@ export default function PatientsPage() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: colors.gray50, borderBottom: `2px solid ${colors.gray200}` }}>
-                    {['#', 'Patient', 'Âge', 'Contact', 'Partenaire', 'Couverture', 'Actions'].map((h, i) => (
-                      <th key={i} style={{
-                        padding: `${spacing.sm} ${spacing.md}`,
-                        textAlign: i === 0 ? 'center' : 'left',
-                        fontSize: '11px', fontWeight: 700, color: colors.bleu,
-                        textTransform: 'uppercase', letterSpacing: '0.5px',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
+                   <tr style={{ background: colors.gray50, borderBottom: `2px solid ${colors.gray200}` }}>
+                     {['#', 'Photo', 'Patient', 'Âge', 'Contact', 'Partenaire', 'Couverture', 'Actions'].map((h, i) => (
+                       <th key={i} style={{
+                         padding: `${spacing.sm} ${spacing.md}`,
+                         textAlign: i <= 1 ? 'center' : 'left',
+                         fontSize: '11px', fontWeight: 700, color: colors.bleu,
+                         textTransform: 'uppercase', letterSpacing: '0.5px',
+                         whiteSpace: 'nowrap',
+                       }}>
+                         {h}
+                       </th>
+                     ))}
+                   </tr>
                 </thead>
                 <tbody>
                   {patients.map((p, i) => {
@@ -574,25 +686,50 @@ export default function PatientsPage() {
                     const rowBg = isActive ? `${colors.bleu}12` : i % 2 === 0 ? colors.white : colors.gray50
 
                     return (
-                      <tr
-                        key={p.id_Rep}
-                        onClick={() => setSelected(prev => prev?.id_Rep === p.id_Rep ? null : p)}
-                        style={{
-                          background: rowBg,
-                          borderBottom: `1px solid ${colors.gray100}`,
-                          cursor: 'pointer',
-                          outline: isActive ? `2px solid ${colors.bleu}` : 'none',
-                          outlineOffset: '-2px',
-                          transition: 'background 0.12s',
-                        }}
-                      >
-                        <td style={{ padding: spacing.md, textAlign: 'center', fontWeight: 600, fontSize: '12px', width: 44 }}>
-                          {isActive
-                            ? <span style={{ color: colors.bleu, fontSize: 16 }}>✔</span>
-                            : <span style={{ color: colors.gray400 }}>{i + 1}</span>
-                          }
-                        </td>
-                        <td style={{ padding: spacing.md }}>
+                       <tr
+                         key={p.id_Rep}
+                         onClick={() => setSelected(prev => prev?.id_Rep === p.id_Rep ? null : p)}
+                         style={{
+                           background: rowBg,
+                           borderBottom: `1px solid ${colors.gray100}`,
+                           cursor: 'pointer',
+                           outline: isActive ? `2px solid ${colors.bleu}` : 'none',
+                           outlineOffset: '-2px',
+                           transition: 'background 0.12s',
+                         }}
+                       >
+                         <td style={{ padding: spacing.md, textAlign: 'center', fontWeight: 600, fontSize: '12px', width: 44 }}>
+                           {isActive
+                             ? <span style={{ color: colors.bleu, fontSize: 16 }}>✔</span>
+                             : <span style={{ color: colors.gray400 }}>{i + 1}</span>
+                           }
+                         </td>
+                          <td style={{ padding: spacing.md, textAlign: 'center', width: 70 }}>
+                            <div style={{ position: 'relative', display: 'inline-block', width: 40, height: 40 }}>
+                              {p.photo_url && (
+                                <img
+                                  src={p.photo_url}
+                                  alt=""
+                                  style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', display: 'block' }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    const next = e.currentTarget.nextElementSibling;
+                                    if (next) next.style.display = 'flex';
+                                  }}
+                                />
+                              )}
+                              <div style={{
+                                position: 'absolute', top: 0, left: 0, width: 40, height: 40,
+                                borderRadius: '50%', background: colors.gray200, color: colors.gray500,
+                                display: p.photo_url ? 'none' : 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                fontSize: 16, fontWeight: 700
+                              }}>
+                                {(p.first_name?.[0] || '') + (p.last_name?.[0] || '')}
+                              </div>
+                            </div>
+                          </td>
+                         <td style={{ padding: spacing.md }}>
                           <div>
                             <div style={{ fontWeight: 700, color: colors.gray900, fontSize: '13px' }}>
                               {p.patient_name}
@@ -683,16 +820,36 @@ export default function PatientsPage() {
             <Sel label="Sexe" name="gender_id" value={formRapide.gender_id} onChange={e => setFormRapide(f => ({ ...f, gender_id: e.target.value }))} options={metadata.genders || []} placeholder="Sélectionner..." />
           </div>
 
-          <SectionTitle icon="📱">Contact</SectionTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
-            <Inp label="Mobile" name="mobile_number" value={formRapide.mobile_number} onChange={e => setFormRapide(f => ({ ...f, mobile_number: e.target.value }))} placeholder="+221 7X XXX XX XX" />
-            <Inp label="Contact d'urgence" name="emergency_contact_number" value={formRapide.emergency_contact_number} onChange={e => setFormRapide(f => ({ ...f, emergency_contact_number: e.target.value }))} placeholder="+221 7X XXX XX XX" />
-          </div>
+           <SectionTitle icon="📱">Contact</SectionTitle>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+             <Inp label="Mobile" name="mobile_number" value={formRapide.mobile_number} onChange={e => setFormRapide(f => ({ ...f, mobile_number: e.target.value }))} placeholder="+221 7X XXX XX XX" />
+             <Inp label="Contact d'urgence" name="emergency_contact_number" value={formRapide.emergency_contact_number} onChange={e => setFormRapide(f => ({ ...f, emergency_contact_number: e.target.value }))} placeholder="+221 7X XXX XX XX" />
+           </div>
 
-          <SectionTitle icon="🛡️">Partenaire & Couverture</SectionTitle>
-          <Sel label="Partenaire (Assureur)" name="company_id" value={formRapide.company_id} onChange={e => handleChangePartenaire(e, true)} options={partenaires.map(p => ({ value: p.id_Rep, label: p.Nom }))} placeholder="Sélectionner..." />
-          <Sel label="Type de couverture" name="type_couverture" value={formRapide.type_couverture} onChange={e => setFormRapide(f => ({ ...f, type_couverture: e.target.value }))} options={types.map(t => ({ value: t.Nom, label: t.Nom }))} placeholder="Sélectionner..." disabled={!formRapide.company_id} />
-        </div>
+           <SectionTitle icon="👨‍👩‍👧‍👦">Famille</SectionTitle>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: spacing.md }}>
+             <Inp label="ID Famille" name="family_id" value={formRapide.family_id || ''} onChange={e => setFormRapide(f => ({ ...f, family_id: e.target.value }))} placeholder="ID de la famille (optionnel)" />
+           </div>
+
+           <SectionTitle icon="🛡️">Partenaire & Couverture</SectionTitle>
+           <Sel label="Partenaire (Assureur)" name="company_id" value={formRapide.company_id} onChange={e => handleChangePartenaire(e, true)} options={partenaires.map(p => ({ value: p.id_Rep, label: p.Nom }))} placeholder="Sélectionner..." />
+           <Sel label="Type de couverture" name="type_couverture" value={formRapide.type_couverture} onChange={e => setFormRapide(f => ({ ...f, type_couverture: e.target.value }))} options={types.map(t => ({ value: t.Nom, label: t.Nom }))} placeholder="Sélectionner..." disabled={!formRapide.company_id} />
+
+           <SectionTitle icon="📷">Photo</SectionTitle>
+           <div>
+             <input
+               type="file"
+               accept="image/*"
+               onChange={e => setPhotoFileRapide(e.target.files[0])}
+               style={{ fontSize: '13px' }}
+             />
+             {photoFileRapide && (
+               <div style={{ marginTop: spacing.xs, fontSize: '12px', color: colors.success }}>
+                 ✅ {photoFileRapide.name}
+               </div>
+             )}
+           </div>
+         </div>
       </Modal>
 
       {/* ── MODAL CRÉATION COMPLÈTE ─────────────────────── */}
@@ -745,16 +902,34 @@ export default function PatientsPage() {
             <Inp label="Téléphone" name="contact_number" value={formComplet.contact_number} onChange={e => setFormComplet(f => ({ ...f, contact_number: e.target.value }))} placeholder="+221 33 XXX XX XX" />
             <Inp label="Mobile" name="mobile_number" value={formComplet.mobile_number} onChange={e => setFormComplet(f => ({ ...f, mobile_number: e.target.value }))} placeholder="+221 7X XXX XX XX" />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
-            <Inp label="Email" name="email_adress" value={formComplet.email_adress} onChange={e => setFormComplet(f => ({ ...f, email_adress: e.target.value }))} type="email" placeholder="client@exemple.com" />
-            <Inp label="Contact d'urgence" name="emergency_contact_name" value={formComplet.emergency_contact_name} onChange={e => setFormComplet(f => ({ ...f, emergency_contact_name: e.target.value }))} placeholder="Nom du contact" />
-          </div>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+             <Inp label="Email" name="email_adress" value={formComplet.email_adress} onChange={e => setFormComplet(f => ({ ...f, email_adress: e.target.value }))} type="email" placeholder="client@exemple.com" />
+             <Inp label="Contact d'urgence" name="emergency_contact_name" value={formComplet.emergency_contact_name} onChange={e => setFormComplet(f => ({ ...f, emergency_contact_name: e.target.value }))} placeholder="Nom du contact" />
+           </div>
 
-          <SectionTitle icon="👨‍👩‍👧‍👦">Famille</SectionTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
-            <Inp label="Père" name="pere_name" value={formComplet.pere_name} onChange={e => setFormComplet(f => ({ ...f, pere_name: e.target.value }))} placeholder="Nom du père" />
-            <Inp label="Mère" name="mere_name" value={formComplet.mere_name} onChange={e => setFormComplet(f => ({ ...f, mere_name: e.target.value }))} placeholder="Nom de la mère" />
-          </div>
+           <SectionTitle icon="📷">Photo</SectionTitle>
+           <div>
+             <input
+               type="file"
+               accept="image/*"
+               onChange={e => setPhotoFileComplet(e.target.files[0])}
+               style={{ fontSize: '13px' }}
+             />
+             {photoFileComplet && (
+               <div style={{ marginTop: spacing.xs, fontSize: '12px', color: colors.success }}>
+                 ✅ {photoFileComplet.name}
+               </div>
+             )}
+           </div>
+
+           <SectionTitle icon="👨‍👩‍👧‍👦">Famille</SectionTitle>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: spacing.md }}>
+             <Inp label="ID Famille" name="family_id" value={formComplet.family_id || ''} onChange={e => setFormComplet(f => ({ ...f, family_id: e.target.value }))} placeholder="ID de la famille (optionnel)" />
+           </div>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+             <Inp label="Père" name="pere_name" value={formComplet.pere_name} onChange={e => setFormComplet(f => ({ ...f, pere_name: e.target.value }))} placeholder="Nom du père" />
+             <Inp label="Mère" name="mere_name" value={formComplet.mere_name} onChange={e => setFormComplet(f => ({ ...f, mere_name: e.target.value }))} placeholder="Nom de la mère" />
+           </div>
 
           <SectionTitle icon="💼">Profession</SectionTitle>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: spacing.md }}>
@@ -825,16 +1000,58 @@ export default function PatientsPage() {
           </div>
           <Inp label="Email" name="email_adress" value={form.email_adress} onChange={e => setForm(f => ({ ...f, email_adress: e.target.value }))} type="email" />
 
-          <SectionTitle icon="🛡️">Couverture & Assurance</SectionTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
-            <Sel label="Partenaire" name="company_id" value={form.company_id} onChange={e => handleChangePartenaire(e, false)} options={partenaires.map(p => ({ value: p.id_Rep, label: p.Nom }))} placeholder="Sélectionner..." />
-            <Sel label="Type de couverture" name="type_couverture" value={form.type_couverture} onChange={e => setForm(f => ({ ...f, type_couverture: e.target.value }))} options={types.map(t => ({ value: t.Nom, label: t.Nom }))} placeholder="Sélectionner..." disabled={!form.company_id} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
-            <Inp label="Numéro de police" name="num_police" value={form.num_police} onChange={e => setForm(f => ({ ...f, num_police: e.target.value }))} />
-            <Inp label="Valide jusqu'au" name="validate" value={form.validate?.substring(0, 10)} onChange={e => setForm(f => ({ ...f, validate: e.target.value }))} type="date" />
-          </div>
-        </div>
+           <SectionTitle icon="🛡️">Couverture & Assurance</SectionTitle>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+             <Sel label="Partenaire" name="company_id" value={form.company_id} onChange={e => handleChangePartenaire(e, false)} options={partenaires.map(p => ({ value: p.id_Rep, label: p.Nom }))} placeholder="Sélectionner..." />
+             <Sel label="Type de couverture" name="type_couverture" value={form.type_couverture} onChange={e => setForm(f => ({ ...f, type_couverture: e.target.value }))} options={types.map(t => ({ value: t.Nom, label: t.Nom }))} placeholder="Sélectionner..." disabled={!form.company_id} />
+           </div>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+             <Inp label="Numéro de police" name="num_police" value={form.num_police} onChange={e => setForm(f => ({ ...f, num_police: e.target.value }))} />
+             <Inp label="Valide jusqu'au" name="validate" value={form.validate?.substring(0, 10)} onChange={e => setForm(f => ({ ...f, validate: e.target.value }))} type="date" />
+           </div>
+
+           <SectionTitle icon="👨‍👩‍👧‍👦">Famille</SectionTitle>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
+             <Inp label="ID Famille" name="family_id" value={form.family_id || ''} onChange={e => setForm(f => ({ ...f, family_id: e.target.value }))} placeholder="ID de la famille (optionnel)" />
+             <Inp label="Père" name="pere_name" value={form.pere_name || ''} onChange={e => setForm(f => ({ ...f, pere_name: e.target.value }))} placeholder="Nom du père" />
+             <Inp label="Mère" name="mere_name" value={form.mere_name || ''} onChange={e => setForm(f => ({ ...f, mere_name: e.target.value }))} placeholder="Nom de la mère" />
+           </div>
+
+           <SectionTitle icon="📷">Photo actuelle</SectionTitle>
+           <div style={{ marginBottom: spacing.md }}>
+             {form.photo_url ? (
+               <img
+                 src={form.photo_url.startsWith('http') ? form.photo_url : `http://localhost:8000/storage/${form.photo}`}
+                 alt="Photo patient"
+                 style={{ width: 120, height: 120, borderRadius: radius.md, objectFit: 'cover' }}
+               />
+             ) : (
+               <div style={{
+                 width: 120, height: 120, borderRadius: radius.md,
+                 background: colors.gray100, display: 'flex',
+                 alignItems: 'center', justifyContent: 'center',
+                 color: colors.gray400, fontSize: 32
+               }}>
+                 👤
+               </div>
+             )}
+           </div>
+
+           <SectionTitle icon="📷">Changer la photo</SectionTitle>
+           <div>
+             <input
+               type="file"
+               accept="image/*"
+               onChange={e => setPhotoFileEdit(e.target.files[0])}
+               style={{ fontSize: '13px' }}
+             />
+             {photoFileEdit && (
+               <div style={{ marginTop: spacing.xs, fontSize: '12px', color: colors.success }}>
+                 ✅ {photoFileEdit.name}
+               </div>
+             )}
+           </div>
+         </div>
       </Modal>
 
       {/* ── MODAL VUE ────────────────────────────────────── */}
@@ -853,28 +1070,55 @@ export default function PatientsPage() {
           </div>
         }
       >
-        {selected && (
-          <div style={{ display: 'grid', gap: spacing.lg }}>
-            <div style={{ padding: spacing.lg, background: colors.blue50, borderRadius: radius.md, borderLeft: `4px solid ${colors.bleu}` }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
-                <div>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', color: colors.gray500, fontWeight: 700 }}>Patient</div>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: colors.gray900 }}>{selected.patient_name}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', color: colors.gray500, fontWeight: 700 }}>Code</div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: colors.bleu }}>{selected.patient_code}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', color: colors.gray500, fontWeight: 700 }}>Âge</div>
-                  <div style={{ fontSize: '13px' }}>{selected.age_patient} ans</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', color: colors.gray500, fontWeight: 700 }}>Sexe</div>
-                  <div style={{ fontSize: '13px' }}>{selected.gender_id === 'M' ? 'Masculin' : selected.gender_id === 'F' ? 'Féminin' : 'Autre'}</div>
-                </div>
-              </div>
-            </div>
+         {selected && (
+           <div style={{ display: 'grid', gap: spacing.lg }}>
+             <div style={{ padding: spacing.lg, background: colors.blue50, borderRadius: radius.md, borderLeft: `4px solid ${colors.bleu}` }}>
+               <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: spacing.lg, alignItems: 'start' }}>
+                  {/* Avatar */}
+                  <div style={{ position: 'relative', display: 'inline-block', width: 80, height: 80 }}>
+                    {selected.photo_url && (
+                      <img
+                        src={selected.photo_url}
+                        alt={selected.patient_name}
+                        style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${colors.bleu}`, display: 'block' }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const next = e.currentTarget.nextElementSibling;
+                          if (next) next.style.display = 'flex';
+                        }}
+                      />
+                    )}
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, width: 80, height: 80,
+                      borderRadius: '50%', background: colors.bleu + '20', color: colors.bleu,
+                      display: selected.photo_url ? 'none' : 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      fontSize: 24, fontWeight: 700, border: `3px solid ${colors.bleu}40`
+                    }}>
+                      {(selected.first_name?.[0] || '') + (selected.last_name?.[0] || '')}
+                    </div>
+                  </div>
+
+                 {/* Infos patient */}
+                 <div style={{ display: 'grid', gap: spacing.xs }}>
+                   <div style={{ fontSize: '10px', textTransform: 'uppercase', color: colors.gray500, fontWeight: 700 }}>Patient</div>
+                   <div style={{ fontSize: '18px', fontWeight: 700, color: colors.gray900 }}>{selected.patient_name}</div>
+                   <div style={{ fontSize: '13px', color: colors.gray600 }}>{selected.patient_code}</div>
+                   <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.xs }}>
+                     <div>
+                       <div style={{ fontSize: '10px', color: colors.gray500 }}>Âge</div>
+                       <div style={{ fontSize: '13px', fontWeight: 600 }}>{selected.age_patient} ans</div>
+                     </div>
+                     <div>
+                       <div style={{ fontSize: '10px', color: colors.gray500 }}>Sexe</div>
+                       <div style={{ fontSize: '13px', fontWeight: 600 }}>
+                         {selected.gender_id === 'M' ? 'Masculin' : selected.gender_id === 'F' ? 'Féminin' : 'Autre'}
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </div>
 
             <div>
               <div style={{ fontSize: '12px', fontWeight: 700, color: colors.gray700, marginBottom: spacing.sm, textTransform: 'uppercase' }}>Coordonnées</div>
@@ -954,18 +1198,278 @@ export default function PatientsPage() {
         />
       )}
 
-      {/* ── MODAL DEVIS ────────────────────────────────────── */}
-      <Modal
-        open={modalDevis}
-        onClose={() => setModalDevis(false)}
-        title="Devis"
-        width={700}
-      >
-        <div style={{ padding: spacing.md, textAlign: 'center', color: colors.gray500 }}>
-          <p>Sélectionnez un patient pour créer un devis.</p>
-          <p style={{ fontSize: '12px' }}>(Fonctionnalité en cours de développement)</p>
+{/* ── MODAL DEVIS ────────────────────────────────────── */}
+<Modal
+  open={modalDevis}
+  onClose={() => setModalDevis(false)}
+  title="Devis"
+  width={700}
+>
+  {selected ? (
+    <div style={{ padding: spacing.md }}>
+      <div style={{ marginBottom: spacing.lg }}>
+        <h3 style={{ color: colors.bleu, marginBottom: spacing.sm }}>
+          Devis pour {selected.patient_name}
+        </h3>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          fontSize: '12px', 
+          color: colors.gray600,
+          marginBottom: 4
+        }}>
+          <span>Date:</span>
+          <span>{new Date().toLocaleDateString('fr-FR')}</span>
         </div>
-      </Modal>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          fontSize: '12px', 
+          color: colors.gray600,
+          marginBottom: 4
+        }}>
+          <span>Validité:</span>
+          <span>30 jours</span>
+        </div>
+      </div>
+      
+      <div style={{ 
+        background: colors.white, 
+        borderRadius: radius.md, 
+        boxShadow: shadows.sm,
+        overflow: 'hidden'
+      }}>
+        <div style={{ 
+          background: colors.gray50, 
+          padding: spacing.md,
+          borderBottom: `1px solid ${colors.gray200}`
+        }}>
+          <div style={{ 
+            fontWeight: 700, 
+            fontSize: '14px', 
+            color: colors.gray800
+          }}>
+            Détails du devis
+          </div>
+        </div>
+        
+        <div style={{ padding: spacing.lg }}>
+<div style={{ 
+  display: 'grid', 
+  gap: spacing.md,
+  marginBottom: spacing.lg
+}}>
+  {/* Articles du devis */}
+  <div>
+    <label style={{ 
+      fontSize: '11px', 
+      fontWeight: 600, 
+      color: colors.gray700,
+      marginBottom: 2,
+      display: 'block'
+    }}>Articles du devis</label>
+    <div style={{ 
+      border: `1px solid ${colors.gray300}`, 
+      borderRadius: radius.sm,
+      minHeight: 100,
+      maxHeight: 200,
+      overflowY: 'auto'
+    }}>
+      {devisArticles.map((article, index) => (
+        <div key={index} style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          padding: '8px 12px',
+          borderBottom: index < devisArticles.length - 1 ? `1px solid ${colors.gray200}` : 'none'
+        }}>
+          <span style={{ flex: 1 }}>{article.description}</span>
+          <span style={{ 
+            fontWeight: 600, 
+            color: colors.gray700,
+            textAlign: 'right'
+          }}>{article.montant.toLocaleString('fr-FR')} FCFA</span>
+          <button
+            onClick={() => {
+              const newArticles = [...devisArticles];
+              newArticles.splice(index, 1);
+              setDevisArticles(newArticles);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: colors.danger,
+              fontSize: 12,
+              padding: 0
+            }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      {devisArticles.length === 0 && (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '20px 0',
+          color: colors.gray500,
+          fontStyle: 'italic'
+        }}>
+          Aucun article ajouté
+        </div>
+      )}
+    </div>
+  </div>
+  
+  {/* Formulaire pour ajouter un nouvel article */}
+  <div>
+    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: spacing.md }}>
+      <div>
+        <label style={{ 
+          fontSize: '11px', 
+          fontWeight: 600, 
+          color: colors.gray700,
+          marginBottom: 2,
+          display: 'block'
+        }}>Description de l'article</label>
+        <input
+          value={nouvelleDescription}
+          onChange={(e) => setNouvelleDescription(e.target.value)}
+          placeholder="Ex: Consultation médicale, Analyse sanguine..."
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            border: `1.5px solid ${colors.gray300}`,
+            borderRadius: radius.sm,
+            fontSize: '13px'
+          }}
+        />
+      </div>
+      <div>
+        <label style={{ 
+          fontSize: '11px', 
+          fontWeight: 600, 
+          color: colors.gray700,
+          marginBottom: 2,
+          display: 'block'
+        }}>Montant (FCFA)</label>
+        <input
+          type="number"
+          value={nouveauMontant || ''}
+          onChange={(e) => setNouveauMontant(e.target.value)}
+          placeholder="0"
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            border: `1.5px solid ${colors.gray300}`,
+            borderRadius: radius.sm,
+            fontSize: '13px'
+          }}
+        />
+      </div>
+    </div>
+    <div style={{ 
+      marginTop: spacing.sm,
+      display: 'flex',
+      justifyContent: 'flex-end'
+    }}>
+      <Button
+        variant="outline"
+        onClick={() => {
+          if (nouvelleDescription.trim() && nouveauMontant && Number(nouveauMontant) > 0) {
+            setDevisArticles(prev => [
+              ...prev,
+              {
+                description: nouvelleDescription.trim(),
+                montant: Number(nouveauMontant)
+              }
+            ]);
+            setNouvelleDescription('');
+            setNouveauMontant('');
+          }
+        }}
+        disabled={!nouvelleDescription.trim() || !nouveauMontant || Number(nouveauMontant) <= 0}
+      >
+        Ajouter l'article
+      </Button>
+    </div>
+  </div>
+</div>
+          
+          <div style={{ 
+            borderTop: `1px solid ${colors.gray200}`,
+            paddingTop: spacing.md,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: spacing.sm
+          }}>
+            <Button 
+              variant="ghost" 
+              onClose={() => setModalDevis(false)}
+            >
+              Annuler
+            </Button>
+<Button
+  onClick={handleGenererDevis}
+  disabled={devisArticles.length === 0}
+>
+  Générer le devis
+</Button>
+          </div>
+        </div>
+      </div>
+      
+      {devisGenere && (
+        <div style={{ 
+          marginTop: spacing.lg,
+          padding: spacing.lg,
+          background: colors.successBg,
+          borderRadius: radius.md,
+          border: `1px solid ${colors.success}`
+        }}>
+          <div style={{ 
+            fontWeight: 700, 
+            color: colors.success,
+            marginBottom: spacing.sm
+          }}>
+            Devis généré avec succès !
+          </div>
+          <div style={{ 
+            fontSize: '13px', 
+            color: colors.gray700
+          }}>
+            Le devis a été préparé pour {selected.patient_name}. 
+            <strong>Nota : Ce devis n'est pas comptabilisé.</strong>
+          </div>
+          <div style={{ 
+            marginTop: spacing.sm,
+            display: 'flex',
+            gap: spacing.sm
+          }}>
+            <Button
+              onClick={() => {
+                // Simuler l'impression/téléchargement
+                showToast('Devis prêt à être imprimé ou envoyé', 'success')
+              }}
+              variant="outline"
+            >
+              Imprimer
+            </Button>
+            <Button
+              onClick={() => setModalDevis(false)}
+              variant="ghost"
+            >
+              Fermer
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  ) : (
+    <div style={{ padding: spacing.md, textAlign: 'center', color: colors.gray500 }}>
+      <p>Sélectionnez un patient pour créer un devis.</p>
+      <p style={{ fontSize: '12px' }}>(Fonctionnalité en cours de développement)</p>
+    </div>
+  )}
+</Modal>
 
       {/* ── MODAL CARTE PATIENT ─────────────────────────────── */}
       <PatientCardModal

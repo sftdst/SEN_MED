@@ -75,15 +75,19 @@ function FileTile({ fiche, onDelete, onPreview }) {
           background: isImg ? '#000' : `${cc}10`, position: 'relative', overflow: 'hidden',
         }}
       >
-        {isImg ? (
-          <img
-            src={ficheAttApi.serveUrl(fiche.id_fiche)}
-            alt={fiche.nom_fichier}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: hov ? 0.85 : 1 }}
-          />
-        ) : (
-          <span style={{ fontSize: 38 }}>{fileIcon(fiche.type_mime)}</span>
-        )}
+{isImg ? (
+  <img
+    src={ficheAttApi.serveUrl(fiche.id_fiche)}
+    alt={fiche.nom_fichier}
+    onError={(e) => {
+      console.error('Erreur de chargement image:', e.target.src);
+      e.target.style.display = 'none';
+    }}
+    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: hov ? 0.85 : 1 }}
+  />
+) : (
+  <span style={{ fontSize: 38 }}>{fileIcon(fiche.type_mime)}</span>
+)}
         {/* Badge source WEBCAM */}
         {fiche.source === 'WEBCAM' && (
           <span style={{
@@ -199,13 +203,17 @@ function PreviewModal({ fiche, onClose }) {
 
         {/* Contenu */}
         <div style={{ flex: 1, overflow: 'auto', background: '#111' }}>
-          {isImg && (
-            <img
-              src={url}
-              alt={fiche.nom_fichier}
-              style={{ display: 'block', maxWidth: '85vw', maxHeight: '75vh', margin: 'auto', objectFit: 'contain' }}
-            />
-          )}
+{isImg && (
+  <img
+    src={url}
+    alt={fiche.nom_fichier}
+    onError={(e) => {
+      console.error('Erreur de chargement image en plein écran:', e.target.src);
+      e.target.style.display = 'none';
+    }}
+    style={{ display: 'block', maxWidth: '85vw', maxHeight: '75vh', margin: 'auto', objectFit: 'contain' }}
+  />
+)}
           {isPdf && (
             <iframe
               src={url}

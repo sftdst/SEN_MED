@@ -7,6 +7,7 @@ use App\Models\Personnel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class PersonnelController extends Controller
 {
@@ -49,7 +50,7 @@ class PersonnelController extends Controller
             'ville_principal'     => 'nullable|string|max:50',
             'ville_secondaire'    => 'nullable|string|max:50',
             'ID_pro'              => 'nullable|string|max:50',
-            'type_exercie'        => 'nullable|string|max:50',
+            'type_exercice'       => 'nullable|string|max:50',
             'secteur'             => 'nullable|string|max:50',
             'lieu_exercice'       => 'nullable|string|max:50',
             'country_id'          => 'nullable|string|max:50',
@@ -58,6 +59,7 @@ class PersonnelController extends Controller
             'consult'             => 'nullable|boolean',
             'titre_id'            => 'nullable|string|max:50',
             'status_id'           => 'nullable|integer',
+            'photo'               => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
     }
 
@@ -112,25 +114,31 @@ class PersonnelController extends Controller
      *
      * POST /api/v1/personnels/creation-rapide
      */
-    public function storeRapide(Request $request): JsonResponse
-    {
-        $validated = $request->validate($this->reglesRapide());
+     public function storeRapide(Request $request): JsonResponse
+     {
+         $validated = $request->validate($this->reglesRapide());
 
-        $validated['staff_name']      = trim($validated['first_name'] . ' ' . $validated['last_name']);
-        $validated['user_id']         = $this->genererUserId();
-        $validated['created_user_id'] = auth()->id() ?? 'system';
-        $validated['created_dttm']    = now();
-        $validated['status_id']       = 1;
+         $validated['staff_name']      = trim($validated['first_name'] . ' ' . $validated['last_name']);
+         $validated['user_id']         = $this->genererUserId();
+         $validated['created_user_id'] = auth()->id() ?? 'system';
+         $validated['created_dttm']    = now();
+         $validated['status_id']       = 1;
 
-        $personnel = Personnel::create($validated);
+         // Gestion upload photo
+         if ($request->hasFile('photo')) {
+             $path = $request->file('photo')->store('personnel_photos', 'public');
+             $validated['photo'] = $path;
+         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Personnel créé rapidement. Vous pouvez compléter son dossier ultérieurement.',
-            'data'    => $personnel->load('departement'),
-            'profil_complet' => false,
-        ], 201);
-    }
+         $personnel = Personnel::create($validated);
+
+         return response()->json([
+             'success' => true,
+             'message' => 'Personnel créé rapidement. Vous pouvez compléter son dossier ultérieurement.',
+             'data'    => $personnel->load('departement'),
+             'profil_complet' => false,
+         ], 201);
+     }
 
     /**
      * Création complète du personnel (tous les champs).
@@ -149,6 +157,12 @@ class PersonnelController extends Controller
 
         if (!isset($validated['status_id'])) {
             $validated['status_id'] = 1;
+        }
+
+        // Gestion upload photo
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('personnel_photos', 'public');
+            $validated['photo'] = $path;
         }
 
         $personnel = Personnel::create($validated);
@@ -202,14 +216,24 @@ class PersonnelController extends Controller
             $validated['staff_name'] = trim($prenom . ' ' . $nom);
         }
 
+        // Gestion upload photo
+        if ($request->hasFile('photo')) {
+            // Supprimer l'ancienne photo si existante
+            if ($personnel->photo && \Storage::disk('public')->exists($personnel->photo)) {
+                \Storage::disk('public')->delete($personnel->photo);
+            }
+            $path = $request->file('photo')->store('personnel_photos', 'public');
+            $validated['photo'] = $path;
+        }
+
         $validated['modified_dttm'] = now();
 
         $personnel->update($validated);
 
         return response()->json([
             'success' => true,
-            'message' => 'Dossier personnel mis à jour avec succès.',
-            'data'    => $personnel->fresh()->load('departement'),
+            'message' => 'Personnel mis à jour avec succès.',
+            'data'    => $personnel->load('departement'),
         ]);
     }
 

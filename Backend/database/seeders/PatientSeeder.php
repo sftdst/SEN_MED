@@ -15,6 +15,9 @@ class PatientSeeder extends Seeder
 
     public function run(): void
     {
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        \DB::table('gen_mst_patient')->truncate();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         $partenaires = PartenaireHeader::pluck('id_Rep')->toArray();
         $patients = [
             ['first_name' => 'Aminata', 'last_name' => 'Diop', 'dob' => '1988-03-15', 'gender_id' => 'F', 'mobile_number' => '221771234567', 'company_id' => $partenaires[array_rand($partenaires)] ?? null, 'type_couverture' => 'Premium'],

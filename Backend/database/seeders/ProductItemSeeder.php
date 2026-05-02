@@ -9,10 +9,9 @@ class ProductItemSeeder extends Seeder
 {
     public function run(): void
     {
-        $exists = DB::table('ph_mst_item')->count();
-        if ($exists > 0) {
-            return;
-        }
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        \DB::table('ph_mst_item')->truncate();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $produits = [
             [

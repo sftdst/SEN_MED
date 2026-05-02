@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Facades\Storage;
 
 class PatientController extends Controller
 {
@@ -66,6 +67,7 @@ class PatientController extends Controller
             'emergency_contact_number' => 'nullable|string|max:50',
             'company_id'               => 'nullable|exists:gen_mst_partenaire_header,id_Rep',
             'type_couverture'          => 'nullable|string|max:50',
+            'photo'                    => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         // Vérifier que le type de couverture existe pour ce partenaire (si fourni)
@@ -98,6 +100,12 @@ class PatientController extends Controller
         $validated['status_id'] = 1;
         $validated['created_dttm'] = now();
         $validated['created_user_id'] = auth()?->user()?->id ?? 'SYSTEM';
+
+        // Gestion upload photo
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('patients_photos', 'public');
+            $validated['photo'] = $path;
+        }
 
         $patient = Patient::create($validated);
 
@@ -144,6 +152,7 @@ class PatientController extends Controller
             'validate'                 => 'nullable|date',
             'family_doctor'            => 'nullable|string|max:200',
             'ssn_no'                   => 'nullable|string|max:100|unique:gen_mst_patient,ssn_no',
+            'photo'                    => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         // Vérifier la cohérence couverture si partenaire spécifié
@@ -171,6 +180,12 @@ class PatientController extends Controller
         $validated['created_dttm'] = now();
         $validated['created_user_id'] = auth()?->user()?->id ?? 'SYSTEM';
 
+        // Gestion upload photo
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('patients_photos', 'public');
+            $validated['photo'] = $path;
+        }
+
         $patient = Patient::create($validated);
 
         return response()->json([
@@ -190,6 +205,9 @@ class PatientController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $patient,
+            'meta'    => [
+                'photo_url' => $patient->photo_url,
+            ],
         ]);
     }
 
@@ -230,6 +248,7 @@ class PatientController extends Controller
             'family_doctor'            => 'nullable|string|max:200',
             'pending_amount'           => 'nullable|numeric|min:0',
             'status_id'                => 'nullable|integer|in:0,1',
+            'photo'                    => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         // Vérifier cohérence couverture
@@ -260,6 +279,17 @@ class PatientController extends Controller
         }
 
         $validated['modified_dttm'] = now();
+
+        // Gestion upload photo
+        if ($request->hasFile('photo')) {
+            // Supprimer l'ancienne photo si existante
+            if ($patient->photo && \Storage::disk('public')->exists($patient->photo)) {
+                \Storage::disk('public')->delete($patient->photo);
+            }
+            $path = $request->file('photo')->store('patients_photos', 'public');
+            $validated['photo'] = $path;
+        }
+
         $patient->update($validated);
 
         return response()->json([
@@ -401,7 +431,7 @@ class PatientController extends Controller
                 'email' => $patient->email_adress,
                 'adresse' => $patient->address,
                 'ville' => $patient->city,
-                'photo' => $patient->photo,
+                'photo' => $patient->photo_url,
                 'assurance' => $patient->partenaire?->Nom,
                 'couverture' => $patient->type_couverture,
                 'num_police' => $patient->num_police,
