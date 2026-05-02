@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\DocumentTemplateController;
 use App\Http\Controllers\Api\GeneratedCertificateController;
 use App\Http\Controllers\Api\NursingDossierController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\AuthController;
 
@@ -451,17 +452,30 @@ Route::prefix('v1')->group(function () {
      Route::post('nursing-dossiers/{dossier}/surveillances/{surveillance}/images',   [NursingDossierController::class, 'uploadSurveillanceImage']);
      Route::delete('nursing-dossiers/{dossier}/surveillances/{surveillance}/images', [NursingDossierController::class, 'deleteSurveillanceImage']);
 
-     // ── Gestion des Profils et Droits ─────────────────────────────────────────
-     Route::get('roles',               [RolePermissionController::class, 'index']);
-     Route::get('roles/{role}',        [RolePermissionController::class, 'show']);
-     Route::post('roles',              [RolePermissionController::class, 'store']);
-     Route::put('roles/{role}',        [RolePermissionController::class, 'update']);
-     Route::delete('roles/{role}',    [RolePermissionController::class, 'destroy']);
-     Route::post('roles/{role}/permissions', [RolePermissionController::class, 'syncPermissions']);
+    /*
+    |--------------------------------------------------------------------------
+    | Module Chat & Messagerie interne
+    |--------------------------------------------------------------------------
+    */
+    Route::get('chat/users',                              [ChatController::class, 'users']);
+    Route::get('chat/conversations',                      [ChatController::class, 'conversations']);
+    Route::post('chat/conversations',                     [ChatController::class, 'createConversation']);
+    Route::get('chat/conversations/{conv}/messages',      [ChatController::class, 'messages']);
+    Route::post('chat/conversations/{conv}/messages',     [ChatController::class, 'sendMessage']);
+    Route::put('chat/conversations/{conv}/read',          [ChatController::class, 'markRead']);
+    Route::get('chat/unread-count',                       [ChatController::class, 'unreadCount']);
 
-     Route::get('permissions',         [RolePermissionController::class, 'permissionIndex']);
-     Route::post('permissions',        [RolePermissionController::class, 'permissionStore']);
-     Route::put('permissions/{id}',   [RolePermissionController::class, 'permissionStore']);
-     Route::delete('permissions/{id}',[RolePermissionController::class, 'permissionDestroy']);
+    // ── Gestion des Profils et Droits ─────────────────────────────────────────
+    Route::get('roles',                          [RolePermissionController::class, 'index']);
+    Route::get('roles/{role}',                   [RolePermissionController::class, 'show']);
+    Route::post('roles',                         [RolePermissionController::class, 'store']);
+    Route::put('roles/{role}',                   [RolePermissionController::class, 'update']);
+    Route::delete('roles/{role}',                [RolePermissionController::class, 'destroy']);
+    Route::post('roles/{role}/permissions',      [RolePermissionController::class, 'syncPermissions']);
 
- });
+    Route::get('permissions',                    [RolePermissionController::class, 'permissionIndex']);
+    Route::post('permissions',                   [RolePermissionController::class, 'permissionStore']);
+    Route::put('permissions/{id}',               [RolePermissionController::class, 'permissionStore']);
+    Route::delete('permissions/{id}',            [RolePermissionController::class, 'permissionDestroy']);
+
+});
