@@ -676,6 +676,105 @@ export default function FacturesTab() {
   )
 }
 
+// ── Génération HTML pour impression facture ──────────────────────────────────
+function buildFacturePrintHtml({ billNo, patientName, services, totDetail, billDate, partenaireNom }) {
+  const fmtF = (n) => Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const fmtD = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
+  const num = (v) => parseFloat(v) || 0
+
+  const serviceRows = services.length > 0
+    ? services.map((svc, i) => `
+      <tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top">${i + 1}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top">${svc.NomDescription || svc.IDService || '—'}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top;text-align:right">${fmtF(svc.MontantTotalFacture)} F</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top;text-align:right">${fmtF(svc.patient_payable)} F</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top;text-align:right">${fmtF(svc.MontantPartenaire || 0)} F</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top;text-align:center">${svc.StatutPaiement === 'PAYE' ? '✅' : svc.StatutPaiement === 'PARTIELLEMENT_PAYE' ? '⚠️' : '⏳'}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;font-style:italic;font-size:12px">Aucun service</td></tr>`
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Facture ${billNo || ''}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1e293b; padding: 24px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 18px; color: #0f172a; margin-bottom: 4px; letter-spacing: 0.3px; }
+  .subtitle { font-size: 12px; color: #64748b; margin-bottom: 24px; }
+  .header-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; }
+  .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; }
+  .info-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+  .info-label { color: #64748b; }
+  .info-value { font-weight: 600; color: #0f172a; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+  thead th { background: #1e40af; color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  tbody td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  .totaux-box { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin-top: 20px; }
+  .totaux-title { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .totaux-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
+  .totaux-label { color: #92400e; }
+  .totaux-value { font-weight: 700; color: #78350f; }
+  .totaux-row-grand { border-top: 2px solid #f59e0b; padding-top: 10px; margin-top: 6px; font-size: 14px !important; }
+  .totaux-row-grand .totaux-label, .totaux-row-grand .totaux-value { font-size: 14px !important; color: #78350f !important; }
+  .footer { margin-top: 32px; padding-top: 16px; border-top: 2px solid #e2e8f0; text-align: center; font-size: 10px; color: #94a3b8; line-height: 1.8; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .badge-paid { background: #dcfce7; color: #166534; }
+  .badge-partial { background: #fef3c7; color: #92400e; }
+  .badge-pending { background: #fef2f2; color: #991b1b; }
+  @media print { body { padding: 12px; } @page { margin: 12mm; } }
+</style>
+</head>
+<body>
+<h1>📄 Détails de la Facture</h1>
+<p class="subtitle">Plateforme Médicale SENMED - Document de facturation</p>
+
+<div class="header-row">
+  <div><strong>Facture N°</strong><br><span style="font-size:14px;font-weight:700;color:#1e40af">${billNo || '—'}</span></div>
+  <div style="text-align:right"><strong>Date</strong><br>${fmtD(billDate)}</div>
+</div>
+
+<div class="info-box">
+  <div class="info-row"><span class="info-label">Patient :</span><span class="info-value">${patientName || '—'}</span></div>
+  ${partenaireNom ? `<div class="info-row"><span class="info-label">Partenaire :</span><span class="info-value">${partenaireNom}</span></div>` : ''}
+  ${services.length ? `<div class="info-row"><span class="info-label">Nombre de services :</span><span class="info-value">${services.length}</span></div>` : ''}
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Description du service</th>
+      <th style="text-align:right">Montant total</th>
+      <th style="text-align:right">Part patient</th>
+      <th style="text-align:right">Part partenaire</th>
+      <th style="text-align:center">Statut</th>
+    </tr>
+  </thead>
+  <tbody>${serviceRows}</tbody>
+</table>
+
+<div class="totaux-box">
+  <div class="totaux-title">📊 Récapitulatif des montants</div>
+  <div class="totaux-row"><span class="totaux-label">Montant total brut :</span><span class="totaux-value">${fmtF(totDetail?.total_brut || 0)} F</span></div>
+  <div class="totaux-row"><span class="totaux-label">Part patient (à payer) :</span><span class="totaux-value">${fmtF(totDetail?.total_patient || 0)} F</span></div>
+  ${num(totDetail?.total_partenaire || 0) > 0 ? `<div class="totaux-row"><span class="totaux-label">Part partenaire :</span><span class="totaux-value">${fmtF(totDetail.total_partenaire)} F</span></div>` : ''}
+  <div class="totaux-row totaux-row-grand"><span class="totaux-label">Total déjà payé :</span><span class="totaux-value">${fmtF(totDetail?.total_deja_paye || 0)} F</span></div>
+  <div class="totaux-row totaux-row-grand"><span class="totaux-label">Restant à payer :</span><span class="totaux-value">${fmtF(totDetail?.total_restant || 0)} F</span></div>
+</div>
+
+<div class="footer">
+  <div>✦ Merci de votre confiance ✦</div>
+  <div>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</div>
+  <div>Conservez ce document à titre de preuve de paiement et de facturation</div>
+</div>
+</body>
+</html>`
+}
+
 // ── Modal Détail Facture ───────────────────────────────────────────────────────
 function FactureDetailModal({ billNo, patientName, detail, onClose, onPay }) {
   const services  = detail?.data?.services ?? []
@@ -889,22 +988,54 @@ function FactureDetailModal({ billNo, patientName, detail, onClose, onPay }) {
             onMouseLeave={e => e.currentTarget.style.borderColor = colors.gray200}
           >
             Fermer
-          </button>
-          <button
-            onClick={onPay}
-            style={{
-              padding: '9px 22px', borderRadius: 8, cursor: 'pointer',
-              border: 'none', background: colors.success,
-              color: '#fff', fontSize: 13, fontWeight: 700,
-              display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: `0 4px 12px ${colors.success}40`,
-              transition: 'opacity 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-          >
-            💳 Enregistrer un paiement
-          </button>
+            </button>
+            <button
+              onClick={onPay}
+              style={{
+                padding: '9px 22px', borderRadius: 8, cursor: 'pointer',
+                border: 'none', background: colors.success,
+                color: '#fff', fontSize: 13, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 6,
+                boxShadow: `0 4px 12px ${colors.success}40`,
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              💳 Enregistrer un paiement
+            </button>
+            <button
+              onClick={() => {
+                const printData = {
+                  billNo,
+                  patientName,
+                  services: services || [],
+                  totDetail: totDetail || null,
+                  billDate: detail?.data?.bill?.bill_date,
+                  partenaireNom: detail?.data?.bill?.partenaire_nom
+                }
+                const html = buildFacturePrintHtml(printData)
+                const win = window.open('', '_blank', 'width=950,height=700,scrollbars=yes')
+                if (win) {
+                  win.document.write(html)
+                  win.document.close()
+                  win.focus()
+                  setTimeout(() => { win.print() }, 500)
+                }
+              }}
+              style={{
+                padding: '9px 22px', borderRadius: 8, cursor: 'pointer',
+                border: 'none', background: colors.bleu,
+                color: '#fff', fontSize: 13, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 6,
+                boxShadow: `0 4px 12px ${colors.bleu}40`,
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              🖨️ Imprimer la facture
+            </button>
         </div>
       </div>
     </div>

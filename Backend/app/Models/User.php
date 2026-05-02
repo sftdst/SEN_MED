@@ -6,12 +6,14 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +24,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role_id',
+        'personnel_id',
     ];
 
     /**
@@ -45,5 +49,42 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Rôle de l'utilisateur
+     */
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Personnel lié (optionnel)
+     */
+    public function personnel(): BelongsTo
+    {
+        return $this->belongsTo(Personnel::class, 'personnel_id');
+    }
+
+    /**
+     * Vérifie si l'utilisateur a une permission spécifique via son rôle
+     */
+    public function hasPermission(string $permissionKey): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+        return $this->role->permissions()
+                    ->where('key', $permissionKey)
+                    ->exists();
+    }
+
+    /**
+     * Vérifie si l'utilisateur a un rôle spécifique
+     */
+    public function hasRole(string $roleKey): bool
+    {
+        return $this->role && $this->role->key === $roleKey;
     }
 }

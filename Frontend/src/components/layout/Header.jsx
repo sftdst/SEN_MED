@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import { colors, shadows } from '../../theme'
 import { useChat } from '../../contexts/ChatContext'
+import { useAuth } from '../../context/AuthContext'
 
 const titles = {
   '/':              'Tableau de bord',
@@ -14,7 +15,6 @@ const titles = {
   '/consultation':  'Consultation Médicale',
 }
 
-// Injecte les keyframes une seule fois
 const STYLE_ID = 'chat-header-anim'
 if (!document.getElementById(STYLE_ID)) {
   const s = document.createElement('style')
@@ -46,8 +46,12 @@ if (!document.getElementById(STYLE_ID)) {
 
 export default function Header({ onToggleSidebar }) {
   const { pathname } = useLocation()
-  const title = titles[pathname] || 'SenMed'
+  const { logout, user } = useAuth()
   const { setChatOpen, chatOpen, unreadTotal, currentUser, hasNewMsg } = useChat()
+  const title = titles[pathname] || 'SenMed'
+
+  const displayName = currentUser?.display_name || user?.first_name || user?.nom || 'Utilisateur'
+  const initials = displayName.substring(0, 1).toUpperCase()
 
   return (
     <header style={{
@@ -84,7 +88,7 @@ export default function Header({ onToggleSidebar }) {
         {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
       </div>
 
-      {/* ── Bouton Chat ── */}
+      {/* Chat button */}
       <button
         onClick={() => setChatOpen(o => !o)}
         title={unreadTotal > 0 ? `${unreadTotal} message${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}` : 'Messagerie interne'}
@@ -139,18 +143,37 @@ export default function Header({ onToggleSidebar }) {
         }} />
       </div>
 
-      {/* Avatar */}
-      <div
-        title={currentUser?.display_name || ''}
-        style={{
-          width: 38, height: 38, borderRadius: '50%',
-          background: `linear-gradient(135deg, ${colors.bleu}, #1a4a80)`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer',
-          userSelect: 'none',
-        }}
-      >
-        {currentUser ? (currentUser.display_name || 'U').substring(0, 1).toUpperCase() : 'U'}
+      {/* User name */}
+      <span style={{ fontSize: 13, color: colors.gray600, fontWeight: 500 }}>
+        {displayName}
+      </span>
+
+      {/* Avatar + logout */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div
+          title={displayName}
+          style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: `linear-gradient(135deg, ${colors.bleu}, #1a4a80)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer',
+            userSelect: 'none',
+          }}
+        >
+          {initials}
+        </div>
+        <button
+          onClick={logout}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: colors.gray400, fontSize: 14, padding: 4,
+            display: 'flex', alignItems: 'center',
+            transition: 'color 0.15s',
+          }}
+          title="Déconnexion"
+        >
+          🔒
+        </button>
       </div>
     </header>
   )

@@ -34,6 +34,8 @@ use App\Http\Controllers\Api\DocumentTemplateController;
 use App\Http\Controllers\Api\GeneratedCertificateController;
 use App\Http\Controllers\Api\NursingDossierController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\RolePermissionController;
+use App\Http\Controllers\Api\AuthController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -46,6 +48,15 @@ Route::get('/user', function (Request $request) {
 */
 
 Route::prefix('v1')->group(function () {
+
+    // ── Authentification ───────────────────────────────────────────────────
+    Route::prefix('auth')->group(function () {
+        Route::post('login',    [AuthController::class, 'login']);
+        Route::post('register', [AuthController::class, 'register']);
+        Route::post('logout',   [AuthController::class, 'logout'])->middleware('auth:sanctum');
+        Route::get('me',       [AuthController::class, 'me'])->middleware('auth:sanctum');
+        Route::post('refresh', [AuthController::class, 'refresh'])->middleware('auth:sanctum');
+    });
 
     // Hôpitaux / Organisations
     Route::apiResource('hospitals', HospitalController::class)
@@ -437,9 +448,9 @@ Route::prefix('v1')->group(function () {
     Route::get('nursing-dossiers/{dossier}/surveillances',  [NursingDossierController::class, 'getSurveillances']);
     Route::post('nursing-dossiers/{dossier}/surveillances', [NursingDossierController::class, 'storeSurveillance']);
 
-    // ── Images de surveillance (plaie) ────────────────────────────────────────
-    Route::post('nursing-dossiers/{dossier}/surveillances/{surveillance}/images',   [NursingDossierController::class, 'uploadSurveillanceImage']);
-    Route::delete('nursing-dossiers/{dossier}/surveillances/{surveillance}/images', [NursingDossierController::class, 'deleteSurveillanceImage']);
+     // ── Images de surveillance (plaie) ────────────────────────────────────────
+     Route::post('nursing-dossiers/{dossier}/surveillances/{surveillance}/images',   [NursingDossierController::class, 'uploadSurveillanceImage']);
+     Route::delete('nursing-dossiers/{dossier}/surveillances/{surveillance}/images', [NursingDossierController::class, 'deleteSurveillanceImage']);
 
     /*
     |--------------------------------------------------------------------------
@@ -453,5 +464,18 @@ Route::prefix('v1')->group(function () {
     Route::post('chat/conversations/{conv}/messages',     [ChatController::class, 'sendMessage']);
     Route::put('chat/conversations/{conv}/read',          [ChatController::class, 'markRead']);
     Route::get('chat/unread-count',                       [ChatController::class, 'unreadCount']);
+
+    // ── Gestion des Profils et Droits ─────────────────────────────────────────
+    Route::get('roles',                          [RolePermissionController::class, 'index']);
+    Route::get('roles/{role}',                   [RolePermissionController::class, 'show']);
+    Route::post('roles',                         [RolePermissionController::class, 'store']);
+    Route::put('roles/{role}',                   [RolePermissionController::class, 'update']);
+    Route::delete('roles/{role}',                [RolePermissionController::class, 'destroy']);
+    Route::post('roles/{role}/permissions',      [RolePermissionController::class, 'syncPermissions']);
+
+    Route::get('permissions',                    [RolePermissionController::class, 'permissionIndex']);
+    Route::post('permissions',                   [RolePermissionController::class, 'permissionStore']);
+    Route::put('permissions/{id}',               [RolePermissionController::class, 'permissionStore']);
+    Route::delete('permissions/{id}',            [RolePermissionController::class, 'permissionDestroy']);
 
 });
