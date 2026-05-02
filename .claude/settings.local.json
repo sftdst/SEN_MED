@@ -50,7 +50,12 @@
       "Bash(grep -n 'protected $fillable' 'e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Backend\\\\app\\\\Models\\\\NursingDossier.php')",
       "Bash(Get-Content \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Backend\\\\storage\\\\logs\\\\laravel.log\" -Tail 40)",
       "Bash(Select-String -Pattern \"patient_no|nursing|ERREUR|ERROR|Exception\")",
-      "Bash(Select-Object -Last 20)"
+      "Bash(Select-Object -Last 20)",
+      "Bash(node --input-type=module --eval ':*)",
+      "Bash(npx --yes react-scripts build)",
+      "Bash(npx react-scripts:*)",
+      "Bash(node -e ':*)",
+      "Bash(node_modules/.bin/react-scripts build:*)"
     ]
   }
 }

@@ -237,33 +237,248 @@ function TabAdmin({ dossier, dossierId, showToast }) {
   )
 }
 
+// ─── Autocomplete médicament (dropdown en position:fixed pour éviter le clipping) ─
+function MedicamentAutocomplete({ value, onSelect, onClear, disabled }) {
+  const [query, setQuery]       = useState(value || '')
+  const [results, setResults]   = useState([])
+  const [open, setOpen]         = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [selected, setSelected] = useState(!!value)
+  const [dropPos, setDropPos]   = useState({ top: 0, left: 0, width: 0 })
+  const timerRef   = React.useRef(null)
+  const inputRef   = React.useRef(null)
+
+  // Fermer si clic extérieur
+  useEffect(() => {
+    const handler = (e) => {
+      if (inputRef.current && !inputRef.current.closest('[data-med-wrap]')?.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Reposionner si scroll/resize
+  useEffect(() => {
+    if (!open) return
+    const reposition = () => {
+      if (!inputRef.current) return
+      const r = inputRef.current.getBoundingClientRect()
+      // Choisir d'afficher au-dessus si pas assez de place en dessous
+      const spaceBelow = window.innerHeight - r.bottom
+      const spaceAbove = r.top
+      const dropH = Math.min(results.length * 58, 280)
+      const showAbove = spaceBelow < dropH + 8 && spaceAbove > dropH + 8
+      setDropPos({
+        top:    showAbove ? r.top - dropH - 4 : r.bottom + 2,
+        left:   r.left,
+        width:  r.width,
+        above:  showAbove,
+      })
+    }
+    reposition()
+    window.addEventListener('scroll', reposition, true)
+    window.addEventListener('resize', reposition)
+    return () => { window.removeEventListener('scroll', reposition, true); window.removeEventListener('resize', reposition) }
+  }, [open, results.length])
+
+  useEffect(() => { setQuery(value || ''); setSelected(!!value) }, [value])
+
+  const openDropdown = () => {
+    if (!inputRef.current) return
+    const r = inputRef.current.getBoundingClientRect()
+    setDropPos({ top: r.bottom + 2, left: r.left, width: r.width })
+  }
+
+  const handleChange = (e) => {
+    const q = e.target.value
+    setQuery(q)
+    setSelected(false)
+    if (onClear) onClear()
+    clearTimeout(timerRef.current)
+    if (q.length < 3) { setResults([]); setOpen(false); return }
+    timerRef.current = setTimeout(async () => {
+      setLoading(true)
+      openDropdown()
+      try {
+        const res = await api.get('/pharmacie/items', { params: { q, limit: 12 } })
+        const items = res.data?.data || []
+        setResults(items)
+        setOpen(items.length > 0)
+      } catch { setResults([]) }
+      finally { setLoading(false) }
+    }, 300)
+  }
+
+  const handleSelect = (item) => {
+    setQuery(item.description)
+    setSelected(true)
+    setOpen(false)
+    setResults([])
+    if (onSelect) onSelect(item)
+  }
+
+  const handleClear = () => {
+    setQuery('')
+    setSelected(false)
+    setResults([])
+    setOpen(false)
+    if (onClear) onClear()
+    inputRef.current?.focus()
+  }
+
+  const fmtPrix = (p) => p ? Number(p).toLocaleString('fr-FR') + ' FCFA' : ''
+
+  return (
+    <div data-med-wrap="1" style={{ position: 'relative', width: '100%' }}>
+      <div style={{ position: 'relative' }}>
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={handleChange}
+          disabled={disabled}
+          placeholder="Saisir ≥ 3 lettres du médicament..."
+          autoComplete="off"
+          style={{
+            ...inputSt,
+            paddingRight: 34,
+            borderColor: selected ? '#16a34a' : open ? colors.bleu : colors.gray300,
+            textDecoration: disabled ? 'line-through' : 'none',
+            color: disabled ? colors.gray500 : selected ? '#0f6b35' : colors.gray900,
+            background: selected ? '#f0fdf4' : disabled ? colors.gray50 : colors.white,
+            transition: 'border-color .15s, background .15s',
+          }}
+        />
+        <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: selected && !disabled ? 'auto' : 'none', cursor: 'pointer' }}>
+          {loading
+            ? <span style={{ fontSize: 12, color: colors.gray400, animation: 'spin 1s linear infinite' }}>⟳</span>
+            : selected
+              ? <span onClick={handleClear} style={{ fontSize: 16, color: colors.gray400, lineHeight: 1 }}>×</span>
+              : query.length >= 3
+                ? <span style={{ fontSize: 12, color: colors.gray400 }}>🔍</span>
+                : <span style={{ fontSize: 12, color: colors.gray300 }}>💊</span>
+          }
+        </span>
+      </div>
+
+      {/* Dropdown rendu hors du overflow via position:fixed */}
+      {open && results.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          top:   dropPos.top,
+          left:  dropPos.left,
+          width: dropPos.width,
+          zIndex: 99999,
+          background: '#fff',
+          borderRadius: radius.lg,
+          boxShadow: '0 12px 32px rgba(0,0,0,.18)',
+          border: `2px solid ${colors.bleu}`,
+          maxHeight: 320,
+          overflowY: 'auto',
+        }}>
+          <div style={{ padding: '6px 12px', background: colors.bleu, color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: `${radius.lg} ${radius.lg} 0 0`, display: 'flex', alignItems: 'center', gap: 6 }}>
+            💊 {results.length} médicament{results.length > 1 ? 's' : ''} trouvé{results.length > 1 ? 's' : ''}
+          </div>
+          {results.map((item, idx) => (
+            <div key={item.id_Rep || idx}
+              onMouseDown={(e) => { e.preventDefault(); handleSelect(item) }}
+              style={{
+                padding: '10px 14px', cursor: 'pointer',
+                borderBottom: idx < results.length - 1 ? `1px solid ${colors.gray100}` : 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                transition: 'background .1s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.gray900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</div>
+                <div style={{ fontSize: 11, color: colors.gray500, marginTop: 2 }}>
+                  {[item.posologie, item.voie_administration].filter(Boolean).join(' · ') || item.item_id}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                {item.PrixVente > 0
+                  ? <span style={{ background: '#dcfce7', color: '#16a34a', borderRadius: radius.full, padding: '3px 10px', fontSize: 12, fontWeight: 700, display: 'block', whiteSpace: 'nowrap' }}>
+                      {fmtPrix(item.PrixVente)}
+                    </span>
+                  : <span style={{ fontSize: 11, color: colors.gray400 }}>Prix libre</span>
+                }
+                <div style={{ fontSize: 10, color: colors.gray400, marginTop: 2 }}>{item.item_id}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Onglet 2: Traitements ────────────────────────────────────────────────────
 function TabTraitements({ dossier, dossierId, showToast }) {
   const [treatments, setTreatments] = useState([])
-  const [saving, setSaving] = useState(null)
+  const [saving, setSaving]   = useState(null)
   const [deleting, setDeleting] = useState(null)
 
   useEffect(() => {
     if (dossier?.treatments) setTreatments(dossier.treatments)
   }, [dossier])
 
-  const addRow = () => setTreatments(prev => [...prev, {
+  const emptyRow = () => ({
     _new: true, _key: Date.now(),
     date_debut: today(), date_fin: '', arret: false,
-    traitement: '', matin: false, midi: false, soir: false, nuit: false,
-  }])
+    designation: '', item_id: '', item_ref: '', quantite: 1,
+    prix_unitaire: 0, prix_total: 0, posologie: '',
+    matin: false, midi: false, soir: false, nuit: false,
+  })
 
-  const update = (i, field, value) => setTreatments(prev => prev.map((t, j) => j === i ? { ...t, [field]: value } : t))
+  const addRow = () => setTreatments(prev => [...prev, emptyRow()])
+
+  const update = (i, field, value) =>
+    setTreatments(prev => prev.map((t, j) => j === i ? { ...t, [field]: value } : t))
+
+  const selectMed = (i, item) =>
+    setTreatments(prev => prev.map((t, j) => j === i ? {
+      ...t,
+      designation:   item.description,
+      item_id:       item.item_id,
+      item_ref:      String(item.id_Rep),
+      prix_unitaire: item.PrixVente || 0,
+      prix_total:    (item.PrixVente || 0) * (t.quantite || 1),
+      posologie:     item.posologie || '',
+    } : t))
+
+  const clearMed = (i) =>
+    setTreatments(prev => prev.map((t, j) => j === i ? {
+      ...t, designation: '', item_id: '', item_ref: '', prix_unitaire: 0, prix_total: 0, posologie: '',
+    } : t))
+
+  const updateQty = (i, qty) =>
+    setTreatments(prev => prev.map((t, j) => j === i ? {
+      ...t, quantite: qty, prix_total: (t.prix_unitaire || 0) * qty,
+    } : t))
 
   const saveRow = async (t, i) => {
-    if (!t.traitement.trim()) { showToast('Veuillez saisir le traitement', 'error'); return }
+    if (!t.designation?.trim()) { showToast('Veuillez saisir ou sélectionner un médicament', 'error'); return }
     setSaving(i)
     try {
+      const payload = {
+        designation: t.designation, item_id: t.item_id || null, item_ref: t.item_ref || null,
+        quantite: t.quantite || 1, prix_unitaire: t.prix_unitaire || 0, posologie: t.posologie || '',
+        date_debut: t.date_debut, date_fin: t.date_fin || null,
+        arret: t.arret, matin: t.matin, midi: t.midi, soir: t.soir, nuit: t.nuit,
+      }
       if (t._new) {
-        const res = await api.post(`/nursing-dossiers/${dossierId}/treatments`, t)
-        setTreatments(prev => prev.map((x, j) => j === i ? { ...res.data.data, ...res.data } : x))
+        const res = await api.post(`/nursing-dossiers/${dossierId}/treatments`, payload)
+        const saved = res.data?.data || res.data
+        setTreatments(prev => prev.map((x, j) => j === i ? { ...x, ...saved, _new: undefined } : x))
+        const prix = saved?.prix_total || 0
+        showToast(prix > 0 ? `Traitement enregistré — ${Number(prix).toLocaleString('fr-FR')} FCFA facturé` : 'Traitement enregistré')
       } else {
-        await api.put(`/nursing-dossiers/${dossierId}/treatments/${t.id}`, t)
+        const res = await api.put(`/nursing-dossiers/${dossierId}/treatments/${t.id}`, payload)
+        const saved = res.data?.data || res.data
+        setTreatments(prev => prev.map((x, j) => j === i ? { ...x, ...saved } : x))
         showToast('Traitement mis à jour')
       }
     } catch { showToast('Erreur lors de la sauvegarde', 'error') }
@@ -272,7 +487,7 @@ function TabTraitements({ dossier, dossierId, showToast }) {
 
   const deleteRow = async (t, i) => {
     if (t._new) { setTreatments(prev => prev.filter((_, j) => j !== i)); return }
-    if (!window.confirm('Supprimer ce traitement ?')) return
+    if (!window.confirm('Supprimer ce traitement ?' + (t.facturation_id ? '\n⚠ La ligne de facturation sera aussi annulée.' : ''))) return
     setDeleting(i)
     try {
       await api.delete(`/nursing-dossiers/${dossierId}/treatments/${t.id}`)
@@ -282,99 +497,181 @@ function TabTraitements({ dossier, dossierId, showToast }) {
     finally { setDeleting(null) }
   }
 
-  const Checkbox = ({ checked, onChange, color }) => (
-    <div onClick={onChange} style={{
-      width: 28, height: 28, borderRadius: radius.sm, cursor: 'pointer',
-      background: checked ? color : colors.gray100,
-      border: `2px solid ${checked ? color : colors.gray300}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'all .15s', margin: '0 auto',
-      color: checked ? '#fff' : 'transparent', fontSize: 14,
-    }}>✓</div>
+  // Checkbox stylisée
+  const Pill = ({ label, checked, onChange, color }) => (
+    <button type="button" onClick={onChange} style={{
+      padding: '4px 10px', borderRadius: radius.full, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700,
+      background: checked ? color : colors.gray100, color: checked ? '#fff' : colors.gray500,
+      transition: 'all .15s', outline: 'none',
+    }}>{label}</button>
   )
+
+  const totalFacture = treatments.reduce((acc, t) => acc + ((t.prix_unitaire || 0) * (t.quantite || 1)), 0)
 
   return (
     <div style={{ background: colors.white, borderRadius: radius.lg, padding: 24, boxShadow: shadows.sm, border: `1px solid ${colors.gray200}` }}>
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+
+      {/* En-tête */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.bleu }}>
-            Fiche de Traitement — {dossier?.patient?.first_name} {dossier?.patient?.last_name}
+            💊 Fiche de Traitement — {dossier?.patient?.first_name} {dossier?.patient?.last_name}
           </h2>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.gray500 }}>
-            Élaborée le {fmt(dossier?.date_debut)}
+          <p style={{ margin: '3px 0 0', fontSize: 12, color: colors.gray500 }}>
+            Élaborée le {fmt(dossier?.date_debut)} · Les médicaments sélectionnés sont facturés automatiquement
           </p>
         </div>
-        <button onClick={addRow} style={{ ...btnOrange, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 16 }}>+</span> Ajouter un traitement
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {totalFacture > 0 && (
+            <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: radius.md, padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 15 }}>💰</span>
+              <div>
+                <div style={{ fontSize: 10, color: '#166534', fontWeight: 600, lineHeight: 1 }}>Total facturé</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#15803d', lineHeight: 1.4 }}>{totalFacture.toLocaleString('fr-FR')} FCFA</div>
+              </div>
+            </div>
+          )}
+          <button onClick={addRow} style={{ ...btnOrange, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> Ajouter un traitement
+          </button>
+        </div>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
-          <thead>
-            <tr style={{ background: colors.gray50, borderBottom: `2px solid ${colors.gray200}` }}>
-              {['Date début', 'Date fin', 'Arrêt', 'Traitement', 'Matin', 'Midi', 'Soir', 'Nuit', ''].map((h, i) => (
-                <th key={i} style={{ padding: '10px 10px', fontSize: 11, fontWeight: 700, color: colors.gray500, textAlign: i === 3 ? 'left' : 'center', whiteSpace: 'nowrap', letterSpacing: '.4px', textTransform: 'uppercase' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {treatments.length === 0 && (
-              <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: colors.gray500, fontSize: 13 }}>
-                Aucun traitement. Cliquez sur "+ Ajouter un traitement".
-              </td></tr>
-            )}
-            {treatments.map((t, i) => {
-              const stopped = t.arret
-              return (
-                <tr key={t.id || t._key} style={{
-                  borderBottom: `1px solid ${colors.gray100}`,
-                  background: stopped ? colors.gray50 : colors.white,
-                  opacity: stopped ? .7 : 1,
-                  transition: 'opacity .15s',
-                }}>
-                  <td style={{ padding: '6px 8px' }}>
-                    <input type="date" value={t.date_debut || ''} onChange={e => update(i, 'date_debut', e.target.value)}
-                      style={{ ...inputSt, fontSize: 11, width: 130 }} />
-                  </td>
-                  <td style={{ padding: '6px 8px' }}>
-                    <input type="date" value={t.date_fin || ''} onChange={e => update(i, 'date_fin', e.target.value)}
-                      style={{ ...inputSt, fontSize: 11, width: 130 }} />
-                  </td>
-                  <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                    <Checkbox checked={stopped} onChange={() => update(i, 'arret', !stopped)} color={colors.danger} />
-                  </td>
-                  <td style={{ padding: '6px 8px' }}>
-                    <input value={t.traitement || ''} onChange={e => update(i, 'traitement', e.target.value)}
-                      placeholder="Nom du médicament, posologie..."
-                      style={{
-                        ...inputSt, textDecoration: stopped ? 'line-through' : 'none',
-                        color: stopped ? colors.gray500 : colors.gray900,
-                      }} />
-                  </td>
-                  {['matin', 'midi', 'soir', 'nuit'].map(p => (
-                    <td key={p} style={{ padding: '6px 8px', textAlign: 'center' }}>
-                      <Checkbox checked={!!t[p]} onChange={() => update(i, p, !t[p])} color={colors.orange} />
-                    </td>
-                  ))}
-                  <td style={{ padding: '6px 8px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                      <button onClick={() => saveRow(t, i)} disabled={saving === i}
-                        style={{ ...btnOrange, padding: '5px 10px', fontSize: 11, opacity: saving === i ? .6 : 1 }}>
-                        {saving === i ? '...' : '💾'}
-                      </button>
-                      <button onClick={() => deleteRow(t, i)} disabled={deleting === i}
-                        style={{ background: colors.dangerBg, color: colors.danger, border: 'none', borderRadius: radius.sm, padding: '5px 10px', fontSize: 11, cursor: 'pointer', opacity: deleting === i ? .6 : 1 }}>
-                        🗑
-                      </button>
+      {/* Liste des traitements en cards */}
+      {treatments.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: colors.gray400, fontSize: 13 }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>💊</div>
+          Aucun traitement. Cliquez sur "+ Ajouter un traitement".
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {treatments.map((t, i) => {
+            const stopped   = t.arret
+            const hasFac    = !!t.facturation_id && !t._new
+            const prixTotal = (t.prix_unitaire || 0) * (t.quantite || 1)
+            return (
+              <div key={t.id || t._key} style={{
+                border: `1.5px solid ${stopped ? colors.gray200 : hasFac ? '#bbf7d0' : colors.gray200}`,
+                borderLeft: `4px solid ${stopped ? colors.danger : hasFac ? '#16a34a' : colors.bleu}`,
+                borderRadius: radius.md,
+                background: stopped ? '#fafafa' : hasFac ? '#f9fff9' : '#fff',
+                opacity: stopped ? .75 : 1,
+                padding: '12px 16px',
+                transition: 'box-shadow .15s',
+              }}>
+
+                {/* Ligne 1 : Médicament (principale) */}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
+                  {/* Autocomplete — prend tout l'espace disponible */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: colors.gray500, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>
+                      Médicament / Traitement
+                    </label>
+                    <MedicamentAutocomplete
+                      value={t.designation || ''}
+                      disabled={stopped}
+                      onSelect={(item) => selectMed(i, item)}
+                      onClear={() => clearMed(i)}
+                    />
+                    {hasFac && (
+                      <span style={{ fontSize: 10, color: '#16a34a', fontWeight: 700, marginTop: 3, display: 'inline-block' }}>✓ Ligne facture créée</span>
+                    )}
+                  </div>
+
+                  {/* Posologie */}
+                  <div style={{ width: 150, flexShrink: 0 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: colors.gray500, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Posologie</label>
+                    <input value={t.posologie || ''} onChange={e => update(i, 'posologie', e.target.value)}
+                      placeholder="1 cp matin..." style={{ ...inputSt, fontSize: 12 }} />
+                  </div>
+
+                  {/* Qté */}
+                  <div style={{ width: 70, flexShrink: 0 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: colors.gray500, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Qté</label>
+                    <input type="number" min={1} value={t.quantite || 1}
+                      onChange={e => updateQty(i, Math.max(1, +e.target.value))}
+                      style={{ ...inputSt, fontSize: 13, textAlign: 'center', fontWeight: 700 }} />
+                  </div>
+
+                  {/* Prix */}
+                  <div style={{ width: 130, flexShrink: 0 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: colors.gray500, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Prix unitaire</label>
+                    <div style={{ ...inputSt, fontSize: 12, color: prixTotal > 0 ? '#15803d' : colors.gray400, fontWeight: prixTotal > 0 ? 700 : 400, background: '#f9fafb', cursor: 'default' }}>
+                      {t.prix_unitaire > 0 ? Number(t.prix_unitaire).toLocaleString('fr-FR') + ' FCFA' : 'Gratuit'}
                     </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+                  </div>
+
+                  {/* Total */}
+                  {prixTotal > 0 && (
+                    <div style={{ width: 130, flexShrink: 0 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: colors.gray500, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.4px' }}>Total</label>
+                      <div style={{ background: '#dcfce7', color: '#15803d', borderRadius: radius.md, padding: '8px 11px', fontSize: 13, fontWeight: 800, textAlign: 'right' }}>
+                        {Number(prixTotal).toLocaleString('fr-FR')} FCFA
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Ligne 2 : Dates + Prises + Actions */}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Date début */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: colors.gray400, textTransform: 'uppercase', letterSpacing: '.4px' }}>Début</label>
+                    <input type="date" value={t.date_debut || ''} onChange={e => update(i, 'date_debut', e.target.value)}
+                      style={{ ...inputSt, fontSize: 12, width: 132 }} />
+                  </div>
+
+                  {/* Date fin */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: colors.gray400, textTransform: 'uppercase', letterSpacing: '.4px' }}>Fin</label>
+                    <input type="date" value={t.date_fin || ''} onChange={e => update(i, 'date_fin', e.target.value)}
+                      style={{ ...inputSt, fontSize: 12, width: 132 }} />
+                  </div>
+
+                  {/* Séparateur */}
+                  <div style={{ width: 1, height: 36, background: colors.gray200, flexShrink: 0 }} />
+
+                  {/* Prises en pill-buttons */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: colors.gray400, textTransform: 'uppercase', letterSpacing: '.4px' }}>Prises</label>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {[['matin', 'Matin'], ['midi', 'Midi'], ['soir', 'Soir'], ['nuit', 'Nuit']].map(([field, label]) => (
+                        <Pill key={field} label={label} checked={!!t[field]}
+                          onChange={() => update(i, field, !t[field])} color={colors.orange} />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Séparateur */}
+                  <div style={{ width: 1, height: 36, background: colors.gray200, flexShrink: 0 }} />
+
+                  {/* Arrêt toggle */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: colors.gray400, textTransform: 'uppercase', letterSpacing: '.4px' }}>Arrêt</label>
+                    <Pill label={stopped ? '⛔ Arrêté' : 'Actif'} checked={stopped}
+                      onChange={() => update(i, 'arret', !stopped)} color={colors.danger} />
+                  </div>
+
+                  {/* Spacer push actions à droite */}
+                  <div style={{ flex: 1 }} />
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => saveRow(t, i)} disabled={saving === i}
+                      style={{ ...btnOrange, padding: '7px 16px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, opacity: saving === i ? .6 : 1 }}>
+                      {saving === i ? '⏳ Enreg...' : '💾 Enregistrer'}
+                    </button>
+                    <button onClick={() => deleteRow(t, i)} disabled={deleting === i}
+                      style={{ background: colors.dangerBg, color: colors.danger, border: `1px solid ${colors.danger}20`, borderRadius: radius.md, padding: '7px 12px', fontSize: 12, cursor: 'pointer', opacity: deleting === i ? .6 : 1 }}>
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -724,11 +1021,128 @@ function TabTransmissions({ dossier, dossierId, showToast }) {
   )
 }
 
+// ─── Webcam Modal ─────────────────────────────────────────────────────────────
+function WebcamModal({ onCapture, onClose }) {
+  const videoRef = React.useRef(null)
+  const canvasRef = React.useRef(null)
+  const streamRef = React.useRef(null)
+  const [captured, setCaptured] = useState(null)
+  const [camError, setCamError] = useState(null)
+
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+      .then(stream => {
+        streamRef.current = stream
+        if (videoRef.current) videoRef.current.srcObject = stream
+      })
+      .catch(() => setCamError("Impossible d'accéder à la caméra. Vérifiez les permissions."))
+    return () => { streamRef.current?.getTracks().forEach(t => t.stop()) }
+  }, [])
+
+  const capture = () => {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+    canvas.width = video.videoWidth || 1280
+    canvas.height = video.videoHeight || 720
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+    setCaptured(canvas.toDataURL('image/jpeg', 0.85))
+  }
+
+  const confirm = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    onCapture(captured)
+  }
+
+  const retake = () => setCaptured(null)
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#1a1a2e', borderRadius: radius.xl, padding: 24, width: '90%', maxWidth: 720, boxShadow: shadows.xl }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>📷 Capture webcam</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: 22, cursor: 'pointer' }}>×</button>
+        </div>
+        {camError
+          ? <div style={{ color: '#f87171', textAlign: 'center', padding: 40, fontSize: 14 }}>{camError}</div>
+          : captured
+            ? <div style={{ textAlign: 'center' }}>
+                <img src={captured} alt="capture" style={{ width: '100%', maxHeight: 400, objectFit: 'contain', borderRadius: radius.md, border: '2px solid #22c55e' }} />
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 16 }}>
+                  <button onClick={retake} style={{ ...btnGray, background: '#374151', color: '#fff', border: 'none' }}>↺ Reprendre</button>
+                  <button onClick={confirm} style={{ ...btnOrange, background: '#22c55e' }}>✓ Utiliser cette photo</button>
+                </div>
+              </div>
+            : <div style={{ textAlign: 'center' }}>
+                <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', maxHeight: 400, borderRadius: radius.md, background: '#000' }} />
+                <button onClick={capture} style={{ marginTop: 16, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 64, height: 64, fontSize: 24, cursor: 'pointer', boxShadow: '0 0 0 4px rgba(239,68,68,.3)' }}>📷</button>
+              </div>
+        }
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+      </div>
+    </div>
+  )
+}
+
+// ─── Lightbox Modal ────────────────────────────────────────────────────────────
+function LightboxModal({ images, index, onClose, onDelete }) {
+  const [cur, setCur] = useState(index)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowRight') setCur(c => Math.min(c + 1, images.length - 1))
+      if (e.key === 'ArrowLeft')  setCur(c => Math.max(c - 1, 0))
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [images.length, onClose])
+
+  const img = images[cur]
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      {/* Header */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: 'rgba(0,0,0,.5)' }}>
+        <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Photo {cur + 1} / {images.length}</span>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {onDelete && (
+            <button onClick={() => onDelete(img, cur)} title="Supprimer" style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: radius.md, padding: '5px 12px', fontSize: 12, cursor: 'pointer' }}>🗑 Supprimer</button>
+          )}
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none', borderRadius: radius.md, padding: '5px 12px', fontSize: 18, cursor: 'pointer' }}>×</button>
+        </div>
+      </div>
+      {/* Navigation */}
+      {cur > 0 && (
+        <button onClick={() => setCur(c => c - 1)} style={{ position: 'absolute', left: 16, background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none', borderRadius: '50%', width: 44, height: 44, fontSize: 20, cursor: 'pointer' }}>‹</button>
+      )}
+      <img src={img?.url || img} alt={`Photo ${cur + 1}`} style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: radius.md, boxShadow: shadows.xl }} />
+      {cur < images.length - 1 && (
+        <button onClick={() => setCur(c => c + 1)} style={{ position: 'absolute', right: 16, background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none', borderRadius: '50%', width: 44, height: 44, fontSize: 20, cursor: 'pointer' }}>›</button>
+      )}
+      {/* Thumbnails strip */}
+      {images.length > 1 && (
+        <div style={{ position: 'absolute', bottom: 12, display: 'flex', gap: 8, padding: '8px 16px', background: 'rgba(0,0,0,.5)', borderRadius: radius.full }}>
+          {images.map((im, i) => (
+            <img key={i} src={im?.url || im} alt="" onClick={() => setCur(i)}
+              style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', border: i === cur ? '2px solid #f97316' : '2px solid transparent', opacity: i === cur ? 1 : 0.6, transition: 'all .15s' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Onglet 5: Plaie Chronique ─────────────────────────────────────────────────
 function TabPlaie({ dossierId, showToast }) {
   const [suivis, setSuivis] = useState([])
   const [form, setForm] = useState({ date_surveillance: today(), surface: '', profondeur: '', douleur_type: 'I', eva: 0, observations: '' })
   const [saving, setSaving] = useState(false)
+  // Images en attente (avant enregistrement)
+  const [pendingImages, setPendingImages] = useState([]) // [{ preview: dataURL, base64: string }]
+  const [showWebcam, setShowWebcam] = useState(false)
+  const [uploadingImgFor, setUploadingImgFor] = useState(null) // { suiviId, index } pour upload sur un suivi existant
+  const [lightbox, setLightbox] = useState(null) // { images: [...], index: 0, suiviId }
+  const fileInputRef = React.useRef(null)
+  const fileInputExistRef = React.useRef(null)
 
   useEffect(() => { fetchSuivis() }, [])
 
@@ -743,22 +1157,99 @@ function TabPlaie({ dossierId, showToast }) {
   const save = async () => {
     setSaving(true)
     try {
-      await api.post(`/nursing-dossiers/${dossierId}/surveillances`, {
+      const res = await api.post(`/nursing-dossiers/${dossierId}/surveillances`, {
         type_surveillance: 'plaie', date_surveillance: form.date_surveillance,
         data: { surface: form.surface, profondeur: form.profondeur, douleur_type: form.douleur_type, eva: form.eva },
         observations: form.observations,
       })
-      showToast('Suivi enregistré')
+      const newId = res.data?.data?.id
+      // Uploader les images en attente
+      if (newId && pendingImages.length > 0) {
+        for (const img of pendingImages) {
+          try {
+            if (img.file) {
+              const fd = new FormData()
+              fd.append('image', img.file)
+              await api.post(`/nursing-dossiers/${dossierId}/surveillances/${newId}/images`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+            } else if (img.base64) {
+              await api.post(`/nursing-dossiers/${dossierId}/surveillances/${newId}/images`, { image_base64: img.base64 })
+            }
+          } catch { /* skip image error */ }
+        }
+      }
+      showToast('Suivi enregistré' + (pendingImages.length ? ` avec ${pendingImages.length} photo(s)` : ''))
       setForm({ date_surveillance: today(), surface: '', profondeur: '', douleur_type: 'I', eva: 0, observations: '' })
+      setPendingImages([])
       fetchSuivis()
-    } catch { showToast('Erreur', 'error') }
+    } catch { showToast('Erreur lors de l\'enregistrement', 'error') }
     finally { setSaving(false) }
+  }
+
+  const addWebcamCapture = (base64) => {
+    setShowWebcam(false)
+    if (uploadingImgFor) {
+      // Upload immédiat sur un suivi existant
+      uploadToExisting(uploadingImgFor, null, base64)
+      setUploadingImgFor(null)
+    } else {
+      setPendingImages(p => [...p, { preview: base64, base64 }])
+    }
+  }
+
+  const addFileImage = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const preview = URL.createObjectURL(file)
+    if (uploadingImgFor) {
+      uploadToExisting(uploadingImgFor, file, null)
+      setUploadingImgFor(null)
+    } else {
+      setPendingImages(p => [...p, { preview, file }])
+    }
+    e.target.value = ''
+  }
+
+  const uploadToExisting = async (suiviId, file, base64) => {
+    try {
+      if (file) {
+        const fd = new FormData()
+        fd.append('image', file)
+        await api.post(`/nursing-dossiers/${dossierId}/surveillances/${suiviId}/images`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      } else {
+        await api.post(`/nursing-dossiers/${dossierId}/surveillances/${suiviId}/images`, { image_base64: base64 })
+      }
+      showToast('Photo ajoutée')
+      fetchSuivis()
+    } catch { showToast('Erreur upload photo', 'error') }
+  }
+
+  const deleteImage = async (suiviId, imgPath) => {
+    if (!window.confirm('Supprimer cette photo ?')) return
+    try {
+      await api.delete(`/nursing-dossiers/${dossierId}/surveillances/${suiviId}/images`, { data: { path: imgPath } })
+      showToast('Photo supprimée')
+      setLightbox(null)
+      fetchSuivis()
+    } catch { showToast('Erreur suppression', 'error') }
   }
 
   const evaColor = (v) => v <= 3 ? colors.success : v <= 6 ? colors.warning : colors.danger
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Webcam modal */}
+      {showWebcam && <WebcamModal onCapture={addWebcamCapture} onClose={() => { setShowWebcam(false); setUploadingImgFor(null) }} />}
+      {/* Lightbox */}
+      {lightbox && (
+        <LightboxModal
+          images={lightbox.images}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onDelete={lightbox.suiviId ? (img) => deleteImage(lightbox.suiviId, img.path || img) : null}
+        />
+      )}
+
+      {/* ── Formulaire nouveau suivi ── */}
       <div style={{ background: colors.white, borderRadius: radius.lg, padding: 24, boxShadow: shadows.sm, border: `1px solid ${colors.gray200}` }}>
         <SectionTitle>Nouveau suivi de plaie</SectionTitle>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
@@ -776,7 +1267,7 @@ function TabPlaie({ dossierId, showToast }) {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: colors.gray700, marginBottom: 5 }}>Type de douleur</label>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {[['P', 'Permanente'], ['I', 'Intermittente'], ['CS', 'Au cours du soin']].map(([v, l]) => (
                 <label key={v} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, cursor: 'pointer' }}>
                   <input type="radio" name="douleur" value={v} checked={form.douleur_type === v} onChange={() => setForm(p => ({ ...p, douleur_type: v }))} />
@@ -792,19 +1283,13 @@ function TabPlaie({ dossierId, showToast }) {
         <div style={{ marginTop: 16 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, fontWeight: 600, color: colors.gray700, marginBottom: 8 }}>
             EVA Douleur:
-            <span style={{
-              background: evaColor(form.eva), color: '#fff',
-              borderRadius: radius.full, padding: '2px 12px', fontSize: 13, fontWeight: 800,
-            }}>{form.eva}/10</span>
+            <span style={{ background: evaColor(form.eva), color: '#fff', borderRadius: radius.full, padding: '2px 12px', fontSize: 13, fontWeight: 800 }}>{form.eva}/10</span>
           </label>
-          <input type="range" min={0} max={10} value={form.eva}
-            onChange={e => setForm(p => ({ ...p, eva: +e.target.value }))}
-            style={{ width: '100%', maxWidth: 400, accentColor: evaColor(form.eva) }} />
+          <input type="range" min={0} max={10} value={form.eva} onChange={e => setForm(p => ({ ...p, eva: +e.target.value }))} style={{ width: '100%', maxWidth: 400, accentColor: evaColor(form.eva) }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 400, marginTop: 2 }}>
             <span style={{ fontSize: 10, color: colors.success }}>0 — Pas de douleur</span>
             <span style={{ fontSize: 10, color: colors.danger }}>10 — Douleur maximale</span>
           </div>
-          {/* Barre de couleur EVA */}
           <div style={{ width: '100%', maxWidth: 400, height: 6, borderRadius: radius.full, background: `linear-gradient(to right, ${colors.success}, ${colors.warning}, ${colors.danger})`, marginTop: 6, position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', left: `${form.eva * 10}%`, top: 0, bottom: 0, right: 0, background: 'rgba(255,255,255,.6)' }} />
           </div>
@@ -814,12 +1299,45 @@ function TabPlaie({ dossierId, showToast }) {
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: colors.gray700, marginBottom: 5 }}>Protocole / Observations</label>
           <textarea value={form.observations} onChange={e => setForm(p => ({ ...p, observations: e.target.value }))} placeholder="Décrire le protocole utilisé..." style={textareaSt} />
         </div>
+
+        {/* ── Section Photos ── */}
+        <div style={{ marginTop: 18, background: '#f8fafc', border: `1.5px dashed ${colors.gray300}`, borderRadius: radius.lg, padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: colors.gray700 }}>📷 Photos de la plaie</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => setShowWebcam(true)}
+                style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: radius.md, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                📷 Webcam
+              </button>
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                style={{ background: colors.bleu || '#0f766e', color: '#fff', border: 'none', borderRadius: radius.md, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                🖼 Importer
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={addFileImage} />
+            </div>
+          </div>
+
+          {pendingImages.length === 0
+            ? <div style={{ textAlign: 'center', color: colors.gray400, fontSize: 12, padding: '12px 0' }}>Aucune photo ajoutée — les photos seront liées au suivi après enregistrement</div>
+            : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {pendingImages.map((img, i) => (
+                  <div key={i} style={{ position: 'relative' }}>
+                    <img src={img.preview} alt={`Photo ${i + 1}`} onClick={() => setLightbox({ images: pendingImages.map(p => ({ url: p.preview })), index: i, suiviId: null })}
+                      style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: radius.md, border: `2px solid ${colors.gray200}`, cursor: 'pointer' }} />
+                    <button onClick={() => setPendingImages(p => p.filter((_, j) => j !== i))}
+                      style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, fontSize: 11, cursor: 'pointer', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                  </div>
+                ))}
+              </div>
+          }
+        </div>
+
         <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={save} disabled={saving} style={{ ...btnOrange, opacity: saving ? .6 : 1 }}>{saving ? '...' : 'Enregistrer'}</button>
+          <button onClick={save} disabled={saving} style={{ ...btnOrange, opacity: saving ? .6 : 1 }}>{saving ? '⏳ Enregistrement...' : 'Enregistrer'}</button>
         </div>
       </div>
 
-      {/* Tableau suivis */}
+      {/* ── Tableau historique ── */}
       <div style={{ background: colors.white, borderRadius: radius.lg, padding: 24, boxShadow: shadows.sm, border: `1px solid ${colors.gray200}` }}>
         <SectionTitle>Historique des suivis</SectionTitle>
         {suivis.length === 0
@@ -828,7 +1346,7 @@ function TabPlaie({ dossierId, showToast }) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: colors.gray50, borderBottom: `2px solid ${colors.gray200}` }}>
-                  {['Date', 'Surface (cm²)', 'Profondeur (mm)', 'Type douleur', 'EVA', 'Observations'].map(h => (
+                  {['Date', 'Surface (cm²)', 'Profondeur (mm)', 'EVA', 'Photos', 'Observations', 'Actions'].map(h => (
                     <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: colors.gray500, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '.4px' }}>{h}</th>
                   ))}
                 </tr>
@@ -837,16 +1355,43 @@ function TabPlaie({ dossierId, showToast }) {
                 {suivis.map((s, i) => {
                   const d = s.data || {}
                   const eva = d.eva ?? 0
+                  const imgs = s.images_urls || []
                   return (
-                    <tr key={i} style={{ borderBottom: `1px solid ${colors.gray100}` }}>
+                    <tr key={i} style={{ borderBottom: `1px solid ${colors.gray100}`, background: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
                       <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600 }}>{fmt(s.date_surveillance)}</td>
                       <td style={{ padding: '10px 12px', fontSize: 13 }}>{d.surface ?? '—'}</td>
                       <td style={{ padding: '10px 12px', fontSize: 13 }}>{d.profondeur ?? '—'}</td>
-                      <td style={{ padding: '10px 12px', fontSize: 13 }}>{d.douleur_type ?? '—'}</td>
                       <td style={{ padding: '10px 12px' }}>
                         <span style={{ background: evaColor(eva) + '22', color: evaColor(eva), borderRadius: radius.full, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>{eva}/10</span>
                       </td>
-                      <td style={{ padding: '10px 12px', fontSize: 12, color: colors.gray700, maxWidth: 200 }}>{s.observations || '—'}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        {imgs.length === 0
+                          ? <span style={{ color: colors.gray400, fontSize: 12 }}>—</span>
+                          : <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                              {imgs.slice(0, 3).map((im, j) => (
+                                <img key={j} src={im.url} alt="" onClick={() => setLightbox({ images: imgs, index: j, suiviId: s.id })}
+                                  style={{ width: 44, height: 36, objectFit: 'cover', borderRadius: 6, border: `1.5px solid ${colors.gray200}`, cursor: 'pointer', transition: 'transform .15s' }}
+                                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                              ))}
+                              {imgs.length > 3 && (
+                                <span onClick={() => setLightbox({ images: imgs, index: 3, suiviId: s.id })}
+                                  style={{ width: 44, height: 36, borderRadius: 6, background: colors.gray200, color: colors.gray600, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                  +{imgs.length - 3}
+                                </span>
+                              )}
+                            </div>
+                        }
+                      </td>
+                      <td style={{ padding: '10px 12px', fontSize: 12, color: colors.gray700, maxWidth: 180 }}>{s.observations || '—'}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button title="Photo webcam" onClick={() => { setUploadingImgFor(s.id); setShowWebcam(true) }}
+                            style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: radius.md, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>📷</button>
+                          <button title="Importer image" onClick={() => { setUploadingImgFor(s.id); fileInputExistRef.current?.click() }}
+                            style={{ background: '#0f766e', color: '#fff', border: 'none', borderRadius: radius.md, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>🖼</button>
+                        </div>
+                      </td>
                     </tr>
                   )
                 })}
@@ -854,6 +1399,8 @@ function TabPlaie({ dossierId, showToast }) {
             </table>
           </div>
         }
+        {/* Input fichier caché pour upload sur suivi existant */}
+        <input ref={fileInputExistRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={addFileImage} />
       </div>
     </div>
   )
@@ -1512,30 +2059,52 @@ function PrintView({ dossier }) {
       {treatments.length === 0 ? (
         <p style={{ fontSize: 11, color: '#999', fontStyle: 'italic', marginBottom: 14 }}>Aucun traitement enregistré.</p>
       ) : (
-        <table style={tblStyle}>
-          <thead>
-            <tr>
-              {['Date début', 'Date fin', 'Traitement / Médicament', 'Matin', 'Midi', 'Soir', 'Nuit', 'Arrêt'].map(h => (
-                <th key={h} style={thBlue}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {treatments.map((t, i) => (
-              <tr key={t.id || i} style={{ opacity: t.arret ? .75 : 1 }}>
-                <td style={tdE(i)}>{fmtP(t.date_debut)}</td>
-                <td style={tdE(i)}>{fmtP(t.date_fin)}</td>
-                <td style={{ ...tdE(i), fontWeight: 600, textDecoration: t.arret ? 'line-through' : 'none' }}>
-                  {t.traitement || t.designation || '—'}
-                </td>
-                {['matin', 'midi', 'soir', 'nuit'].map(p => (
-                  <td key={p} style={{ ...tdC(i), color: t[p] ? '#27ae60' : '#ccc', fontWeight: 800 }}>{t[p] ? '✓' : '—'}</td>
+        <>
+          <table style={tblStyle}>
+            <thead>
+              <tr>
+                {['Date début', 'Date fin', 'Médicament / Traitement', 'Posologie', 'Qté', 'Prix unit.', 'Total', 'M', 'Mi', 'S', 'N', 'Arrêt'].map(h => (
+                  <th key={h} style={{ ...thBlue, background: '#1a5276' }}>{h}</th>
                 ))}
-                <td style={{ ...tdC(i), color: t.arret ? '#e74c3c' : '#ccc', fontWeight: 700 }}>{t.arret ? 'OUI' : '—'}</td>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {treatments.map((t, i) => {
+                const prixTotal = (t.prix_unitaire || 0) * (t.quantite || 1)
+                return (
+                  <tr key={t.id || i} style={{ opacity: t.arret ? .7 : 1 }}>
+                    <td style={tdE(i)}>{fmtP(t.date_debut)}</td>
+                    <td style={tdE(i)}>{fmtP(t.date_fin) || '—'}</td>
+                    <td style={{ ...tdE(i), fontWeight: 700, textDecoration: t.arret ? 'line-through' : 'none', color: t.arret ? '#999' : '#002f59' }}>
+                      {t.designation || t.traitement || '—'}
+                    </td>
+                    <td style={{ ...tdE(i), fontSize: 10, color: '#555' }}>{t.posologie || '—'}</td>
+                    <td style={tdC(i)}>{t.quantite || 1}</td>
+                    <td style={{ ...tdC(i), fontSize: 10 }}>{t.prix_unitaire > 0 ? Number(t.prix_unitaire).toLocaleString('fr-FR') : '—'}</td>
+                    <td style={{ ...tdC(i), fontWeight: 700, color: prixTotal > 0 ? '#15803d' : '#999' }}>
+                      {prixTotal > 0 ? Number(prixTotal).toLocaleString('fr-FR') : '—'}
+                    </td>
+                    {['matin', 'midi', 'soir', 'nuit'].map(p => (
+                      <td key={p} style={{ ...tdC(i), color: t[p] ? '#27ae60' : '#ddd', fontWeight: 800, fontSize: 13 }}>{t[p] ? '✓' : '·'}</td>
+                    ))}
+                    <td style={{ ...tdC(i), color: t.arret ? '#e74c3c' : '#ccc', fontWeight: 700, fontSize: 10 }}>{t.arret ? 'ARRÊTÉ' : '—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          {/* Totaux facturation */}
+          {treatments.some(t => (t.prix_unitaire || 0) > 0) && (() => {
+            const total = treatments.reduce((acc, t) => acc + (t.prix_unitaire || 0) * (t.quantite || 1), 0)
+            return (
+              <div style={{ textAlign: 'right', marginBottom: 12, fontSize: 11 }}>
+                <span style={{ background: '#1a5276', color: '#fff', borderRadius: 4, padding: '4px 14px', fontWeight: 700 }}>
+                  Total médicaments : {total.toLocaleString('fr-FR')} FCFA
+                </span>
+              </div>
+            )
+          })()}
+        </>
       )}
 
       {/* ════════════════ SECTION 3 ════════════════ */}
@@ -1662,7 +2231,7 @@ function PrintView({ dossier }) {
           <SecHeader num={5} icon="🩹" label="SURVEILLANCE PLAIE CHRONIQUE" color="#b71c1c" />
           <table style={tblStyle}>
             <thead><tr>
-              {['Date', 'Surface (cm²)', 'Profondeur (mm)', 'Type douleur', 'EVA /10', 'Observations'].map(h => (
+              {['Date', 'Surface (cm²)', 'Profondeur (mm)', 'Type douleur', 'EVA /10', 'Photo', 'Observations'].map(h => (
                 <th key={h} style={{ ...thBlue, background: '#b71c1c' }}>{h}</th>
               ))}
             </tr></thead>
@@ -1671,6 +2240,8 @@ function PrintView({ dossier }) {
                 const d = s.data || {}
                 const eva = d.eva ?? 0
                 const evaColor = eva <= 3 ? '#27ae60' : eva <= 6 ? '#e67e22' : '#e74c3c'
+                const imgs = s.images_urls || []
+                const firstImg = imgs[0]
                 return (
                   <tr key={s.id || i}>
                     <td style={tdE(i)}>{fmtP(s.date_surveillance)}</td>
@@ -1678,12 +2249,37 @@ function PrintView({ dossier }) {
                     <td style={tdC(i)}>{d.profondeur ?? '—'}</td>
                     <td style={tdC(i)}>{d.douleur_type ?? '—'}</td>
                     <td style={{ ...tdC(i), fontWeight: 800, color: evaColor }}>{eva}/10</td>
+                    <td style={{ ...tdC(i), padding: '4px 6px' }}>
+                      {firstImg
+                        ? <div>
+                            <img src={firstImg.url} alt="plaie" style={{ width: 72, height: 56, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd', display: 'block', margin: '0 auto' }} />
+                            {imgs.length > 1 && <div style={{ fontSize: 9, color: '#666', textAlign: 'center', marginTop: 2 }}>+{imgs.length - 1} photo(s)</div>}
+                          </div>
+                        : <span style={{ color: '#999', fontSize: 10 }}>—</span>
+                      }
+                    </td>
                     <td style={tdE(i)}>{s.observations || '—'}</td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
+          {/* Galerie complète des photos si plusieurs suivis ont des photos */}
+          {plaies.some(s => (s.images_urls || []).length > 0) && (
+            <div style={{ marginBottom: 14, pageBreakInside: 'avoid' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#b71c1c', marginBottom: 8, borderBottom: '1px solid #f5c6cb', paddingBottom: 4 }}>ÉVOLUTION PHOTOGRAPHIQUE DE LA PLAIE</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {plaies.filter(s => (s.images_urls || []).length > 0).map((s, si) =>
+                  (s.images_urls || []).map((im, ii) => (
+                    <div key={`${si}-${ii}`} style={{ textAlign: 'center' }}>
+                      <img src={im.url} alt={`J${si + 1}-P${ii + 1}`} style={{ width: 90, height: 70, objectFit: 'cover', borderRadius: 6, border: '1.5px solid #e0c2c2', display: 'block' }} />
+                      <div style={{ fontSize: 9, color: '#555', marginTop: 3 }}>{fmtP(s.date_surveillance)}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 

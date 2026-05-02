@@ -436,4 +436,8 @@ Route::prefix('v1')->group(function () {
     Route::get('nursing-dossiers/{dossier}/surveillances',  [NursingDossierController::class, 'getSurveillances']);
     Route::post('nursing-dossiers/{dossier}/surveillances', [NursingDossierController::class, 'storeSurveillance']);
 
+    // ── Images de surveillance (plaie) ────────────────────────────────────────
+    Route::post('nursing-dossiers/{dossier}/surveillances/{surveillance}/images',   [NursingDossierController::class, 'uploadSurveillanceImage']);
+    Route::delete('nursing-dossiers/{dossier}/surveillances/{surveillance}/images', [NursingDossierController::class, 'deleteSurveillanceImage']);
+
 });

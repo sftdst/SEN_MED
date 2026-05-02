@@ -16,6 +16,7 @@ class NursingSurveillance extends Model
         'date_surveillance',
         'data',
         'observations',
+        'images',
         'infirmiere_id',
     ];
 
@@ -23,6 +24,7 @@ class NursingSurveillance extends Model
         'dossier_id'        => 'integer',
         'date_surveillance' => 'date',
         'data'              => 'array',
+        'images'            => 'array',
         'infirmiere_id'     => 'integer',
     ];
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BillHeader;
+use App\Models\Facture;
 use App\Models\NursingAssessment;
 use App\Models\NursingCareRecord;
 use App\Models\NursingContact;
@@ -15,6 +17,8 @@ use App\Models\VisiteAdt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class NursingDossierController extends Controller
 {
@@ -289,23 +293,48 @@ class NursingDossierController extends Controller
         $record = NursingDossier::findOrFail($dossier);
 
         $validated = $request->validate([
-            'designation' => 'required|string|max:255',
-            'date_debut'  => 'nullable|date',
-            'date_fin'    => 'nullable|date|after_or_equal:date_debut',
-            'arret'       => 'nullable|boolean',
-            'matin'       => 'nullable|boolean',
-            'midi'        => 'nullable|boolean',
-            'soir'        => 'nullable|boolean',
-            'nuit'        => 'nullable|boolean',
-            'ordre'       => 'nullable|integer',
+            'designation'   => 'required|string|max:255',
+            'item_id'       => 'nullable|string|max:50',
+            'item_ref'      => 'nullable|string|max:20',
+            'quantite'      => 'nullable|integer|min:1',
+            'prix_unitaire' => 'nullable|numeric|min:0',
+            'posologie'     => 'nullable|string|max:200',
+            'date_debut'    => 'nullable|date',
+            'date_fin'      => 'nullable|date|after_or_equal:date_debut',
+            'arret'         => 'nullable|boolean',
+            'matin'         => 'nullable|boolean',
+            'midi'          => 'nullable|boolean',
+            'soir'          => 'nullable|boolean',
+            'nuit'          => 'nullable|boolean',
+            'ordre'         => 'nullable|integer',
         ]);
 
         try {
             $validated['dossier_id'] = $record->id;
+            $quantite      = max(1, (int) ($validated['quantite'] ?? 1));
+            $prixUnitaire  = (float) ($validated['prix_unitaire'] ?? 0);
+            $validated['quantite']      = $quantite;
+            $validated['prix_unitaire'] = $prixUnitaire;
+            $validated['prix_total']    = round($prixUnitaire * $quantite, 2);
+
             $treatment = NursingTreatment::create($validated);
 
+            // ── Créer la ligne facture si prix > 0 ──────────────────────────
+            if ($prixUnitaire > 0) {
+                $facId = $this->ajouterLigneFactureNursing(
+                    $record,
+                    $validated['designation'],
+                    $validated['prix_total'],
+                    'SOIN_INF',
+                    $treatment->id
+                );
+                if ($facId) {
+                    $treatment->update(['facturation_id' => $facId]);
+                }
+            }
+
             return response()->json([
-                'data'    => $treatment,
+                'data'    => $treatment->fresh(),
                 'message' => 'Traitement ajouté avec succès.',
             ], 201);
         } catch (\Exception $e) {
@@ -326,18 +355,39 @@ class NursingDossierController extends Controller
                                      ->findOrFail($treatmentId);
 
         $validated = $request->validate([
-            'designation' => 'nullable|string|max:255',
-            'date_debut'  => 'nullable|date',
-            'date_fin'    => 'nullable|date',
-            'arret'       => 'nullable|boolean',
-            'matin'       => 'nullable|boolean',
-            'midi'        => 'nullable|boolean',
-            'soir'        => 'nullable|boolean',
-            'nuit'        => 'nullable|boolean',
-            'ordre'       => 'nullable|integer',
+            'designation'   => 'nullable|string|max:255',
+            'item_id'       => 'nullable|string|max:50',
+            'item_ref'      => 'nullable|string|max:20',
+            'quantite'      => 'nullable|integer|min:1',
+            'prix_unitaire' => 'nullable|numeric|min:0',
+            'posologie'     => 'nullable|string|max:200',
+            'date_debut'    => 'nullable|date',
+            'date_fin'      => 'nullable|date',
+            'arret'         => 'nullable|boolean',
+            'matin'         => 'nullable|boolean',
+            'midi'          => 'nullable|boolean',
+            'soir'          => 'nullable|boolean',
+            'nuit'          => 'nullable|boolean',
+            'ordre'         => 'nullable|integer',
         ]);
 
         try {
+            // Recalculer prix_total si quantite ou prix_unitaire changent
+            $quantite     = (int) ($validated['quantite']      ?? $treatment->quantite      ?? 1);
+            $prixUnit     = (float) ($validated['prix_unitaire'] ?? $treatment->prix_unitaire ?? 0);
+            $validated['prix_total'] = round($prixUnit * max(1, $quantite), 2);
+
+            // Si la ligne facture existait et que le prix change, mettre à jour
+            if ($treatment->facturation_id && $validated['prix_total'] != (float) $treatment->prix_total) {
+                $this->mettreAJourLigneFactureNursing($treatment->facturation_id, $record, $validated['prix_total']);
+            }
+            // Si pas de facture encore et prix > 0 maintenant
+            if (!$treatment->facturation_id && $prixUnit > 0) {
+                $label = $validated['designation'] ?? $treatment->designation;
+                $facId = $this->ajouterLigneFactureNursing($record, $label, $validated['prix_total'], 'SOIN_INF', $treatment->id);
+                if ($facId) $validated['facturation_id'] = $facId;
+            }
+
             $treatment->update($validated);
 
             return response()->json([
@@ -362,6 +412,11 @@ class NursingDossierController extends Controller
                                      ->findOrFail($treatmentId);
 
         try {
+            // Annuler la ligne facture associée si elle existe
+            if ($treatment->facturation_id) {
+                $this->supprimerLigneFactureNursing($treatment->facturation_id, $record);
+            }
+
             $treatment->delete();
 
             return response()->json([
@@ -372,6 +427,132 @@ class NursingDossierController extends Controller
                 'message' => 'Erreur lors de la suppression du traitement.',
                 'error'   => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    // ── Helpers facturation soins infirmiers ───────────────────────────────────
+
+    /**
+     * Crée une ligne gen_mst_facture pour un soin infirmier.
+     * Retourne l'ID de la ligne créée ou null si échec.
+     */
+    private function ajouterLigneFactureNursing(
+        NursingDossier $dossier,
+        string         $description,
+        float          $montant,
+        string         $typeService,
+        int            $procedureId
+    ): ?int {
+        try {
+            // Récupérer la visite si dossier lié à un adt_id
+            $visite  = $dossier->adt_id ? VisiteAdt::find($dossier->adt_id) : null;
+            $billHd  = $visite ? BillHeader::where('adt_id', $visite->adt_id)->first() : null;
+
+            // Calcul part patient / compagnie
+            $pctCie      = 0;
+            if ($visite) {
+                $totalVisite = (float) ($visite->Total_a_payer ?? 0);
+                $pctCie      = $totalVisite > 0 ? ((float) ($visite->montant_compagny ?? 0) / $totalVisite) : 0;
+            }
+            $partCie      = round($montant * $pctCie, 3);
+            $partPatient  = round($montant - $partCie, 3);
+
+            $facture = Facture::create([
+                'NomDescription'         => $description,
+                'PrixService'            => $montant,
+                'IDService'              => null,
+                'adt_id'                 => $dossier->adt_id,
+                'patient_id'             => $dossier->patient_id,
+                'MontantPayer'           => 0,
+                'MontantRestant'         => $partPatient,
+                'compagny_id'            => $visite?->ID_Compagny,
+                'MontantTotalFacture'    => $montant,
+                'StatutPaiement'         => 'EN_ATTENTE',
+                'DateCreation'           => now(),
+                'docteur_id'             => null,
+                'MontantPartenaire'      => $partCie,
+                'TypeService'            => $typeService,
+                'patient_payable'        => $partPatient,
+                'bill_id'                => $billHd?->bill_hd_id,
+                'ID_Procedure'           => $procedureId,
+                'MontantpayerPartenaire' => 0,
+            ]);
+
+            // Mettre à jour les totaux BillHeader et VisiteAdt si liés
+            if ($billHd) {
+                $billHd->increment('bill_amount',    $montant);
+                $billHd->increment('net_amount',     $montant);
+                $billHd->increment('pending_amount', $partPatient);
+            }
+            if ($visite) {
+                $visite->increment('bill_amount',     $montant);
+                $visite->increment('Total_a_payer',   $montant);
+                $visite->increment('montant_patient',  $partPatient);
+                $visite->increment('montant_compagny', $partCie);
+            }
+
+            return $facture->IDgen_mst_facture;
+        } catch (\Exception $e) {
+            \Log::error("ajouterLigneFactureNursing: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Met à jour le montant d'une ligne facture existante (ajustement delta).
+     */
+    private function mettreAJourLigneFactureNursing(int $facId, NursingDossier $dossier, float $newMontant): void
+    {
+        try {
+            $facture = Facture::find($facId);
+            if (!$facture) return;
+
+            $ancienMontant = (float) $facture->MontantTotalFacture;
+            $delta         = $newMontant - $ancienMontant;
+
+            $facture->update([
+                'PrixService'         => $newMontant,
+                'MontantTotalFacture' => $newMontant,
+                'MontantRestant'      => $newMontant,
+                'patient_payable'     => $newMontant,
+            ]);
+
+            // Ajuster BillHeader
+            if ($dossier->adt_id) {
+                $billHd = BillHeader::where('adt_id', $dossier->adt_id)->first();
+                if ($billHd && $delta != 0) {
+                    $billHd->increment('bill_amount',    $delta);
+                    $billHd->increment('net_amount',     $delta);
+                    $billHd->increment('pending_amount', $delta);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("mettreAJourLigneFactureNursing: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Supprime une ligne facture et ajuste les totaux.
+     */
+    private function supprimerLigneFactureNursing(int $facId, NursingDossier $dossier): void
+    {
+        try {
+            $facture = Facture::find($facId);
+            if (!$facture) return;
+
+            $montant = (float) $facture->MontantTotalFacture;
+            $facture->delete();
+
+            if ($dossier->adt_id) {
+                $billHd = BillHeader::where('adt_id', $dossier->adt_id)->first();
+                if ($billHd) {
+                    $billHd->decrement('bill_amount',    $montant);
+                    $billHd->decrement('net_amount',     $montant);
+                    $billHd->decrement('pending_amount', $montant);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("supprimerLigneFactureNursing: " . $e->getMessage());
         }
     }
 
@@ -624,9 +805,91 @@ class NursingDossierController extends Controller
 
         $surveillances = $query->orderBy('date_surveillance', 'desc')->get();
 
+        // Enrichir chaque surveillance avec les URLs des images
+        $surveillances->transform(function ($surv) {
+            $surv->images_urls = array_map(
+                fn($p) => ['path' => $p, 'url' => Storage::disk('public')->url($p)],
+                $surv->images ?? []
+            );
+            return $surv;
+        });
+
         return response()->json([
             'data'    => $surveillances,
             'message' => 'Surveillances récupérées avec succès.',
+        ]);
+    }
+
+    /**
+     * POST /api/v1/nursing-dossiers/{dossier}/surveillances/{surveillance}/images
+     * Accepte : image (file) OU image_base64 (string base64)
+     */
+    public function uploadSurveillanceImage(Request $request, int $dossier, int $surveillance): JsonResponse
+    {
+        $record = NursingDossier::findOrFail($dossier);
+        $surv   = NursingSurveillance::where('dossier_id', $record->id)->findOrFail($surveillance);
+
+        $storagePath = "nursing/plaies/{$dossier}";
+        $filename    = Str::uuid() . '.jpg';
+        $fullPath    = "{$storagePath}/{$filename}";
+
+        if ($request->hasFile('image')) {
+            // Upload fichier classique
+            $request->validate(['image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120']);
+            Storage::disk('public')->put($fullPath, file_get_contents($request->file('image')->getRealPath()));
+        } elseif ($request->filled('image_base64')) {
+            // Capture webcam en base64
+            $base64 = $request->input('image_base64');
+            // Retirer l'entête data:image/...;base64,
+            if (str_contains($base64, ',')) {
+                $base64 = explode(',', $base64, 2)[1];
+            }
+            $decoded = base64_decode($base64);
+            if ($decoded === false || strlen($decoded) < 100) {
+                return response()->json(['message' => 'Image base64 invalide.'], 422);
+            }
+            Storage::disk('public')->put($fullPath, $decoded);
+        } else {
+            return response()->json(['message' => 'Aucune image fournie.'], 422);
+        }
+
+        // Ajouter le chemin à la liste des images
+        $images   = $surv->images ?? [];
+        $images[] = $fullPath;
+        $surv->update(['images' => $images]);
+
+        return response()->json([
+            'data'    => [
+                'path' => $fullPath,
+                'url'  => Storage::disk('public')->url($fullPath),
+            ],
+            'images'  => array_map(fn($p) => ['path' => $p, 'url' => Storage::disk('public')->url($p)], $images),
+            'message' => 'Image enregistrée avec succès.',
+        ], 201);
+    }
+
+    /**
+     * DELETE /api/v1/nursing-dossiers/{dossier}/surveillances/{surveillance}/images
+     * Body: { path: "nursing/plaies/..." }
+     */
+    public function deleteSurveillanceImage(Request $request, int $dossier, int $surveillance): JsonResponse
+    {
+        $record = NursingDossier::findOrFail($dossier);
+        $surv   = NursingSurveillance::where('dossier_id', $record->id)->findOrFail($surveillance);
+
+        $request->validate(['path' => 'required|string']);
+        $path = $request->input('path');
+
+        // Supprimer le fichier
+        Storage::disk('public')->delete($path);
+
+        // Retirer de la liste
+        $images = array_values(array_filter($surv->images ?? [], fn($p) => $p !== $path));
+        $surv->update(['images' => $images]);
+
+        return response()->json([
+            'images'  => array_map(fn($p) => ['path' => $p, 'url' => Storage::disk('public')->url($p)], $images),
+            'message' => 'Image supprimée.',
         ]);
     }
 

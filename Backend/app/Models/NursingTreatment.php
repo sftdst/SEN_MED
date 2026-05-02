@@ -13,6 +13,13 @@ class NursingTreatment extends Model
     protected $fillable = [
         'dossier_id',
         'designation',
+        'item_id',
+        'item_ref',
+        'quantite',
+        'prix_unitaire',
+        'prix_total',
+        'facturation_id',
+        'posologie',
         'date_debut',
         'date_fin',
         'arret',
@@ -24,15 +31,19 @@ class NursingTreatment extends Model
     ];
 
     protected $casts = [
-        'dossier_id' => 'integer',
-        'date_debut' => 'date',
-        'date_fin'   => 'date',
-        'arret'      => 'boolean',
-        'matin'      => 'boolean',
-        'midi'       => 'boolean',
-        'soir'       => 'boolean',
-        'nuit'       => 'boolean',
-        'ordre'      => 'integer',
+        'dossier_id'    => 'integer',
+        'quantite'      => 'integer',
+        'prix_unitaire' => 'float',
+        'prix_total'    => 'float',
+        'facturation_id'=> 'integer',
+        'date_debut'    => 'date',
+        'date_fin'      => 'date',
+        'arret'         => 'boolean',
+        'matin'         => 'boolean',
+        'midi'          => 'boolean',
+        'soir'          => 'boolean',
+        'nuit'          => 'boolean',
+        'ordre'         => 'integer',
     ];
 
     public function dossier(): BelongsTo

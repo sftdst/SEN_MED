@@ -9,15 +9,26 @@ use Illuminate\Support\Facades\Schema;
 
 class ProductItemController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $items = DB::table('ph_mst_item')
-            ->orderBy('created_dttm', 'desc')
-            ->get();
+        $query = DB::table('ph_mst_item')->where('status_id', 1);
+
+        // Recherche texte (autocomplete) — filtre sur description ou item_id
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $query->where(function ($sub) use ($q) {
+                $sub->whereRaw('LOWER(description) LIKE ?', ['%' . strtolower($q) . '%'])
+                    ->orWhereRaw('LOWER(item_id) LIKE ?', ['%' . strtolower($q) . '%']);
+            });
+        }
+
+        $limit = (int) $request->input('limit', 200);
+        $items = $query->orderBy('description')->limit($limit)
+            ->get(['id_Rep', 'item_id', 'description', 'PrixVente', 'prixcAchat', 'posologie', 'voie_administration']);
 
         return response()->json([
             'success' => true,
-            'data' => $items
+            'data'    => $items,
         ]);
     }
 
