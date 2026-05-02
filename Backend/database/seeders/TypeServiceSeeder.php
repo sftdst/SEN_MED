@@ -10,7 +10,9 @@ class TypeServiceSeeder extends Seeder
 {
     public function run(): void
     {
-        \DB::statement('TRUNCATE TABLE "gen_mst_Type_Service" RESTART IDENTITY CASCADE');
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        \DB::table('gen_mst_Type_Service')->truncate();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $types = [
             ['NomType' => 'Consultation', 'description' => 'Services de consultation médicale', 'status' => 1, 'IDgen_mst_Departement' => 1],

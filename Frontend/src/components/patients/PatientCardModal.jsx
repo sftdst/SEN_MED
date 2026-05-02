@@ -86,7 +86,7 @@ export default function PatientCardModal({ open, onClose, patient }) {
       ) : (
         <div ref={printRef} style={{ padding: spacing.md }}>
           <div style={{
-            background: 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)',
+            background: 'linear-gradient(135deg, #006400 0%, #004d00 100%)',
             borderRadius: radius.lg,
             padding: spacing.lg,
             color: colors.white,

@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { colors, radius, shadows, spacing } from '../theme';
 
 const AccessCard = ({ personnel }) => {
-  const { first_name, last_name, second_name = '', specialization, Joining_date, user_id, staff_name, departement } = personnel;
+  const { first_name, last_name, second_name = '', specialization, Joining_date, user_id, staff_name, departement, photo, photo_url } = personnel;
   const fullName = staff_name || `${first_name} ${second_name} ${last_name}`.trim();
 
   const formatDate = (dateStr) => {
@@ -12,12 +12,25 @@ const AccessCard = ({ personnel }) => {
     return new Date(dateStr).toLocaleDateString(undefined, options);
   };
 
+  // Determine the image source, falling back to constructing from raw photo path if needed
+  const getPhotoSrc = () => {
+    if (photo_url && photo_url.startsWith('http')) {
+      return photo_url;
+    }
+    if (photo) {
+      return `http://localhost:8000/storage/${photo}`;
+    }
+    return null;
+  };
+
+  const displaySrc = getPhotoSrc();
+
   const initials = (first_name?.[0] || '') + (last_name?.[0] || '');
 
   return (
     <div style={{
       width: 340,
-      background: 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)',
+      background: 'linear-gradient(135deg, #006400 0%, #004d00 100%)',
       borderRadius: radius.lg,
       overflow: 'hidden',
       fontFamily: 'Arial, sans-serif',
@@ -46,41 +59,42 @@ const AccessCard = ({ personnel }) => {
 
       <div style={{ display: 'flex', gap: spacing.md, padding: spacing.lg, position: 'relative', zIndex: 1 }}>
         {/* Photo / Initials */}
-        <div style={{ flex: 1 }}>
-          <div style={{
-            width: 90,
-            height: 110,
-            borderRadius: radius.md,
-            background: colors.white,
-            border: '3px solid rgba(255,255,255,0.6)',
-            overflow: 'hidden',
-            marginBottom: spacing.md,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            {personnel.photo_url ? (
-              <img
-                src={personnel.photo_url}
-                alt={fullName}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-              />
-            ) : null}
+         <div style={{ flex: 1 }}>
             <div style={{
-              display: personnel.photo_url ? 'none' : 'flex',
-              width: '100%',
-              height: '100%',
+              width: 90,
+              height: 110,
+              borderRadius: radius.md,
+              background: colors.gray200,
+              border: '3px solid white',
+              overflow: 'hidden',
+              marginBottom: spacing.md,
+              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(255,255,255,0.2)',
-              color: colors.white,
-              fontWeight: 800,
-              fontSize: 32,
+              position: 'relative',
             }}>
-              {initials}
+              {displaySrc ? (
+                <img
+                  src={displaySrc}
+                  alt={fullName}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const placeholder = e.currentTarget.nextElementSibling;
+                    if (placeholder) placeholder.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                display: displaySrc ? 'none' : 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                color: colors.gray400,
+                fontSize: 40,
+              }}>
+                👤
+              </div>
             </div>
-          </div>
 
           {/* Card number */}
           <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>

@@ -114,25 +114,31 @@ class PersonnelController extends Controller
      *
      * POST /api/v1/personnels/creation-rapide
      */
-    public function storeRapide(Request $request): JsonResponse
-    {
-        $validated = $request->validate($this->reglesRapide());
+     public function storeRapide(Request $request): JsonResponse
+     {
+         $validated = $request->validate($this->reglesRapide());
 
-        $validated['staff_name']      = trim($validated['first_name'] . ' ' . $validated['last_name']);
-        $validated['user_id']         = $this->genererUserId();
-        $validated['created_user_id'] = auth()->id() ?? 'system';
-        $validated['created_dttm']    = now();
-        $validated['status_id']       = 1;
+         $validated['staff_name']      = trim($validated['first_name'] . ' ' . $validated['last_name']);
+         $validated['user_id']         = $this->genererUserId();
+         $validated['created_user_id'] = auth()->id() ?? 'system';
+         $validated['created_dttm']    = now();
+         $validated['status_id']       = 1;
 
-        $personnel = Personnel::create($validated);
+         // Gestion upload photo
+         if ($request->hasFile('photo')) {
+             $path = $request->file('photo')->store('personnel_photos', 'public');
+             $validated['photo'] = $path;
+         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Personnel créé rapidement. Vous pouvez compléter son dossier ultérieurement.',
-            'data'    => $personnel->load('departement'),
-            'profil_complet' => false,
-        ], 201);
-    }
+         $personnel = Personnel::create($validated);
+
+         return response()->json([
+             'success' => true,
+             'message' => 'Personnel créé rapidement. Vous pouvez compléter son dossier ultérieurement.',
+             'data'    => $personnel->load('departement'),
+             'profil_complet' => false,
+         ], 201);
+     }
 
     /**
      * Création complète du personnel (tous les champs).

@@ -145,7 +145,7 @@ function PersonnelCard({ row, onView, onEdit, onDelete }) {
               {row.staff_name}
             </div>
             <div style={{ fontSize: 11, color: colors.gray400, marginTop: 2 }}>
-              #{row.user_id}{row.titre_id ? ` · ${row.titre_id}` : ''}
+              #{row.user_id}{row.titre_id ? ` - ${row.titre_id}` : ''}
             </div>
             <div style={{ marginTop: 6 }}>
               <span style={{
