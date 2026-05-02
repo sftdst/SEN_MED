@@ -56,7 +56,8 @@
       "Bash(npx react-scripts:*)",
       "Bash(node -e ':*)",
       "Bash(node_modules/.bin/react-scripts build:*)",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(git add *)"
     ]
   }
 }
