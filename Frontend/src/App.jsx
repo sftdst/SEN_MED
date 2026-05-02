@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
 import Layout from './components/layout/Layout'
+import ProtectedRoute from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
 import HospitalsPage from './pages/hospitals/HospitalsPage'
 import DepartementsPage from './pages/departements/DepartementsPage'
@@ -15,6 +17,7 @@ import PharmaciePage from './pages/pharmacie/PharmaciePage'
 import ComptabilitePage from './pages/comptabilite/ComptabilitePage'
 import ConfigSystemePage from './pages/configSysteme/ConfigSystemePage'
 import ConfigSanitairePage from './pages/configSanitaire/ConfigSanitairePage'
+import ConfigProfilsDroitsPage from './pages/configProfilsDroits/ConfigProfilsDroitsPage'
 import HospitalisationPage from './pages/hospitalisation/HospitalisationPage'
 import RendezVousPage from './pages/rendezvous/RendezVousPage'
 import EspaceMedecinPage from './pages/espaceMedecin/EspaceMedecinPage'
@@ -28,46 +31,97 @@ import FormulairePage from './pages/formulaire/FormulairePage'
 import DossierSoinsPage from './pages/dossierSoins/DossierSoinsPage'
 import DossierSoinsDetailPage from './pages/dossierSoins/DossierSoinsDetailPage'
 import DPEPage from './pages/patients/DPEPage'
+import LoginPage from './pages/auth/LoginPage'
+
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Page de connexion publique */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* Routes protégées */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="hopitaux" element={<HospitalsPage />} />
+        <Route path="departements" element={<DepartementsPage />} />
+        <Route path="type-services" element={<TypeServicesPage />} />
+        <Route path="services" element={<ServicesPage />} />
+        <Route path="personnels" element={<PersonnelsPage />} />
+        <Route path="planning" element={<PlanningPage />} />
+        <Route path="partenaires" element={<PartenairesPage />} />
+        <Route path="patients" element={<PatientsPage />} />
+        <Route path="visites" element={<VisitesPage />} />
+        <Route path="salle-attente" element={<SalleAttentePage />} />
+        <Route path="pharmacie" element={<PharmaciePage />} />
+        <Route path="comptabilite" element={<ComptabilitePage />} />
+        <Route path="config-systeme" element={<ConfigSystemePage />} />
+        <Route path="config-sanitaire" element={<ConfigSanitairePage />} />
+        <Route path="config-profils-droits" element={<ConfigProfilsDroitsPage />} />
+        <Route path="formulaires" element={<FormulairePage />} />
+        <Route path="tarification" element={<TarificationPage />} />
+        <Route path="hospitalisation" element={<HospitalisationPage />} />
+        <Route path="rendezvous" element={<RendezVousPage />} />
+        <Route path="espace-medecin" element={<EspaceMedecinPage />} />
+        <Route path="transferts" element={<TransfertsPage />} />
+        <Route path="ressources-humaines/conges" element={<GestionCongesPage />} />
+        <Route path="ressources-humaines/absences" element={<GestionAbsencesRetardsPage />} />
+        <Route path="ressources-humaines/contrats" element={<GestionContratsPage />} />
+        <Route path="dossier-soins" element={<DossierSoinsPage />} />
+       </Route>
+
+       {/* Consultation et DSI hors Layout (protégés) */}
+       <Route
+         path="/consultation"
+         element={
+           <ProtectedRoute>
+             <ConsultationPage />
+           </ProtectedRoute>
+         }
+       />
+       <Route
+         path="/consultation/:id"
+         element={
+           <ProtectedRoute>
+             <ConsultationPage />
+           </ProtectedRoute>
+         }
+       />
+       <Route
+         path="/dossier-soins/:id"
+         element={
+           <ProtectedRoute>
+             <DossierSoinsDetailPage />
+           </ProtectedRoute>
+         }
+       />
+       <Route
+         path="/dpe/:id"
+         element={
+           <ProtectedRoute>
+             <DPEPage />
+           </ProtectedRoute>
+         }
+       />
+
+       {/* Page 404 */}
+       <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index                element={<Dashboard />} />
-          <Route path="hopitaux"      element={<HospitalsPage />} />
-          <Route path="departements"  element={<DepartementsPage />} />
-          <Route path="type-services"  element={<TypeServicesPage />} />
-          <Route path="services"      element={<ServicesPage />} />
-          <Route path="personnels"     element={<PersonnelsPage />} />
-          <Route path="planning"      element={<PlanningPage />} />
-          <Route path="partenaires"   element={<PartenairesPage />} />
-          <Route path="patients"      element={<PatientsPage />} />
-          <Route path="visites"       element={<VisitesPage />} />
-          <Route path="salle-attente" element={<SalleAttentePage />} />
-          <Route path="pharmacie"           element={<PharmaciePage />} />
-          <Route path="comptabilite"       element={<ComptabilitePage />} />
-          <Route path="config-systeme"    element={<ConfigSystemePage />} />
-          <Route path="config-sanitaire" element={<ConfigSanitairePage />} />
-          <Route path="formulaires"      element={<FormulairePage />} />
-          <Route path="tarification"     element={<TarificationPage />} />
-          <Route path="hospitalisation" element={<HospitalisationPage />} />
-          <Route path="rendezvous"      element={<RendezVousPage />} />
-          <Route path="espace-medecin"  element={<EspaceMedecinPage />} />
-          <Route path="transferts"      element={<TransfertsPage />} />
-            <Route path="ressources-humaines/conges" element={<GestionCongesPage />} />
-            <Route path="ressources-humaines/absences" element={<GestionAbsencesRetardsPage />} />
-            <Route path="ressources-humaines/contrats" element={<GestionContratsPage />} />
-            <Route path="dossier-soins" element={<DossierSoinsPage />} />
-        </Route>
-        {/* Consultation plein écran — hors Layout sidebar */}
-        <Route path="/consultation"     element={<ConsultationPage />} />
-        <Route path="/consultation/:id" element={<ConsultationPage />} />
-         {/* DSI plein écran — hors Layout sidebar */}
-         <Route path="/dossier-soins/:id" element={<DossierSoinsDetailPage />} />
-         {/* DPE — Dossier Patient Électronique */}
-         <Route path="/dpe/:id" element={<DPEPage />} />
-       </Routes>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   )
 }

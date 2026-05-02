@@ -339,6 +339,23 @@ export const nursingApi = {
   storeSurveillance:   (id, data)     => api.post(`/nursing-dossiers/${id}/surveillances`, data),
 }
 
+// ── Rôles et Permissions ───────────────────────────────────────
+export const rolePermissionApi = {
+  // Rôles
+  roles:              ()       => api.get('/roles'),
+  role:               (id)     => api.get(`/roles/${id}`),
+  creerRole:          (data)   => api.post('/roles', data),
+  modifierRole:       (id, data) => api.put(`/roles/${id}`, data),
+  supprimerRole:      (id)     => api.delete(`/roles/${id}`),
+  syncPermissions:    (id, data) => api.post(`/roles/${id}/permissions`, data),
+
+  // Permissions (modules)
+  permissions:        ()       => api.get('/permissions'),
+  creerPermission:    (data)   => api.post('/permissions', data),
+  modifierPermission: (id, data) => api.put(`/permissions/${id}`, data),
+  supprimerPermission:(id)     => api.delete(`/permissions/${id}`),
+}
+
 // ── Fiches ATT ───────────────────────────────────────────────
 export const ficheAttApi = {
   liste:     (params) => api.get('/fiches-att', { params }),

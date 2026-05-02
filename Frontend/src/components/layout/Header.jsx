@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom'
 import { colors, shadows } from '../../theme'
+import { useAuth } from '../../context/AuthContext'
 
 const titles = {
   '/':              'Tableau de bord',
@@ -15,6 +16,7 @@ const titles = {
 
 export default function Header({ onToggleSidebar }) {
   const { pathname } = useLocation()
+  const { logout, user } = useAuth()
   const title = titles[pathname] || 'SenMed'
 
   return (
@@ -53,6 +55,13 @@ export default function Header({ onToggleSidebar }) {
         {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
       </div>
 
+      {/* User info */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginRight: 8 }}>
+        <span style={{ fontSize: 13, color: colors.gray600, fontWeight: 500 }}>
+          {user?.first_name || user?.nom || 'Utilisateur'}
+        </span>
+      </div>
+
       {/* Notification bell */}
       <div style={{
         width: 36, height: 36, borderRadius: '50%',
@@ -68,13 +77,29 @@ export default function Header({ onToggleSidebar }) {
         }} />
       </div>
 
-      {/* Avatar */}
-      <div style={{
-        width: 36, height: 36, borderRadius: '50%',
-        background: colors.bleu,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: colors.white, fontWeight: 700, fontSize: 14, cursor: 'pointer',
-      }}>A</div>
+      {/* Avatar with logout */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: '50%',
+          background: colors.bleu,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: colors.white, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+        }}>
+          {(user?.first_name?.[0] || user?.nom?.[0] || 'U').toUpperCase()}
+        </div>
+        <button
+          onClick={logout}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: colors.gray400, fontSize: 14, padding: 4,
+            display: 'flex', alignItems: 'center',
+            transition: 'color 0.15s',
+          }}
+          title="Déconnexion"
+        >
+          🔒
+        </button>
+      </div>
     </header>
   )
 }

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
 import Button from '../../components/ui/Button'
 import SearchBar from '../../components/ui/SearchBar'
-import { personnelApi } from '../../api'
+import { personnelApi, exceptionApi } from '../../api'
 
 export default function GestionAbsencesRetardsPage() {
   const [absences, setAbsences] = useState([])
@@ -30,28 +30,45 @@ export default function GestionAbsencesRetardsPage() {
     loadPersonnels()
   }, [])
 
-  const loadAbsences = async () => {
+  const loadAbsences = useCallback(async () => {
     setLoading(true)
     try {
-      // TODO: implémenter avec ExceptionController API
-      const data = [
-        { id: 1, IDMedecin: 1, Type: 'maladie', DateDebut: '2026-04-20', DateFin: '2026-04-22', Description: 'Grippe', Statut: 'approuve', personnel: 'M. Diop' },
-        { id: 2, IDMedecin: 2, Type: 'autre', DateDebut: '2026-04-21', DateFin: '2026-04-21', Description: 'Retard', Statut: 'en_attente', personnel: 'Mme. Fall' },
-      ]
-      const filtered = search
-        ? data.filter(a =>
-            a.personnel.toLowerCase().includes(search.toLowerCase()) ||
-            a.Type.toLowerCase().includes(search.toLowerCase()) ||
-            a.Description?.toLowerCase().includes(search.toLowerCase())
-          )
-        : data
-      setAbsences(filtered)
+      const response = await exceptionApi.liste({ per_page: 200 })
+      const d = response.data
+      let list = []
+      if (d?.data?.data && Array.isArray(d.data.data)) {
+        list = d.data.data.map(item => ({
+          id: item.IDmedecin_exception,
+          IDMedecin: item.IDMedecin,
+          Type: item.Type,
+          DateDebut: item.DateDebut?.split('T')[0] || item.DateDebut,
+          DateFin: item.DateFin?.split('T')[0] || item.DateFin,
+          Description: item.Description,
+          Statut: item.Statut || 'en_attente',
+          personnel: item.medecin?.staff_name || item.medecin?.nom || `${item.medecin?.first_name || ''} ${item.medecin?.last_name || ''}`.trim() || 'Personnel #' + item.IDMedecin
+        }))
+      }
+      setAbsences(list)
     } catch {
       showToast('Erreur chargement', 'error')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadAbsences()
+  }, [loadAbsences])
+
+  const filteredAbsences = useMemo(() => {
+    if (!search) return absences
+    const s = search.toLowerCase()
+    return absences.filter(a =>
+      a.personnel.toLowerCase().includes(s) ||
+      a.Type.toLowerCase().includes(s) ||
+      (a.Description || '').toLowerCase().includes(s)
+    )
+  }, [absences, search])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -59,27 +76,59 @@ export default function GestionAbsencesRetardsPage() {
   }
 
   const handleSave = async () => {
+    if (!form.IDMedecin) {
+      showToast('Veuillez sélectionner un membre du personnel', 'error')
+      return
+    }
+    if (!form.DateDebut || !form.DateFin) {
+      showToast('Veuillez remplir toutes les dates', 'error')
+      return
+    }
+    if (new Date(form.DateFin) < new Date(form.DateDebut)) {
+      showToast('La date de fin doit être après la date de début', 'error')
+      return
+    }
+
     try {
+      const payload = {
+        IDMedecin: parseInt(form.IDMedecin),
+        DateDebut: form.DateDebut,
+        DateFin: form.DateFin,
+        Type: form.Type,
+        Description: form.Description,
+        Statut: form.Statut,
+      }
       if (editingId) {
-        showToast('Modifié', 'success')
+        await exceptionApi.modifier(editingId, payload)
+        showToast('Absence modifiée', 'success')
       } else {
-        showToast('Ajouté', 'success')
+        await exceptionApi.creer(payload)
+        showToast('Absence ajoutée', 'success')
       }
       setShowModal(false)
       setEditingId(null)
       setForm({ IDMedecin: '', Type: 'maladie', DateDebut: '', DateFin: '', Description: '', Statut: 'en_attente' })
       loadAbsences()
-    } catch {
-      showToast('Erreur sauvegarde', 'error')
+    } catch (err) {
+      console.error('Erreur sauvegarde:', err)
+      if (err.response?.status === 422) {
+        const errors = err.response.data.errors
+        const messages = Object.values(errors).flat().join(', ')
+        showToast(`Erreur de validation: ${messages}`, 'error')
+      } else {
+        showToast('Erreur lors de la sauvegarde', 'error')
+      }
     }
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Supprimer ?')) return
+    if (!window.confirm('Supprimer cette absence/retard ?')) return
     try {
+      await exceptionApi.supprimer(id)
       showToast('Supprimé', 'success')
       loadAbsences()
-    } catch {
+    } catch (err) {
+      console.error('Erreur suppression:', err)
       showToast('Erreur suppression', 'error')
     }
   }
@@ -129,7 +178,7 @@ export default function GestionAbsencesRetardsPage() {
               </tr>
             </thead>
             <tbody>
-              {absences.map(a => (
+              {filteredAbsences.map(a => (
                 <tr key={a.id} style={{ borderBottom: `1px solid ${colors.gray100}` }}>
                   <td style={{ padding: '12px 16px' }}>{a.personnel}</td>
                   <td style={{ padding: '12px 16px' }}>

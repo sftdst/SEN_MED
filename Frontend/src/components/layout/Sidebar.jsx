@@ -1,89 +1,92 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { colors } from '../../theme'
+import { useAuth } from '../../context/AuthContext'
 
-const navItems = [
+// ── Menu items avec permissions requises ────────────────────────────────────
+const navItemsDef = [
   {
     group: 'ACCUEIL',
     icon: '⊞',
     items: [
-      { to: '/', label: 'Tableau de bord' },
-      { to: '/patients', label: 'Patients' },
-      { to: '/visites', label: 'Visites' },
-      { to: '/salle-attente', label: "Salle d'attente" },
-      { to: '/hospitalisation',  label: 'Hospitalisation' },
-      { to: '/transferts',      label: 'Transferts' },
+      { to: '/', label: 'Tableau de bord', permission: 'dashboard' },
+      { to: '/patients', label: 'Patients', permission: 'patients' },
+      { to: '/visites', label: 'Visites', permission: 'visites' },
+      { to: '/salle-attente', label: "Salle d'attente", permission: 'salle-attente' },
+      { to: '/hospitalisation', label: 'Hospitalisation', permission: 'hospitalisation' },
+      { to: '/transferts', label: 'Transferts', permission: 'transferts' },
     ],
   },
   {
     group: 'ESPACE MÉDECIN',
     icon: '👨‍⚕️',
     items: [
-      { to: '/espace-medecin', label: 'Tableau de bord' },
+      { to: '/espace-medecin', label: 'Tableau de bord', permission: 'espace-medecin' },
     ],
   },
   {
     group: 'GESTION RDV',
     icon: '📅',
     items: [
-      { to: '/rendezvous', label: 'Gestion des RDV' },
+      { to: '/rendezvous', label: 'Gestion des RDV', permission: 'rendezvous' },
     ],
   },
   {
     group: 'SOINS INFIRMIERS',
     icon: '🩺',
     items: [
-      { to: '/dossier-soins', label: 'Dossier de Soins Infirmiers' },
+      { to: '/dossier-soins', label: 'Dossier de Soins Infirmiers', permission: 'dossier-soins' },
     ],
   },
   {
     group: 'GESTION PHARMACEUTIQUE',
     icon: '💊',
     items: [
-      { to: '/pharmacie', label: 'Pharmacie' },
+      { to: '/pharmacie', label: 'Pharmacie', permission: 'pharmacie' },
     ],
   },
   {
     group: 'COMPTABILITÉ',
     icon: '💰',
     items: [
-      { to: '/comptabilite', label: 'Comptabilité' },
-      { to: '/tarification', label: 'Tarification' },
+      { to: '/comptabilite', label: 'Comptabilité', permission: 'comptabilite' },
+      { to: '/tarification', label: 'Tarification', permission: 'tarification' },
     ],
   },
   {
     group: 'RESSOURCES HUMAINES',
     icon: '👥',
     items: [
-      { to: '/personnels', label: 'Gestion personnel' },
-      { to: '/ressources-humaines/conges', label: 'Gestion congés' },
-      { to: '/ressources-humaines/absences', label: 'Absences & retards' },
-      { to: '/ressources-humaines/contrats', label: 'Gestion contrats' },
+      { to: '/personnels', label: 'Gestion personnel', permission: 'personnels' },
+      { to: '/ressources-humaines/conges', label: 'Gestion congés', permission: 'conges' },
+      { to: '/ressources-humaines/absences', label: 'Absences & retards', permission: 'absences-retards' },
+      { to: '/ressources-humaines/contrats', label: 'Gestion contrats', permission: 'contrats' },
     ],
   },
   {
     group: 'CONFIGURATION',
     icon: '⚙️',
     items: [
-      { to: '/config-systeme',   label: 'Configuration système' },
-      { to: '/config-sanitaire', label: 'Config. sanitaire'     },
-      { to: '/formulaires',      label: 'Formulaires'           },
+      { to: '/config-systeme', label: 'Configuration système', permission: 'config-systeme' },
+      { to: '/config-sanitaire', label: 'Config. sanitaire', permission: 'config-sanitaire' },
+      { to: '/formulaires', label: 'Formulaires', permission: 'formulaires' },
+      { to: '/config-profils-droits', label: 'Profil et droits', permission: 'profil-droits' },
     ],
   },
   {
     group: 'LABORATOIRE',
     icon: '🧪',
     items: [
-      { to: '/laboratoire', label: 'Laboratoire' },
+      { to: '/laboratoire', label: 'Laboratoire', permission: 'laboratoire' },
     ],
   },
   {
     group: 'ADMINISTRATION',
     icon: '🏢',
     items: [
-      { to: '/departements',     label: 'Départements'          },
-      { to: '/hopitaux',         label: 'Hôpitaux'              },
-      { to: '/partenaires',      label: 'Partenaires'           },
+      { to: '/departements', label: 'Départements', permission: 'departements' },
+      { to: '/hopitaux', label: 'Hôpitaux', permission: 'hopitaux' },
+      { to: '/partenaires', label: 'Partenaires', permission: 'partenaires' },
     ],
   },
 ]
@@ -117,21 +120,21 @@ function NavItem({ item, collapsed }) {
         >
           <span style={{ fontSize: 16 }}>{item.icon}</span>
           <span style={{ flex: 1, textAlign: 'left' }}>{item.group}</span>
-          <span style={{ 
+          <span style={{
             transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s', fontSize: 10, color: colors.white 
+            transition: 'transform 0.2s', fontSize: 10, color: colors.white
           }}>▼</span>
         </button>
         {expanded && (
-          <div style={{ 
+          <div style={{
             display: 'block',
-            marginLeft: 16, paddingLeft: 12, 
+            marginLeft: 16, paddingLeft: 12,
             borderLeft: `2px solid ${colors.orange}`,
           }}>
             {item.items?.map((sub, i) => (
               sub.children ? (
                 <div key={i}>
-                  <div style={{ 
+                  <div style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '10px 20px 10px 28px',
                     margin: '2px 4px', borderRadius: 6,
@@ -146,7 +149,7 @@ function NavItem({ item, collapsed }) {
                       to={child.to}
                       style={({ isActive }) => ({
                         display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '8px 20px 8px 48px',
+                        padding: '8px 20px 10px 48px',
                         margin: '2px 4px', borderRadius: 6,
                         textDecoration: 'none',
                         color: colors.white,
@@ -206,7 +209,21 @@ function NavItem({ item, collapsed }) {
 }
 
 export default function Sidebar({ collapsed = false }) {
+  const { hasPermission } = useAuth()
   const W = collapsed ? 68 : 240
+
+  // Filter items based on user permissions
+  const filteredNavItems = navItemsDef
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        // If no permission required, always show
+        if (!item.permission) return true
+        // Check permission
+        return hasPermission(item.permission)
+      }),
+    }))
+    .filter(group => group.items.length > 0)
 
   return (
     <aside style={{
@@ -242,7 +259,7 @@ export default function Sidebar({ collapsed = false }) {
       </div>
 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
-        {navItems.map((item, idx) => (
+        {filteredNavItems.map((item, idx) => (
           <NavItem key={idx} item={item} collapsed={collapsed} />
         ))}
       </nav>

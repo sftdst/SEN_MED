@@ -22,19 +22,21 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
 
-        $this->call([
-            HospitalSeeder::class,
-            DepartementSeeder::class,
-            TypeServiceSeeder::class,
-            ServiceSeeder::class,
-            AddSoinsInfirmiersTypeService::class,
-            AddSoinsInfirmiersServices::class,
-            AddConsultationsMedicalsServices::class,
-            PersonnelSeeder::class,
-            PartenaireHeaderSeeder::class,
-            PatientSeeder::class,
-            ProductItemSeeder::class,
-            TarificationSeeder::class,
-        ]);
+         $this->call([
+             HospitalSeeder::class,
+             DepartementSeeder::class,
+             TypeServiceSeeder::class,
+             ServiceSeeder::class,
+             AddSoinsInfirmiersTypeService::class,
+             AddSoinsInfirmiersServices::class,
+             AddConsultationsMedicalsServices::class,
+             PersonnelSeeder::class,
+             PartenaireHeaderSeeder::class,
+             PatientSeeder::class,
+             ProductItemSeeder::class,
+             TarificationSeeder::class,
+             RolePermissionSeeder::class,
+             UserSeeder::class,
+         ]);
     }
 }
