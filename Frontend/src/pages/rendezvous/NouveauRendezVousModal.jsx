@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import { format, differenceInYears, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { rendezVousApi, patientApi } from '../../api'
@@ -112,7 +112,7 @@ function SectionTitle({ icon, title, subtitle }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '12px 16px',
-      background: `linear-gradient(90deg, ${colors.bleu}0a, transparent)`,
+      background: `linear-gradient(90deg, var(--app-primary-0a, #002f590a), transparent)`,
       borderLeft: `3px solid ${colors.bleu}`,
       borderRadius: `0 ${radius.sm} ${radius.sm} 0`,
       marginBottom: 14,
@@ -561,8 +561,8 @@ export default function NouveauRendezVousModal({
         {/* ── Bandeau date/heure sélectionnée ── */}
         {dateChoisi && (
           <div style={{
-            background: `${colors.orange}15`,
-            borderBottom: `2px solid ${colors.orange}33`,
+            background: `var(--app-accent-15, #ff763115)`,
+            borderBottom: `2px solid var(--app-accent-33, #ff763133)`,
             padding: '10px 24px',
             display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
             flexShrink: 0,
@@ -864,7 +864,7 @@ export default function NouveauRendezVousModal({
                       style={{
                         padding: '6px 14px', borderRadius: radius.full,
                         border: `1.5px solid ${form.personne_pris === p.value ? colors.orange : colors.gray300}`,
-                        background: form.personne_pris === p.value ? `${colors.orange}15` : colors.white,
+                        background: form.personne_pris === p.value ? `var(--app-accent-15, #ff763115)` : colors.white,
                         color: form.personne_pris === p.value ? colors.orange : colors.gray700,
                         fontSize: 12, fontWeight: 600, cursor: 'pointer',
                         transition: 'all 0.15s',
@@ -925,7 +925,7 @@ export default function NouveauRendezVousModal({
               <SectionTitle icon="📋" title="Récapitulatif" subtitle="Vérifiez les informations avant de confirmer" />
 
               <div style={{
-                background: `linear-gradient(135deg, ${colors.bleu}08, ${colors.orange}08)`,
+                background: `linear-gradient(135deg, var(--app-primary-08, #002f5908), var(--app-accent-08, #ff763108))`,
                 border: `1px solid ${colors.gray200}`,
                 borderRadius: radius.md, padding: 16,
               }}>

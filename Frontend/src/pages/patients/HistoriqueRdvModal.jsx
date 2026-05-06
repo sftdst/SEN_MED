@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { rendezVousApi } from '../../api'
 import { colors, radius, shadows } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
@@ -394,7 +394,7 @@ export default function HistoriqueRdvModal({ patient, onClose }) {
             {selected && (
               <div style={{
                 padding: '14px 20px',
-                borderTop: `2px solid ${colors.bleu}20`,
+                borderTop: `2px solid var(--app-primary-20, #002f5920)`,
                 background: colors.gray50,
                 flexShrink: 0,
               }}>

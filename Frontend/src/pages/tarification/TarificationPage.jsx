@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { serviceApi, personnelApi, medecinTarifApi } from '../../api'
 import { showToast } from '../../components/ui/Toast'
@@ -176,7 +176,7 @@ export default function TarificationPage() {
             width: 48, height: 48, borderRadius: radius.md,
             background: colors.orange,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, boxShadow: `0 4px 12px ${colors.orange}50`,
+            fontSize: 22, boxShadow: `0 4px 12px var(--app-accent-50, #ff763150)`,
           }}>💰</div>
           <div>
             <div style={{ color: '#fff', fontWeight: 800, fontSize: 18 }}>
@@ -190,7 +190,7 @@ export default function TarificationPage() {
         <div style={{ display: 'flex', gap: 10 }}>
           {[
             { label: 'Services', val: services.length, color: 'rgba(255,255,255,0.8)', bg: 'rgba(255,255,255,0.1)',  border: 'rgba(255,255,255,0.2)' },
-            { label: 'Médecins', val: medecins.length, color: colors.orange,          bg: `${colors.orange}20`,    border: `${colors.orange}40`    },
+            { label: 'Médecins', val: medecins.length, color: colors.orange,          bg: `var(--app-accent-20, #ff763120)`,    border: `var(--app-accent-40, #ff763140)`    },
             { label: 'Tarifs',   val: tarifs.length,   color: '#4caf50',              bg: 'rgba(76,175,80,0.15)',  border: 'rgba(76,175,80,0.3)'   },
           ].map(s => (
             <div key={s.label} style={{
@@ -220,7 +220,7 @@ export default function TarificationPage() {
                 display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                 padding: '10px 18px', borderRadius: radius.sm, cursor: 'pointer',
                 border: active ? `1.5px solid ${colors.orange}` : '1.5px solid transparent',
-                background: active ? `${colors.orange}0f` : colors.gray100,
+                background: active ? `var(--app-accent-0f, #ff76310f)` : colors.gray100,
                 color: active ? colors.orange : colors.gray600,
                 transition: 'all 0.15s', textAlign: 'left',
               }}
@@ -451,7 +451,7 @@ function TarifsHopital({ services, search, setSearch, onRefresh }) {
                       style={{
                         padding: '4px 12px', borderRadius: radius.sm, cursor: 'pointer',
                         border: `1.5px solid ${colors.bleu}`,
-                        background: `${colors.bleu}0d`,
+                        background: `var(--app-primary-0d, #002f590d)`,
                         color: colors.bleu,
                         fontSize: 10, fontWeight: 700, transition: 'all 0.13s',
                       }}
@@ -590,8 +590,8 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
           {medecin && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 16px', background: `${colors.bleu}0a`,
-              borderRadius: radius.md, border: `1px solid ${colors.bleu}20`,
+              padding: '8px 16px', background: `var(--app-primary-0a, #002f590a)`,
+              borderRadius: radius.md, border: `1px solid var(--app-primary-20, #002f5920)`,
             }}>
               <div style={{
                 width: 34, height: 34, borderRadius: '50%',

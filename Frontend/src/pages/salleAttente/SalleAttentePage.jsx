@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { salleAttenteApi } from '../../api'
 import { colors, radius, shadows, spacing } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
@@ -71,7 +71,7 @@ function PatientCard({ visite }) {
             ? `linear-gradient(135deg, ${VU_COLOR}22, ${VU_COLOR}44)`
             : estUrgence
               ? `linear-gradient(135deg, ${URGENCE_COLOR}22, ${URGENCE_COLOR}44)`
-              : `linear-gradient(135deg, ${colors.bleu}22, ${colors.bleu}44)`,
+              : `linear-gradient(135deg, var(--app-primary-22, #002f5922), var(--app-primary-44, #002f5944))`,
           border: `3px solid ${statusColor}40`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
@@ -292,7 +292,7 @@ export default function SalleAttentePage() {
               width: 42, height: 42, borderRadius: radius.md,
               background: `linear-gradient(135deg, ${colors.bleu}, ${colors.bleuLight})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 22, boxShadow: `0 4px 12px ${colors.bleu}40`,
+              fontSize: 22, boxShadow: `0 4px 12px var(--app-primary-40, #002f5940)`,
             }}>🏥</div>
             <div>
               <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: colors.gray900 }}>
@@ -475,7 +475,7 @@ export default function SalleAttentePage() {
         }}>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            border: `3px solid ${colors.bleu}30`,
+            border: `3px solid var(--app-primary-30, #002f5930)`,
             borderTop: `3px solid ${colors.bleu}`,
             animation: 'spin 0.8s linear infinite',
           }} />

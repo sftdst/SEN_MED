@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { rendezVousApi } from '../../api'
 import { colors, radius, shadows } from '../../theme'
@@ -430,7 +430,7 @@ export default function RdvRapideModal({ open, onClose, patient, medecin, rdv, o
                           color: sel ? '#fff' : '#495057',
                           fontSize: 12, fontWeight: sel ? 700 : 500,
                           transition: 'all 0.12s',
-                          boxShadow: sel ? `0 3px 8px ${colors.orange}40` : 'none',
+                          boxShadow: sel ? `0 3px 8px var(--app-accent-40, #ff763140)` : 'none',
                         }}
                         onMouseEnter={e => { if (!sel) { e.currentTarget.style.borderColor = colors.orange; e.currentTarget.style.background = '#fff3e0' } }}
                         onMouseLeave={e => { if (!sel) { e.currentTarget.style.borderColor = '#dee2e6'; e.currentTarget.style.background = '#fff' } }}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+﻿import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { colors, radius, shadows } from '../../theme'
 import api from '../../api/axios'
@@ -2419,7 +2419,7 @@ function DossierSoinsContent({ dossierId, onClose, isModal = false }) {
         @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
         .dsi-tab:hover { background: rgba(255,255,255,.15) !important; }
         .dsi-tab-active { background: rgba(255,255,255,.18) !important; border-bottom: 3px solid ${colors.orange} !important; }
-        input:focus, select:focus, textarea:focus { border-color: ${colors.orange} !important; box-shadow: 0 0 0 3px ${colors.orange}18 !important; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: ${colors.orange} !important; box-shadow: 0 0 0 3px var(--app-accent-18, #ff763118) !important; outline: none; }
         @media screen { .dsi-print-view { display: none; } }
         @media print {
           -webkit-print-color-adjust: exact; print-color-adjust: exact;

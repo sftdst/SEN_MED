@@ -1,9 +1,11 @@
 export const colors = {
-  orange:      '#ff7631',
-  orangeLight: '#fff3ee',
-  orangeDark:  '#e0621f',
-  bleu:        '#002f59',
-  bleuLight:   '#003f7a',
+  // Couleurs de marque — utilisent les variables CSS posées par applyTheme()
+  // afin de refléter automatiquement les préférences de la plateforme.
+  orange:      'var(--app-accent,  #ff7631)',
+  orangeLight: 'var(--app-accent-08, #fff3ee)',
+  orangeDark:  'var(--app-accent,  #e0621f)',
+  bleu:        'var(--app-primary, #002f59)',
+  bleuLight:   'var(--app-primary, #003f7a)',
   bleuMuted:   '#4a6fa5',
   white:       '#ffffff',
   gray50:      '#f8f9fa',

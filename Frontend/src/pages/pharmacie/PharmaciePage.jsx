@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { colors, radius, shadows, spacing } from '../../theme'
 import { produitApi, fournisseurApi, commandeApi, approvisionnementApi, mouvementStockApi, inventaireApi, hospitalApi } from '../../api'
 import { showToast } from '../../components/ui/Toast'
@@ -70,7 +70,7 @@ function FInput({ error, style, ...props }) {
         fontSize: 13, color: colors.gray800,
         background: props.readOnly || props.disabled ? colors.gray50 : colors.white,
         outline: 'none', transition: 'border-color 0.15s',
-        boxShadow: focus ? `0 0 0 3px ${colors.bleu}18` : 'none',
+        boxShadow: focus ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
         ...style,
       }}
     />
@@ -91,7 +91,7 @@ function FSelect({ children, error, style, ...props }) {
         fontSize: 13, color: colors.gray800,
         background: colors.white, outline: 'none', cursor: 'pointer',
         transition: 'border-color 0.15s',
-        boxShadow: focus ? `0 0 0 3px ${colors.bleu}18` : 'none',
+        boxShadow: focus ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
         ...style,
       }}
     >{children}</select>
@@ -105,7 +105,7 @@ function FCheck({ label, name, checked, onChange }) {
       cursor: 'pointer', padding: '10px 14px',
       border: `1.5px solid ${checked ? colors.bleu : colors.gray200}`,
       borderRadius: radius.sm,
-      background: checked ? `${colors.bleu}08` : colors.white,
+      background: checked ? `var(--app-primary-08, #002f5908)` : colors.white,
       transition: 'all 0.15s',
     }}>
       <div style={{
@@ -1161,7 +1161,7 @@ function ProduitsTab({
                 {produits.map((p, i) => (
                   <tr key={p.id_Rep}
                     style={{ borderBottom: `1px solid ${colors.gray100}` }}
-                    onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}05`}
+                    onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-05, #002f5905)`}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <td style={{ padding: '11px 16px', fontSize: 12, color: colors.gray400, textAlign: 'center', width: 40 }}>
@@ -1739,7 +1739,7 @@ function FormSection({ title, icon, children }) {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '8px 14px', marginBottom: 18,
-        background: `linear-gradient(90deg, ${colors.bleu}0d, transparent)`,
+        background: `linear-gradient(90deg, var(--app-primary-0d, #002f590d), transparent)`,
         borderLeft: `3px solid ${colors.bleu}`,
         borderRadius: `0 ${radius.sm} ${radius.sm} 0`,
       }}>
@@ -1810,7 +1810,7 @@ function FournisseursTab({ data, loading, onEdit, onDelete }) {
             {data.map((f, i) => (
               <tr key={f.id_Rep}
                 style={{ borderBottom: `1px solid ${colors.gray100}` }}
-                onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}05`}
+                onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-05, #002f5905)`}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <td style={{ padding: '12px 16px', fontSize: 12, color: colors.gray400 }}>{i + 1}</td>
@@ -2024,7 +2024,7 @@ function FournisseurProduitsTable({ produits, setProduits, allItems }) {
           <tbody>
             {/* New row */}
             {newRow && (
-              <tr style={{ background: `${colors.orange}08` }}>
+              <tr style={{ background: `var(--app-accent-08, #ff763108)` }}>
                 <td style={{ ...tCell, textAlign: 'center', color: colors.gray400 }}>—</td>
                 <td style={tCell}>
                   <select
@@ -2111,7 +2111,7 @@ function FournisseurProduitsTable({ produits, setProduits, allItems }) {
               return (
                 <tr
                   key={row._tempId || i}
-                  style={{ background: isEdit ? `${colors.orange}08` : i % 2 === 0 ? colors.white : colors.gray50 }}
+                  style={{ background: isEdit ? `var(--app-accent-08, #ff763108)` : i % 2 === 0 ? colors.white : colors.gray50 }}
                   onClick={() => { if (!isEdit) setEditIdx(i) }}
                 >
                   <td style={{ ...tCell, textAlign: 'center', fontWeight: 600, color: colors.gray500 }}>{i + 1}</td>
@@ -2209,7 +2209,7 @@ function FournisseurProduitsTable({ produits, setProduits, allItems }) {
                       }}>✓</button>
                     ) : (
                       <button onClick={() => setEditIdx(i)} title="Modifier" style={{
-                        border: `1px solid ${colors.bleu}30`, borderRadius: radius.sm,
+                        border: `1px solid var(--app-primary-30, #002f5930)`, borderRadius: radius.sm,
                         background: 'transparent', color: colors.bleu,
                         padding: '4px 8px', cursor: 'pointer', fontSize: '11px',
                       }}>✏</button>
@@ -2578,7 +2578,7 @@ function CommandesTab({ commandes, loading, fournisseurs, onEdit, onDelete }) {
             {commandes.map((c, i) => {
               const sc = STATUT_COLORS[c.statut] || STATUT_COLORS.en_attente
               return (
-                <tr key={c.id_Rep} style={{ borderBottom: `1px solid ${colors.gray100}` }} onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}05`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <tr key={c.id_Rep} style={{ borderBottom: `1px solid ${colors.gray100}` }} onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-05, #002f5905)`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '12px 16px', fontSize: 12, color: colors.gray400 }}>{i + 1}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 700, color: colors.bleu, fontSize: 13 }}>{c.numero_commande}</td>
                   <td style={{ padding: '12px 16px', fontSize: 13, color: colors.gray700 }}>{c.date_commande}</td>
@@ -2634,7 +2634,7 @@ function ApprovisionnementsTab({ approvisionnements, loading, fournisseurs }) {
           </thead>
           <tbody>
             {approvisionnements.map((a, i) => (
-              <tr key={a.id_Rep} style={{ borderBottom: `1px solid ${colors.gray100}` }} onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}05`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <tr key={a.id_Rep} style={{ borderBottom: `1px solid ${colors.gray100}` }} onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-05, #002f5905)`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <td style={{ padding: '12px 16px', fontSize: 12, color: colors.gray400 }}>{i + 1}</td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: colors.gray700 }}>{a.date_approvisionnement}</td>
                 <td style={{ padding: '12px 16px', fontSize: 13, color: colors.gray700 }}>{a.fournisseur?.nom || '—'}</td>
@@ -2688,7 +2688,7 @@ function MouvementsTab({ mouvements, loading, produits, typeFilter, onDelete }) 
             {filteredMouvements.map((m, i) => {
               const tc = TYPE_COLORS[m.type_mouvement] || colors.gray600
               return (
-                <tr key={m.id_Rep} style={{ borderBottom: `1px solid ${colors.gray100}` }} onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}05`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <tr key={m.id_Rep} style={{ borderBottom: `1px solid ${colors.gray100}` }} onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-05, #002f5905)`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '12px 16px', fontSize: 12, color: colors.gray400 }}>{i + 1}</td>
                   <td style={{ padding: '12px 16px', fontSize: 12, color: colors.gray600 }}>{new Date(m.created_at).toLocaleDateString('fr-FR')}</td>
                   <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.bleu }}>{m.item?.item_id || m.item_id}</td>
@@ -2746,7 +2746,7 @@ function InventairesTab({ inventaires, loading, onCloturer, onDelete }) {
               const sc = STATUT_COLORS[inv.statut] || STATUT_COLORS.en_cours
               const ecartColor = inv.ecart_total > 0 ? colors.danger : inv.ecart_total < 0 ? colors.warning : colors.success
               return (
-                <tr key={inv.id_Rep} style={{ borderBottom: `1px solid ${colors.gray100}` }} onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}05`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <tr key={inv.id_Rep} style={{ borderBottom: `1px solid ${colors.gray100}` }} onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-05, #002f5905)`} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '12px 16px', fontSize: 12, color: colors.gray400 }}>{i + 1}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 700, color: colors.bleu, fontSize: 13 }}>{inv.numero_inventaire}</td>
                   <td style={{ padding: '12px 16px', fontSize: 13, color: colors.gray700 }}>{inv.date_inventaire}</td>
@@ -2913,7 +2913,7 @@ function CommandeModal({ isEdit, formData, onChange, onSave, saving, onClose, fo
                 📦 Produits commandés
               </div>
               <button onClick={handleAddProduit} style={{
-                padding: '6px 14px', border: `1px solid ${colors.bleu}40`, borderRadius: radius.sm,
+                padding: '6px 14px', border: `1px solid var(--app-primary-40, #002f5940)`, borderRadius: radius.sm,
                 background: colors.white, color: colors.bleu, cursor: 'pointer', fontSize: 12, fontWeight: 600,
               }}>
                 + Ajouter un produit

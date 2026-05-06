@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { colors, radius, shadows, typography } from '../../theme'
 import { ficheAttApi } from '../../api'
 
@@ -679,7 +679,7 @@ export default function FicheAttModal({ onClose, showToast, patientId, patientNa
                     padding: '24px 20px',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
                     cursor: uploading ? 'default' : 'pointer',
-                    background: dragging ? `${colors.orange}08` : uploading ? `${colors.success}08` : `${colors.bleu}04`,
+                    background: dragging ? `var(--app-accent-08, #ff763108)` : uploading ? `${colors.success}08` : `var(--app-primary-04, #002f5904)`,
                     transition: 'all 0.2s',
                   }}
                 >

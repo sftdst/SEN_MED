@@ -6,8 +6,27 @@ body {
   color: #212529;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background .3s, color .3s;
 }
 
+/* ── Mode sombre ─────────────────────────────────────────────────────────── */
+/*
+ * Les composants utilisent des styles inline, on ne peut pas les surcharger
+ * avec du CSS. On applique donc un filtre CSS sur le contenu principal :
+ * invert(0.88) inverse les tons clairs en sombres,
+ * hue-rotate(180deg) rétablit les teintes naturelles des couleurs vives.
+ */
+#app-main[data-theme="dark"] {
+  filter: invert(0.88) hue-rotate(180deg) saturate(0.85);
+}
+/* Ré-inverser les images/vidéos pour qu'elles gardent leurs couleurs */
+#app-main[data-theme="dark"] img,
+#app-main[data-theme="dark"] video,
+#app-main[data-theme="dark"] canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f1f3f5; }
 ::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }

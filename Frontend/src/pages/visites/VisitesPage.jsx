@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { visiteApi, patientApi } from '../../api'
 import { colors, radius, shadows } from '../../theme'
@@ -274,7 +274,7 @@ export default function VisitesPage() {
         <button
           onClick={() => { setDateFrom(todayISO()); setDateTo(todayISO()); setTimeout(handleSearch, 0) }}
           style={{
-            border: `1px solid ${colors.bleu}`, background: `${colors.bleu}0d`,
+            border: `1px solid ${colors.bleu}`, background: `var(--app-primary-0d, #002f590d)`,
             color: colors.bleu, borderRadius: radius.sm, padding: '8px 14px',
             fontSize: 12, fontWeight: 700, cursor: 'pointer',
           }}
@@ -284,7 +284,7 @@ export default function VisitesPage() {
 
         {pagination?.total != null && (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            <span style={{ background: `${colors.bleu}15`, color: colors.bleu, borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
+            <span style={{ background: `var(--app-primary-15, #002f5915)`, color: colors.bleu, borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
               {pagination.total} visites
             </span>
             <span style={{ background: `${colors.success}15`, color: colors.success, borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
@@ -360,7 +360,7 @@ export default function VisitesPage() {
                     <tr
                       key={v.adt_id ?? i}
                       style={{ background: isEven ? '#fff' : '#fafbfc', transition: 'background 0.1s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}07`}
+                      onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-07, #002f5907)`}
                       onMouseLeave={e => e.currentTarget.style.background = isEven ? '#fff' : '#fafbfc'}
                     >
                       {/* # */}
@@ -399,7 +399,7 @@ export default function VisitesPage() {
                         {billNo ? (
                           <span style={{
                             fontFamily: 'monospace', fontSize: 11, fontWeight: 600,
-                            background: `${colors.bleu}0d`, color: colors.bleu,
+                            background: `var(--app-primary-0d, #002f590d)`, color: colors.bleu,
                             borderRadius: 5, padding: '2px 8px',
                           }}>{billNo}</span>
                         ) : (
@@ -463,13 +463,13 @@ export default function VisitesPage() {
                           style={{
                             width: 30, height: 30, borderRadius: 7,
                             border: `1.5px solid ${colors.bleu}`,
-                            background: `${colors.bleu}10`, color: colors.bleu,
+                            background: `var(--app-primary-10, #002f5910)`, color: colors.bleu,
                             cursor: 'pointer', fontSize: 14,
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             transition: 'all 0.13s',
                           }}
                           onMouseEnter={e => { e.currentTarget.style.background = colors.bleu; e.currentTarget.style.color = '#fff' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = `${colors.bleu}10`; e.currentTarget.style.color = colors.bleu }}
+                          onMouseLeave={e => { e.currentTarget.style.background = `var(--app-primary-10, #002f5910)`; e.currentTarget.style.color = colors.bleu }}
                         >👁</button>
                       </td>
                     </tr>

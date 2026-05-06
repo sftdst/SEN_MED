@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+﻿import { useEffect, useState, useCallback } from 'react'
 import { visiteApi, personnelApi, departementApi, serviceApi, typeServiceApi, medecinTarifApi } from '../../api'
 import { colors, radius, shadows, spacing } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
@@ -37,7 +37,7 @@ function Inp({ label, name, value, onChange, type = 'text', disabled, required, 
           fontSize: 13, color: disabled ? colors.gray500 : colors.gray900,
           background: disabled ? colors.gray100 : colors.white,
           outline: 'none', transition: 'border-color 0.15s',
-          boxShadow: f && !disabled ? `0 0 0 3px ${colors.bleu}18` : 'none',
+          boxShadow: f && !disabled ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
         }}
       />
     </Field>
@@ -58,7 +58,7 @@ function Sel({ label, name, value, onChange, options, required, error, disabled 
           fontSize: 13, color: colors.gray900,
           background: disabled ? colors.gray100 : colors.white,
           outline: 'none', transition: 'border-color 0.15s', cursor: 'pointer',
-          boxShadow: f ? `0 0 0 3px ${colors.bleu}18` : 'none',
+          boxShadow: f ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
         }}
       >
         <option value="">-- Sélectionner --</option>
@@ -599,7 +599,7 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
 function Section({ title, children }) {
   return (
     <div style={{
-      border: `1.5px solid ${colors.bleu}30`,
+      border: `1.5px solid var(--app-primary-30, #002f5930)`,
       borderRadius: radius.md, overflow: 'hidden',
     }}>
       <div style={{

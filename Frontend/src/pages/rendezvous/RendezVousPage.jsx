@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+﻿import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   format, addWeeks, subWeeks, startOfWeek, addDays,
   isSameDay, isToday, isPast, isBefore, parseISO,
@@ -396,7 +396,7 @@ function JourColonne({ date, horaires, rdvs, onSlotClick, selectedSlot, jourIdx,
             style={{
               height: SLOT_H,
               background: isSelected
-                ? `${colors.orange}22`
+                ? `var(--app-accent-22, #ff763122)`
                 : past
                   ? '#eceff1'
                   : working
@@ -409,7 +409,7 @@ function JourColonne({ date, horaires, rdvs, onSlotClick, selectedSlot, jourIdx,
             }}
             onMouseEnter={e => {
               if (!past && working && !isSelected)
-                e.currentTarget.style.background = `${colors.orange}18`
+                e.currentTarget.style.background = `var(--app-accent-18, #ff763118)`
             }}
             onMouseLeave={e => {
               if (!isSelected)
@@ -871,7 +871,7 @@ function VueSemaine({ joursSemaine, horaires, rdvsDuJour, onSlotClick, selectedS
               flex: 1, textAlign: 'center', padding: '10px 4px',
               borderLeft: idx > 0 ? `1px solid ${colors.gray200}` : 'none',
               background: today
-                ? `linear-gradient(135deg, ${colors.orange}22, ${colors.orange}11)`
+                ? `linear-gradient(135deg, var(--app-accent-22, #ff763122), var(--app-accent-11, #ff763111))`
                 : 'transparent',
             }}>
               <div style={{
@@ -955,7 +955,7 @@ function VueJour({ date, horaires, rdvs, onSlotClick, selectedSlot, onRdvClick }
       {/* Titre jour */}
       <div style={{
         padding: '12px 24px', borderBottom: `2px solid ${colors.gray200}`,
-        background: isToday(date) ? `${colors.orange}11` : colors.gray50,
+        background: isToday(date) ? `var(--app-accent-11, #ff763111)` : colors.gray50,
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         <span style={{ fontSize: 28, fontWeight: 800, color: isToday(date) ? colors.orange : colors.bleu }}>
@@ -1058,7 +1058,7 @@ function VueMois({ dateCourante, rdvsDuJour, onJourClick }) {
                 minHeight: 80, padding: '6px 8px',
                 borderRadius: radius.sm,
                 background: auj
-                  ? `linear-gradient(135deg, ${colors.orange}22, ${colors.orange}11)`
+                  ? `linear-gradient(135deg, var(--app-accent-22, #ff763122), var(--app-accent-11, #ff763111))`
                   : passe
                     ? colors.gray50
                     : duMois ? colors.white : '#f9f9f9',

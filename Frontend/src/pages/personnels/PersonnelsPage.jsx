@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import { personnelApi, departementApi } from '../../api'
 import { colors, radius, shadows, spacing } from '../../theme'
 import Button from '../../components/ui/Button'
@@ -88,8 +88,8 @@ function PersonnelCard({ row, onView, onEdit, onDelete }) {
   const isFemme = row.gender_id === 'feminin'
   const initials = (row.first_name?.[0] || '') + (row.last_name?.[0] || '')
   const avatarColor = isFemme ? '#e91e63' : colors.bleu
-  const avatarBg    = isFemme ? '#fce4ec' : `${colors.bleu}18`
-  const avatarBorder= isFemme ? '#f48fb133' : `${colors.bleu}33`
+  const avatarBg    = isFemme ? '#fce4ec' : `var(--app-primary-18, #002f5918)`
+  const avatarBorder= isFemme ? '#f48fb133' : `var(--app-primary-33, #002f5933)`
 
   return (
     <div
@@ -769,12 +769,12 @@ const [modalRapide,  setModalRapide]  = useState(false)
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 16,
                 padding: '16px 20px', borderRadius: radius.md, marginBottom: 20,
-                background: `linear-gradient(135deg, ${colors.bleu}08, ${colors.bleu}18)`,
-                border: `1px solid ${colors.bleu}22`,
+                background: `linear-gradient(135deg, var(--app-primary-08, #002f5908), var(--app-primary-18, #002f5918))`,
+                border: `1px solid var(--app-primary-22, #002f5922)`,
               }}>
                 <div style={{
                   width: 64, height: 64, borderRadius: '50%', flexShrink: 0,
-                  background: isFemme ? '#fce4ec' : `${colors.bleu}18`,
+                  background: isFemme ? '#fce4ec' : `var(--app-primary-18, #002f5918)`,
                   color: isFemme ? '#e91e63' : colors.bleu,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontWeight: 800, fontSize: 24,

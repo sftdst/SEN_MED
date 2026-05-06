@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { comptabiliteApi, paiementApi } from '../../api'
+import { useTheme } from '../../contexts/ThemeContext'
+import { printFactures } from './printUtils'
 import PaiementModal from './PaiementModal'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -79,6 +81,8 @@ function Badge({ label, color, bg }) {
 
 // ── Composant principal ───────────────────────────────────────────────────────
 export default function FacturesTab() {
+  const { prefs } = useTheme()
+
   // Données
   const [rows,       setRows]       = useState([])
   const [totaux,     setTotaux]     = useState(null)
@@ -169,6 +173,11 @@ export default function FacturesTab() {
     setPartenaire('')
     setSearch('')
     setSearchInput('')
+  }
+
+  const handlePrint = async () => {
+    const partenaireNom = partenaires.find(p => String(p.id_gen_partenaire) === String(partenaire))?.Nom || null
+    await printFactures(rows, totaux, prefs, { dateDebut, dateFin, partenaireNom, search: searchInput || search })
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -271,7 +280,7 @@ export default function FacturesTab() {
         {/* Header filtre */}
         <div style={{
           padding: '12px 20px',
-          background: `linear-gradient(90deg, ${colors.bleu}08 0%, transparent 100%)`,
+          background: `linear-gradient(90deg, var(--app-primary-08, #002f5908) 0%, transparent 100%)`,
           borderBottom: `1px solid ${colors.gray100}`,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
@@ -407,9 +416,12 @@ export default function FacturesTab() {
               </span>
             )}
           </div>
-          {loading && (
-            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Chargement…</span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {loading && (
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Chargement…</span>
+            )}
+            <PrintBtn onClick={handlePrint} disabled={loading || rows.length === 0} />
+          </div>
         </div>
 
         {/* Table */}
@@ -483,7 +495,7 @@ export default function FacturesTab() {
                         background: idx % 2 === 0 ? '#fff' : colors.gray50,
                         transition: 'background 0.12s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = `${colors.bleu}06` }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `var(--app-primary-06, #002f5906)` }}
                       onMouseLeave={e => { e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : colors.gray50 }}
                     >
                       {/* # */}
@@ -566,7 +578,7 @@ export default function FacturesTab() {
                             fontFamily: 'monospace', fontSize: 12, fontWeight: 600,
                             color: colors.bleu, background: colors.infoBg,
                             padding: '3px 8px', borderRadius: radius.sm,
-                            border: `1px solid ${colors.bleu}20`,
+                            border: `1px solid var(--app-primary-20, #002f5920)`,
                           }}>
                             {row.bill_no}
                           </span>
@@ -912,7 +924,7 @@ function FactureDetailModal({ billNo, patientName, detail, onClose, onPay }) {
                     {/* Numéro */}
                     <div style={{
                       width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                      background: `${colors.bleu}12`, color: colors.bleu,
+                      background: `var(--app-primary-12, #002f5912)`, color: colors.bleu,
                       fontSize: 11, fontWeight: 700,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>{si + 1}</div>
@@ -1028,7 +1040,7 @@ function FactureDetailModal({ billNo, patientName, detail, onClose, onPay }) {
                 border: 'none', background: colors.bleu,
                 color: '#fff', fontSize: 13, fontWeight: 700,
                 display: 'flex', alignItems: 'center', gap: 6,
-                boxShadow: `0 4px 12px ${colors.bleu}40`,
+                boxShadow: `0 4px 12px var(--app-primary-40, #002f5940)`,
                 transition: 'opacity 0.15s',
               }}
               onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
@@ -1060,6 +1072,29 @@ function TotalPill({ label, value, color, bg }) {
 }
 
 // ── Composants locaux ─────────────────────────────────────────────────────────
+function PrintBtn({ onClick, disabled }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      title="Imprimer le tableau"
+      style={{
+        padding: '5px 14px', borderRadius: 7, cursor: disabled ? 'not-allowed' : 'pointer',
+        border: '1.5px solid rgba(255,255,255,0.45)',
+        background: hov && !disabled ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.15)',
+        color: '#fff', fontSize: 12, fontWeight: 700,
+        display: 'flex', alignItems: 'center', gap: 6,
+        opacity: disabled ? 0.45 : 1, transition: 'background 0.15s',
+      }}
+    >
+      🖨️ Imprimer
+    </button>
+  )
+}
+
 function Avatar({ name = '' }) {
   const parts  = name.trim().split(' ').filter(Boolean)
   const initls = parts.length >= 2

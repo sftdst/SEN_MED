@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
 import Button from '../../components/ui/Button'
@@ -137,7 +137,7 @@ export default function GestionContratsPage() {
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <button onClick={() => openEdit(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid ${colors.bleu}40`, borderRadius: radius.sm, background: 'transparent', color: colors.bleu, cursor: 'pointer' }}>✏️</button>
+                    <button onClick={() => openEdit(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid var(--app-primary-40, #002f5940)`, borderRadius: radius.sm, background: 'transparent', color: colors.bleu, cursor: 'pointer' }}>✏️</button>
                     <button onClick={() => handleDelete(c.id)} style={{ padding: '6px 10px', border: `1px solid ${colors.danger}40`, borderRadius: radius.sm, background: 'transparent', color: colors.danger, cursor: 'pointer' }}>🗑️</button>
                   </td>
                 </tr>

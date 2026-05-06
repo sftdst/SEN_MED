@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { rolePermissionApi } from '../../api'
 
@@ -11,7 +11,7 @@ function Badge({ children, variant = 'default' }) {
     info:    { bg: colors.infoBg,    color: colors.info    },
     orange:  { bg: '#fff3ee',        color: colors.orange  },
     default: { bg: colors.gray100,   color: colors.gray700 },
-    bleu:    { bg: `${colors.bleu}15`,  color: colors.bleu  },
+    bleu:    { bg: `var(--app-primary-15, #002f5915)`,  color: colors.bleu  },
   }
   const s = MAP[variant] || MAP.default
   return (
@@ -42,7 +42,7 @@ function ToggleSwitch({ enabled, onChange }) {
         transition: 'background 0.2s',
         outline: 'none',
       }}
-      onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 0 3px ${enabled ? `${colors.orange}40` : 'rgba(0,0,0,0.1)'}`}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 0 3px ${enabled ? `var(--app-accent-40, #ff763140)` : 'rgba(0,0,0,0.1)'}`}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
     >
       <span style={{
@@ -69,7 +69,7 @@ function SectionHeader({ icon, title, count }) {
           width: 36, height: 36, borderRadius: radius.md,
           background: `linear-gradient(135deg, ${colors.bleu}, #003f7a)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16, boxShadow: `0 4px 10px ${colors.bleu}30`,
+          fontSize: 16, boxShadow: `0 4px 10px var(--app-primary-30, #002f5930)`,
         }}>{icon}</div>
         <div>
           <div style={{ fontWeight: 800, fontSize: 14, color: colors.gray900 }}>{title}</div>
@@ -525,7 +525,7 @@ export default function ProfilDroitsPage() {
             width: 48, height: 48, borderRadius: radius.md,
             background: colors.orange,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, boxShadow: `0 4px 12px ${colors.orange}50`,
+            fontSize: 22, boxShadow: `0 4px 12px var(--app-accent-50, #ff763150)`,
           }}>👥</div>
           <div>
             <div style={{ color: '#fff', fontWeight: 800, fontSize: 18, lineHeight: 1.2 }}>
@@ -559,7 +559,7 @@ export default function ProfilDroitsPage() {
               border: 'none', background: colors.orange,
               color: '#fff', fontSize: 12, fontWeight: 700,
               cursor: 'pointer', opacity: saving ? 0.7 : 1,
-              boxShadow: `0 3px 10px ${colors.orange}40`,
+              boxShadow: `0 3px 10px var(--app-accent-40, #ff763140)`,
             }}
           >
             <span style={{ fontSize: 14 }}>💾</span> Enregistrer
@@ -648,8 +648,8 @@ export default function ProfilDroitsPage() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,
                       padding: '8px 14px', borderRadius: radius.sm,
-                      border: `1px solid ${colors.bleu}40`,
-                      background: `${colors.bleu}08`, color: colors.bleu,
+                      border: `1px solid var(--app-primary-40, #002f5940)`,
+                      background: `var(--app-primary-08, #002f5908)`, color: colors.bleu,
                       fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}
                   >
@@ -677,9 +677,9 @@ export default function ProfilDroitsPage() {
             {/* Description */}
             <div style={{
               padding: '14px 18px',
-              background: `${colors.bleu}08`,
+              background: `var(--app-primary-08, #002f5908)`,
               borderRadius: radius.md,
-              border: `1px solid ${colors.bleu}20`,
+              border: `1px solid var(--app-primary-20, #002f5920)`,
               marginBottom: 24,
               fontSize: 12,
               color: colors.gray700,

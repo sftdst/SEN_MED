@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { paiementApi } from '../../api'
+import { useTheme } from '../../contexts/ThemeContext'
+import { printHistorique } from './printUtils'
 import RecuPaiement from './RecuPaiement'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -235,6 +237,8 @@ function DetailModal({ billId, patientName, onClose }) {
 // HISTORIQUE TAB PRINCIPAL
 // ═════════════════════════════════════════════════════════════════════════════
 export default function HistoriqueTab() {
+  const { prefs } = useTheme()
+
   const [rows,       setRows]       = useState([])
   const [totaux,     setTotaux]     = useState(null)
   const [loading,    setLoading]    = useState(false)
@@ -286,6 +290,15 @@ export default function HistoriqueTab() {
     setDateDebut(monthStart()); setDateFin(today()); setSearch(''); setSearchInput(''); setBillNo(''); setBillNoInput(''); setStatut('')
   }
 
+  const handlePrint = async () => {
+    await printHistorique(rows, totaux, prefs, {
+      dateDebut, dateFin,
+      search: searchInput || search,
+      billNo: billNoInput || billNo,
+      statut,
+    })
+  }
+
   const hasFilters = search || billNo || statut || dateDebut !== monthStart() || dateFin !== today()
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -305,7 +318,7 @@ export default function HistoriqueTab() {
 
         {/* ── Zone de recherche ──────────────────────────────────────────── */}
         <div style={{ background: '#fff', borderRadius: radius.lg, boxShadow: shadows.sm, border: `1px solid ${colors.gray100}`, overflow: 'hidden' }}>
-          <div style={{ padding: '10px 18px', background: `linear-gradient(90deg, ${colors.bleu}08, transparent)`, borderBottom: `1px solid ${colors.gray100}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ padding: '10px 18px', background: `linear-gradient(90deg, var(--app-primary-08, #002f5908), transparent)`, borderBottom: `1px solid ${colors.gray100}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 14 }}>🔍</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: colors.gray700 }}>Filtres de recherche</span>
@@ -374,7 +387,10 @@ export default function HistoriqueTab() {
                 </span>
               )}
             </div>
-            {loading && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Chargement…</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {loading && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Chargement…</span>}
+              <PrintBtn onClick={handlePrint} disabled={loading || rows.length === 0} />
+            </div>
           </div>
 
           {error && (
@@ -429,7 +445,7 @@ export default function HistoriqueTab() {
 
                   return (
                     <tr key={row.bill_hd_id ?? idx} style={{ borderBottom: `1px solid ${colors.gray100}`, background: idx % 2 === 0 ? '#fff' : colors.gray50, transition: 'background 0.1s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}05`}
+                      onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-05, #002f5905)`}
                       onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : colors.gray50}>
 
                       {/* # */}
@@ -450,7 +466,7 @@ export default function HistoriqueTab() {
 
                       {/* N° Facture */}
                       <td style={{ padding: '10px 12px' }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: colors.bleu, background: colors.infoBg, padding: '2px 8px', borderRadius: radius.sm, border: `1px solid ${colors.bleu}20` }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: colors.bleu, background: colors.infoBg, padding: '2px 8px', borderRadius: radius.sm, border: `1px solid var(--app-primary-20, #002f5920)` }}>
                           {row.bill_no || '—'}
                         </span>
                       </td>
@@ -484,7 +500,7 @@ export default function HistoriqueTab() {
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                           {modes.length === 0 ? <span style={{ fontSize: 11, color: colors.gray400 }}>—</span>
                             : modes.map(m => (
-                              <span key={m} style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: colors.infoBg, color: colors.bleu, border: `1px solid ${colors.bleu}20` }}>
+                              <span key={m} style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: colors.infoBg, color: colors.bleu, border: `1px solid var(--app-primary-20, #002f5920)` }}>
                                 {MODE_ICONS[m] || ''} {m}
                               </span>
                             ))}
@@ -538,11 +554,34 @@ export default function HistoriqueTab() {
   )
 }
 
+function PrintBtn({ onClick, disabled }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      title="Imprimer le tableau"
+      style={{
+        padding: '5px 14px', borderRadius: 7, cursor: disabled ? 'not-allowed' : 'pointer',
+        border: '1.5px solid rgba(255,255,255,0.45)',
+        background: hov && !disabled ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.15)',
+        color: '#fff', fontSize: 12, fontWeight: 700,
+        display: 'flex', alignItems: 'center', gap: 6,
+        opacity: disabled ? 0.45 : 1, transition: 'background 0.15s',
+      }}
+    >
+      🖨️ Imprimer
+    </button>
+  )
+}
+
 function DetailBtn({ onClick }) {
   const [hov, setHov] = useState(false)
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ padding: '5px 10px', borderRadius: radius.sm, cursor: 'pointer', border: `1.5px solid ${colors.bleu}`, background: hov ? colors.bleu : `${colors.bleu}12`, color: hov ? '#fff' : colors.bleu, fontSize: 11, fontWeight: 700, transition: 'all 0.12s', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      style={{ padding: '5px 10px', borderRadius: radius.sm, cursor: 'pointer', border: `1.5px solid ${colors.bleu}`, background: hov ? colors.bleu : `var(--app-primary-12, #002f5912)`, color: hov ? '#fff' : colors.bleu, fontSize: 11, fontWeight: 700, transition: 'all 0.12s', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
       <span>👁</span><span>Détail</span>
     </button>
   )

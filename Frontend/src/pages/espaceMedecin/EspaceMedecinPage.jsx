@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Fragment } from 'react'
+﻿import { useState, useEffect, useMemo, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { colors, radius, shadows } from '../../theme'
 import { patientApi, visiteApi, rendezVousApi, salleAttenteApi, personnelApi, medecinTarifApi, hospitalApi } from '../../api'
@@ -650,8 +650,8 @@ export default function EspaceMedecinPage() {
 
                         {/* ── Ligne rupture patient ── */}
                         <tr style={{
-                          background: `${colors.bleu}09`,
-                          borderTop: gi > 0 ? `2px solid ${colors.bleu}1a` : 'none',
+                          background: `var(--app-primary-09, #002f5909)`,
+                          borderTop: gi > 0 ? `2px solid var(--app-primary-1a, #002f591a)` : 'none',
                         }}>
                           {/* N° */}
                           <td style={{ padding: '9px 12px', color: '#6c757d', fontSize: 11, fontWeight: 700, width: 40 }}>
@@ -678,7 +678,7 @@ export default function EspaceMedecinPage() {
                           <td style={{ padding: '9px 12px' }}>
                             <span style={{
                               padding: '3px 10px', borderRadius: radius.full, fontSize: 10, fontWeight: 700,
-                              background: `${colors.bleu}18`, color: colors.bleu,
+                              background: `var(--app-primary-18, #002f5918)`, color: colors.bleu,
                             }}>
                               {group.services.length} service{group.services.length > 1 ? 's' : ''}
                             </span>
@@ -695,13 +695,13 @@ export default function EspaceMedecinPage() {
                               key={`svc-${svc.id}`}
                               onClick={selectRow}
                               style={{
-                                background: sel ? `${colors.orange}14` : si % 2 === 0 ? '#fff' : '#fafbfc',
+                                background: sel ? `var(--app-accent-14, #ff763114)` : si % 2 === 0 ? '#fff' : '#fafbfc',
                                 cursor: 'pointer',
                                 borderBottom: `1px solid ${sel ? colors.orange + '30' : '#f1f3f5'}`,
                                 borderLeft: sel ? `4px solid ${colors.orange}` : '4px solid transparent',
                                 transition: 'background 0.12s, border-left 0.12s',
                               }}
-                              onMouseEnter={e => { if (!sel) e.currentTarget.style.background = `${colors.bleu}07` }}
+                              onMouseEnter={e => { if (!sel) e.currentTarget.style.background = `var(--app-primary-07, #002f5907)` }}
                               onMouseLeave={e => { if (!sel) e.currentTarget.style.background = si % 2 === 0 ? '#fff' : '#fafbfc' }}
                             >
                               {/* Radio sélection */}
@@ -808,8 +808,8 @@ export default function EspaceMedecinPage() {
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '5px 14px',
-                    background: `${colors.bleu}0d`, borderRadius: radius.full,
-                    border: `1px solid ${colors.bleu}20`,
+                    background: `var(--app-primary-0d, #002f590d)`, borderRadius: radius.full,
+                    border: `1px solid var(--app-primary-20, #002f5920)`,
                   }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: colors.orange, flexShrink: 0 }} />
                     <span style={{ fontSize: 11, color: colors.bleu, fontWeight: 700 }}>{selected.nom}</span>
@@ -876,7 +876,7 @@ export default function EspaceMedecinPage() {
                       }}
                       style={{
                         padding: '2px 8px', borderRadius: radius.sm, cursor: 'pointer',
-                        border: `1px solid ${colors.bleu}`, background: `${colors.bleu}0d`,
+                        border: `1px solid ${colors.bleu}`, background: `var(--app-primary-0d, #002f590d)`,
                         color: colors.bleu, fontSize: 9, fontWeight: 700,
                       }}>Voir</button>
                   ),
@@ -942,12 +942,12 @@ export default function EspaceMedecinPage() {
                     }}
                     style={{
                       padding: '3px 8px', borderRadius: radius.sm, cursor: 'pointer',
-                      border: `1px solid ${colors.orange}80`, background: `${colors.orange}30`,
+                      border: `1px solid var(--app-accent-80, #ff763180)`, background: `var(--app-accent-30, #ff763130)`,
                       color: colors.orange, fontSize: 10, fontWeight: 700,
                       transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = colors.orange; e.currentTarget.style.color = '#fff' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = `${colors.orange}30`; e.currentTarget.style.color = colors.orange }}
+                    onMouseLeave={e => { e.currentTarget.style.background = `var(--app-accent-30, #ff763130)`; e.currentTarget.style.color = colors.orange }}
                   >+ Nouveau</button>
                 </div>
               }
@@ -969,7 +969,7 @@ export default function EspaceMedecinPage() {
                         onClick={() => { setRdvEdit(row._raw); setRdvRapideOpen(true) }}
                         style={{
                           padding: '2px 6px', borderRadius: radius.sm, cursor: 'pointer',
-                          border: `1px solid ${colors.bleu}`, background: `${colors.bleu}0d`,
+                          border: `1px solid ${colors.bleu}`, background: `var(--app-primary-0d, #002f590d)`,
                           color: colors.bleu, fontSize: 9, fontWeight: 700,
                         }}>Modifier</button>
                       <button style={{

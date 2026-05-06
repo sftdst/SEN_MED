@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { patientApi, partenaireApi } from '../../api'
 import CreerVisiteModal from '../visites/CreerVisiteModal'
@@ -77,7 +77,7 @@ function Inp({ label, name, value, onChange, disabled, type = 'text', error, req
           background: disabled ? colors.gray100 : colors.white,
           outline: 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
-          boxShadow: focused && !disabled ? `0 0 0 3px ${colors.bleu}18` : 'none',
+          boxShadow: focused && !disabled ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
           ...style,
         }}
       />
@@ -101,7 +101,7 @@ function Sel({ label, name, value, onChange, options, placeholder, required, err
           fontSize: '13px', color: colors.gray900,
           background: colors.white, outline: 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
-          boxShadow: focused ? `0 0 0 3px ${colors.bleu}18` : 'none',
+          boxShadow: focused ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
           cursor: 'pointer',
         }}
       >
@@ -683,7 +683,7 @@ export default function PatientsPage() {
                 <tbody>
                   {patients.map((p, i) => {
                     const isActive = selected?.id_Rep === p.id_Rep
-                    const rowBg = isActive ? `${colors.bleu}12` : i % 2 === 0 ? colors.white : colors.gray50
+                    const rowBg = isActive ? `var(--app-primary-12, #002f5912)` : i % 2 === 0 ? colors.white : colors.gray50
 
                     return (
                        <tr
@@ -1093,7 +1093,7 @@ export default function PatientsPage() {
                       borderRadius: '50%', background: colors.bleu + '20', color: colors.bleu,
                       display: selected.photo_url ? 'none' : 'flex',
                       alignItems: 'center', justifyContent: 'center',
-                      fontSize: 24, fontWeight: 700, border: `3px solid ${colors.bleu}40`
+                      fontSize: 24, fontWeight: 700, border: `3px solid var(--app-primary-40, #002f5940)`
                     }}>
                       {(selected.first_name?.[0] || '') + (selected.last_name?.[0] || '')}
                     </div>

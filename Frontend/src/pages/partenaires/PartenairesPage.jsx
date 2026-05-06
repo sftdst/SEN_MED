@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+﻿import { useEffect, useRef, useState, useCallback } from 'react'
 import { partenaireApi } from '../../api'
 import Pagination from '../../components/ui/Pagination'
 import { colors, radius, shadows, spacing } from '../../theme'
@@ -87,7 +87,7 @@ function Inp({ label, name, value, onChange, disabled, type = 'text', error, req
           background: disabled ? colors.gray100 : colors.white,
           outline: 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
-          boxShadow: focused && !disabled ? `0 0 0 3px ${colors.bleu}18` : 'none',
+          boxShadow: focused && !disabled ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
           ...style,
         }}
       />
@@ -111,7 +111,7 @@ function Sel({ label, name, value, onChange, options, placeholder, required, err
           fontSize: D.inputFont, color: colors.gray900,
           background: colors.white, outline: 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
-          boxShadow: focused ? `0 0 0 3px ${colors.bleu}18` : 'none',
+          boxShadow: focused ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
           cursor: 'pointer',
         }}
       >
@@ -560,7 +560,7 @@ function CouvertureTable({ partenaire, couvertures, setCouvertures, budget, setB
           <tbody>
             {/* Ligne d'ajout */}
             {newRow && (
-              <tr style={{ background: `${colors.bleu}08` }}>
+              <tr style={{ background: `var(--app-primary-08, #002f5908)` }}>
                 <td style={{ ...tCell, textAlign: 'center', color: colors.gray400, fontWeight: 600 }}>—</td>
                 <td style={tCell}>
                   <input style={inpCell} value={newRow.Nom} placeholder="Nom du type *"
@@ -613,9 +613,9 @@ function CouvertureTable({ partenaire, couvertures, setCouvertures, budget, setB
               const isSel  = selectedId === row.id_Rep
               const isEdit = editRow?.id_Rep === row.id_Rep
               const bg = isEdit
-                ? `${colors.bleu}0d`
+                ? `var(--app-primary-0d, #002f590d)`
                 : isSel
-                  ? `${colors.orange}12`
+                  ? `var(--app-accent-12, #ff763112)`
                   : i % 2 === 0 ? colors.white : colors.gray50
 
               return (
@@ -870,7 +870,7 @@ function CouvertureLocalTable({ rows, setRows, maximumCredit }) {
           <tbody>
             {/* Ligne d'ajout */}
             {newRow && (
-              <tr style={{ background: `${colors.bleu}08` }}>
+              <tr style={{ background: `var(--app-primary-08, #002f5908)` }}>
                 <td style={{ ...tCell, textAlign: 'center', color: colors.gray400 }}>—</td>
                 <td style={tCell}>
                   <input style={inpCell} value={newRow.Nom} autoFocus placeholder="Nom *"
@@ -917,7 +917,7 @@ function CouvertureLocalTable({ rows, setRows, maximumCredit }) {
             ) : rows.map((row, i) => {
               const isEdit = editIdx === i
               return (
-                <tr key={row._tempId || i} style={{ background: isEdit ? `${colors.bleu}08` : i % 2 === 0 ? colors.white : colors.gray50 }}>
+                <tr key={row._tempId || i} style={{ background: isEdit ? `var(--app-primary-08, #002f5908)` : i % 2 === 0 ? colors.white : colors.gray50 }}>
                   <td style={{ ...tCell, textAlign: 'center', fontWeight: 700, color: colors.gray500, fontSize: '12px' }}>{i + 1}</td>
                   <td style={tCell}>
                     {isEdit
@@ -953,8 +953,8 @@ function CouvertureLocalTable({ rows, setRows, maximumCredit }) {
                         onClick={() => setEditIdx(isEdit ? null : i)}
                         title={isEdit ? 'Fermer' : 'Modifier'}
                         style={{
-                          border: `1px solid ${colors.bleu}30`, borderRadius: radius.sm,
-                          background: isEdit ? `${colors.bleu}15` : 'transparent',
+                          border: `1px solid var(--app-primary-30, #002f5930)`, borderRadius: radius.sm,
+                          background: isEdit ? `var(--app-primary-15, #002f5915)` : 'transparent',
                           color: colors.bleu, padding: '3px 7px', cursor: 'pointer', fontSize: '12px',
                         }}
                       >
@@ -1210,13 +1210,13 @@ const [partenaires, setPartenaires]         = useState([])
                     const alloue   = p.types_couverture_sum_maximum_credit || 0
                     const pct      = p.maximum_credit > 0 ? Math.min(100, Math.round((alloue / p.maximum_credit) * 100)) : 0
                     const barColor = pct >= 90 ? colors.danger : pct >= 70 ? colors.warning : colors.success
-                    const rowBg    = isActive ? `${colors.bleu}06` : i % 2 === 0 ? colors.white : colors.gray50
+                    const rowBg    = isActive ? `var(--app-primary-06, #002f5906)` : i % 2 === 0 ? colors.white : colors.gray50
 
                     return (
                       <tr
                         key={p.id_Rep}
                         style={{ background: rowBg, borderBottom: `1px solid ${colors.gray100}` }}
-                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = `${colors.bleu}04` }}
+                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = `var(--app-primary-04, #002f5904)` }}
                         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = rowBg }}
                       >
                         {/* N° */}
@@ -1295,7 +1295,7 @@ const [partenaires, setPartenaires]         = useState([])
                           <div style={{ display: 'flex', gap: spacing.xs, justifyContent: 'flex-end' }}>
                             <ActionBtn
                               onClick={e => { e.stopPropagation(); openViewModal(p) }}
-                              color={colors.bleu} bg={`${colors.bleu}12`} title="Voir les détails"
+                              color={colors.bleu} bg={`var(--app-primary-12, #002f5912)`} title="Voir les détails"
                             >
                               Voir
                             </ActionBtn>

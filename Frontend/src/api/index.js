@@ -356,6 +356,19 @@ export const rolePermissionApi = {
   supprimerPermission:(id)     => api.delete(`/permissions/${id}`),
 }
 
+// ── Configuration Mailing (SMTP) ────────────────────────────────────────────
+export const mailingApi = {
+  get:  ()       => api.get('/mailing-config'),
+  save: (data)   => api.post('/mailing-config', data),
+  test: (to)     => api.post('/mailing-config/test', { to }),
+}
+
+// ── Préférences de l'application ─────────────────────────────────────────────
+export const preferencesApi = {
+  get:  ()     => api.get('/app-preferences'),
+  save: (data) => api.post('/app-preferences', data),
+}
+
 // ── Fiches ATT ───────────────────────────────────────────────
 export const ficheAttApi = {
   liste:     (params) => api.get('/fiches-att', { params }),

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback } from 'react'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { rendezVousApi, personnelApi } from '../../api'
@@ -116,14 +116,14 @@ function RdvCard({ rdv, onAnnuler, onReporter, selected, onClick }) {
     <div
       onClick={onClick}
       style={{
-        background: selected ? `${colors.bleu}06` : '#fff',
+        background: selected ? `var(--app-primary-06, #002f5906)` : '#fff',
         border: `1.5px solid ${selected ? colors.bleu : '#e9ecef'}`,
         borderLeft: `4px solid ${selected ? colors.orange : (STATUTS[rdv.statut_app]?.color ?? '#dee2e6')}`,
         borderRadius: radius.lg,
         padding: '16px 18px',
         cursor: 'pointer',
         transition: 'all 0.15s',
-        boxShadow: selected ? `0 4px 16px ${colors.bleu}18` : '0 1px 4px rgba(0,0,0,0.05)',
+        boxShadow: selected ? `0 4px 16px var(--app-primary-18, #002f5918)` : '0 1px 4px rgba(0,0,0,0.05)',
       }}
       onMouseEnter={e => { if (!selected) e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)' }}
       onMouseLeave={e => { if (!selected) e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)' }}

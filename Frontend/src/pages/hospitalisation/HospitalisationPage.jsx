@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { chambreApi, equipementApi, hospitalisationApi, patientApi, personnelApi } from '../../api'
 import { colors, radius, shadows } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
@@ -43,7 +43,7 @@ function Inp({ label, name, value, onChange, type = 'text', required, error, pla
           color: disabled ? colors.gray500 : colors.gray900,
           background: disabled ? colors.gray100 : colors.white,
           outline: 'none', width: '100%', boxSizing: 'border-box',
-          boxShadow: f && !disabled ? `0 0 0 3px ${colors.bleu}18` : 'none',
+          boxShadow: f && !disabled ? `0 0 0 3px var(--app-primary-18, #002f5918)` : 'none',
         }} />
       {error && <span style={{ fontSize: 11, color: colors.danger }}>⚠ {error}</span>}
     </div>
@@ -417,7 +417,7 @@ function SortieModal({ open, onClose, hospitalisation, onSaved }) {
   return (
     <Modal open={open} onClose={onClose} title="Enregistrer la sortie" width={480}>
       {hospitalisation && (
-        <div style={{ background: colors.bleu + '10', border: `1px solid ${colors.bleu}30`, borderRadius: radius.sm, padding: '10px 14px', marginBottom: 16 }}>
+        <div style={{ background: colors.bleu + '10', border: `1px solid var(--app-primary-30, #002f5930)`, borderRadius: radius.sm, padding: '10px 14px', marginBottom: 16 }}>
           <div style={{ fontWeight: 700, color: colors.bleu }}>{nomPatient}</div>
           <div style={{ fontSize: 12, color: colors.gray600 }}>
             {hospitalisation.chambre?.code_chambre} · Entré le {fmtDate(hospitalisation.date_entree)}

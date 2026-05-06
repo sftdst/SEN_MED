@@ -57,7 +57,12 @@
       "Bash(node -e ':*)",
       "Bash(node_modules/.bin/react-scripts build:*)",
       "Bash(xargs cat *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(node -e ' *)",
+      "Bash(npx tsc *)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8000/api/v1/auth/login\" -Method POST -ContentType \"application/json\" -Body '{\"email\":\"admin@senmed.sn\",\"password\":\"admin123\"}' -UseBasicParsing 2>&1)",
+      "Bash(Get-ChildItem -Path \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Frontend\\\\src\" -Recurse -Include \"*hospital*\",\"*config*\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

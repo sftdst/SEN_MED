@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import api from '../../api/axios'
 import { colors } from '../../theme'
 import { Avatar } from './UserSelectorModal'
@@ -540,7 +540,7 @@ function AudioBubble({ url, isMe }) {
 
   const trackBg   = isMe ? 'rgba(255,255,255,0.28)' : colors.gray200
   const trackFill = isMe ? '#fff'                    : colors.bleu
-  const btnBg     = isMe ? 'rgba(255,255,255,0.18)'  : `${colors.bleu}18`
+  const btnBg     = isMe ? 'rgba(255,255,255,0.18)'  : `var(--app-primary-18, #002f5918)`
   const iconCol   = isMe ? '#fff'                    : colors.bleu
   const timeCol   = isMe ? 'rgba(255,255,255,0.70)'  : colors.gray400
 

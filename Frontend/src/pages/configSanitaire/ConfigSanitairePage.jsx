@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { colors, radius, shadows, spacing } from '../../theme'
 
 // ── Données mock ──────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ function SectionHead({ icon, title, count, onAdd }) {
           width: 38, height: 38, borderRadius: radius.md,
           background: `linear-gradient(135deg, ${colors.bleu}, #003f7a)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 17, boxShadow: `0 4px 10px ${colors.bleu}30`,
+          fontSize: 17, boxShadow: `0 4px 10px var(--app-primary-30, #002f5930)`,
         }}>{icon}</div>
         <div>
           <div style={{ fontWeight: 800, fontSize: 15, color: colors.gray900 }}>{title}</div>
@@ -128,7 +128,7 @@ function SectionHead({ icon, title, count, onAdd }) {
           border: 'none', background: colors.orange,
           color: '#fff', fontSize: 12, fontWeight: 700,
           cursor: 'pointer', transition: 'all 0.15s',
-          boxShadow: `0 3px 10px ${colors.orange}40`,
+          boxShadow: `0 3px 10px var(--app-accent-40, #ff763140)`,
         }}
         onMouseEnter={e => e.currentTarget.style.background = colors.orangeDark}
         onMouseLeave={e => e.currentTarget.style.background = colors.orange}
@@ -174,7 +174,7 @@ function DataTable({ cols, rows }) {
                 borderBottom: `1px solid ${colors.gray100}`,
                 transition: 'background 0.1s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}06`}
+              onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-06, #002f5906)`}
               onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? '#fff' : colors.gray50}
             >
               {cols.map((c, j) => (
@@ -218,7 +218,7 @@ export default function ConfigSanitairePage() {
             width: 48, height: 48, borderRadius: radius.md,
             background: colors.orange,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, boxShadow: `0 4px 12px ${colors.orange}50`,
+            fontSize: 22, boxShadow: `0 4px 12px var(--app-accent-50, #ff763150)`,
           }}>⚕️</div>
           <div>
             <div style={{ color: '#fff', fontWeight: 800, fontSize: 18, lineHeight: 1.2 }}>
@@ -234,7 +234,7 @@ export default function ConfigSanitairePage() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {[
             { label: 'Catégories', val: TABS.length,   color: 'rgba(255,255,255,0.8)', bg: 'rgba(255,255,255,0.1)',  border: 'rgba(255,255,255,0.2)' },
-            { label: 'Éléments',   val: statsTotal,    color: colors.orange,           bg: `${colors.orange}20`,    border: `${colors.orange}40`    },
+            { label: 'Éléments',   val: statsTotal,    color: colors.orange,           bg: `var(--app-accent-20, #ff763120)`,    border: `var(--app-accent-40, #ff763140)`    },
             { label: 'Actifs',     val: statsTotal,    color: '#4caf50',               bg: 'rgba(76,175,80,0.15)',  border: 'rgba(76,175,80,0.3)'   },
           ].map(s => (
             <div key={s.label} style={{
@@ -267,13 +267,13 @@ export default function ConfigSanitairePage() {
                 padding: '8px 16px', borderRadius: radius.sm,
                 border: active ? `1.5px solid ${colors.orange}` : '1.5px solid transparent',
                 background: active
-                  ? `linear-gradient(135deg, ${colors.orange}15, ${colors.orange}08)`
+                  ? `linear-gradient(135deg, var(--app-accent-15, #ff763115), var(--app-accent-08, #ff763108))`
                   : colors.gray100,
                 color: active ? colors.orange : colors.gray600,
                 fontSize: 12, fontWeight: active ? 700 : 600,
                 cursor: 'pointer', whiteSpace: 'nowrap',
                 transition: 'all 0.15s',
-                boxShadow: active ? `0 2px 8px ${colors.orange}25` : 'none',
+                boxShadow: active ? `0 2px 8px var(--app-accent-25, #ff763125)` : 'none',
               }}
               onMouseEnter={e => { if (!active) e.currentTarget.style.background = colors.gray200 }}
               onMouseLeave={e => { if (!active) e.currentTarget.style.background = colors.gray100 }}
@@ -313,7 +313,7 @@ export default function ConfigSanitairePage() {
 function TabContent({ tabKey, data }) {
   const ACTIONS = (
     <div style={{ display: 'flex', gap: 5 }}>
-      <ActionBtn label="✏️ Modifier" color={colors.bleu}    bgColor={`${colors.bleu}0d`}    />
+      <ActionBtn label="✏️ Modifier" color={colors.bleu}    bgColor={`var(--app-primary-0d, #002f590d)`}    />
       <ActionBtn label="🗑 Suppr."   color={colors.danger}  bgColor={colors.dangerBg}        />
     </div>
   )

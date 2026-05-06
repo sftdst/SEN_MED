@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { colors, radius, shadows } from '../../theme'
 import { comptabiliteApi } from '../../api'
+import { useTheme } from '../../contexts/ThemeContext'
+import { printCreditsPatients } from './printUtils'
 import PaiementModal from './PaiementModal'
 import SolderToutModal from './SolderToutModal'
 
@@ -61,6 +63,29 @@ function Avatar({ name = '' }) {
 function Spinner() {
   return (
     <div style={{ width: 26, height: 26, borderRadius: '50%', border: `3px solid ${colors.gray200}`, borderTopColor: colors.bleu, animation: 'spin 0.7s linear infinite' }} />
+  )
+}
+
+function PrintBtn({ onClick, disabled }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      title="Imprimer le tableau"
+      style={{
+        padding: '5px 14px', borderRadius: 7, cursor: disabled ? 'not-allowed' : 'pointer',
+        border: '1.5px solid rgba(255,255,255,0.45)',
+        background: hov && !disabled ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.15)',
+        color: '#fff', fontSize: 12, fontWeight: 700,
+        display: 'flex', alignItems: 'center', gap: 6,
+        opacity: disabled ? 0.45 : 1, transition: 'background 0.15s',
+      }}
+    >
+      🖨️ Imprimer
+    </button>
   )
 }
 
@@ -217,6 +242,8 @@ function DetailModal({ patient, onClose, onPayer }) {
 // CREDIT PATIENT TAB
 // ═════════════════════════════════════════════════════════════════════════════
 export default function CreditPatientTab() {
+  const { prefs } = useTheme()
+
   const [rows,       setRows]       = useState([])
   const [totaux,     setTotaux]     = useState(null)
   const [loading,    setLoading]    = useState(false)
@@ -262,6 +289,13 @@ export default function CreditPatientTab() {
 
   const handleReset = () => {
     setDateDebut(monthStart()); setDateFin(today()); setSearch(''); setSearchInput('')
+  }
+
+  const handlePrint = async () => {
+    await printCreditsPatients(rows, totaux, prefs, {
+      dateDebut, dateFin,
+      search: searchInput || search,
+    })
   }
 
   const hasFilters = search || dateDebut !== monthStart() || dateFin !== today()
@@ -364,7 +398,10 @@ export default function CreditPatientTab() {
                 </span>
               )}
             </div>
-            {loading && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Chargement…</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {loading && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Chargement…</span>}
+              <PrintBtn onClick={handlePrint} disabled={loading || rows.length === 0} />
+            </div>
           </div>
 
           {error && (

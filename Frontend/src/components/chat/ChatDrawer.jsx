@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import api from '../../api/axios'
 import { colors } from '../../theme'
 import { useChat } from '../../contexts/ChatContext'
@@ -243,7 +243,7 @@ function WelcomeScreen({ onSelect }) {
     }}>
       <div style={{
         width: 80, height: 80, borderRadius: 24,
-        background: `linear-gradient(135deg, ${colors.bleu}20, ${colors.bleu}10)`,
+        background: `linear-gradient(135deg, var(--app-primary-20, #002f5920), var(--app-primary-10, #002f5910))`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 36, marginBottom: 20,
       }}>💬</div>
@@ -259,11 +259,11 @@ function WelcomeScreen({ onSelect }) {
           padding: '11px 28px', borderRadius: 12, border: 'none',
           background: `linear-gradient(135deg, ${colors.bleu}, #1a4a80)`,
           color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-          boxShadow: `0 4px 14px ${colors.bleu}40`,
+          boxShadow: `0 4px 14px var(--app-primary-40, #002f5940)`,
           transition: 'transform 0.15s, box-shadow 0.15s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = `0 6px 18px ${colors.bleu}50` }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = `0 4px 14px ${colors.bleu}40` }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = `0 6px 18px var(--app-primary-50, #002f5950)` }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = `0 4px 14px var(--app-primary-40, #002f5940)` }}
       >Choisir mon profil</button>
     </div>
   )
@@ -340,7 +340,7 @@ function ConversationList({ conversations, loading, currentUser, onOpen, onNew }
                 ? <Avatar name={conv.other_staff?.display_name || name} photo={conv.other_staff?.photo_url} size={44} role={conv.other_staff?.staff_type} />
                 : <div style={{
                     width: 44, height: 44, borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${colors.bleu}cc, #1a4a80)`,
+                    background: `linear-gradient(135deg, var(--app-primary-cc, #002f59cc), #1a4a80)`,
                     color: '#fff', display: 'flex', alignItems: 'center',
                     justifyContent: 'center', fontSize: 20,
                   }}>👥</div>

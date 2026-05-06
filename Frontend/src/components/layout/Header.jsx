@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom'
+﻿import { useLocation } from 'react-router-dom'
 import { colors, shadows } from '../../theme'
 import { useChat } from '../../contexts/ChatContext'
 import { useAuth } from '../../context/AuthContext'
@@ -99,7 +99,7 @@ export default function Header({ onToggleSidebar }) {
             : unreadTotal > 0 ? '#e8f0fe' : colors.gray100,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', fontSize: 17, position: 'relative',
-          border: chatOpen ? 'none' : unreadTotal > 0 ? `2px solid ${colors.bleu}30` : 'none',
+          border: chatOpen ? 'none' : unreadTotal > 0 ? `2px solid var(--app-primary-30, #002f5930)` : 'none',
           transition: 'background 0.2s, transform 0.15s',
           outline: 'none',
         }}

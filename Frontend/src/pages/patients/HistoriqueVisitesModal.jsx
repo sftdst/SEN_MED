@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { visiteApi } from '../../api'
 import { colors, radius, shadows } from '../../theme'
@@ -294,7 +294,7 @@ export default function HistoriqueVisitesModal({ patient, onClose }) {
               {!loading && totalVisites > 0 && (
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{
-                    background: `${colors.bleu}15`, color: colors.bleu,
+                    background: `var(--app-primary-15, #002f5915)`, color: colors.bleu,
                     borderRadius: radius.full, padding: '3px 10px',
                     fontSize: 11, fontWeight: 700,
                   }}>
@@ -348,7 +348,7 @@ export default function HistoriqueVisitesModal({ patient, onClose }) {
                         <tr
                           key={v.adt_id ?? i}
                           style={{ transition: 'background 0.1s' }}
-                          onMouseEnter={e => e.currentTarget.style.background = `${colors.bleu}08`}
+                          onMouseEnter={e => e.currentTarget.style.background = `var(--app-primary-08, #002f5908)`}
                           onMouseLeave={e => e.currentTarget.style.background = ''}
                         >
                           {/* # */}
@@ -373,7 +373,7 @@ export default function HistoriqueVisitesModal({ patient, onClose }) {
                             {v.bill_header?.[0]?.bill_no ? (
                               <span style={{
                                 fontFamily: 'monospace', fontSize: 11,
-                                background: `${colors.bleu}0d`, color: colors.bleu,
+                                background: `var(--app-primary-0d, #002f590d)`, color: colors.bleu,
                                 borderRadius: 4, padding: '2px 7px', fontWeight: 600,
                               }}>
                                 {v.bill_header[0].bill_no}
@@ -437,14 +437,14 @@ export default function HistoriqueVisitesModal({ patient, onClose }) {
                               style={{
                                 width: 30, height: 30, borderRadius: radius.sm,
                                 border: `1.5px solid ${colors.bleu}`,
-                                background: `${colors.bleu}10`,
+                                background: `var(--app-primary-10, #002f5910)`,
                                 color: colors.bleu,
                                 cursor: 'pointer', fontSize: 14,
                                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                 transition: 'all 0.13s',
                               }}
                               onMouseEnter={e => { e.currentTarget.style.background = colors.bleu; e.currentTarget.style.color = '#fff' }}
-                              onMouseLeave={e => { e.currentTarget.style.background = `${colors.bleu}10`; e.currentTarget.style.color = colors.bleu }}
+                              onMouseLeave={e => { e.currentTarget.style.background = `var(--app-primary-10, #002f5910)`; e.currentTarget.style.color = colors.bleu }}
                             >👁</button>
                           </td>
                         </tr>

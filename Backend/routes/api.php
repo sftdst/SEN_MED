@@ -36,6 +36,8 @@ use App\Http\Controllers\Api\NursingDossierController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MailingConfigController;
+use App\Http\Controllers\Api\AppPreferenceController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -477,5 +479,22 @@ Route::prefix('v1')->group(function () {
     Route::post('permissions',                   [RolePermissionController::class, 'permissionStore']);
     Route::put('permissions/{id}',               [RolePermissionController::class, 'permissionStore']);
     Route::delete('permissions/{id}',            [RolePermissionController::class, 'permissionDestroy']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Configuration Mailing (SMTP)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('mailing-config',       [MailingConfigController::class, 'show']);
+    Route::post('mailing-config',      [MailingConfigController::class, 'save']);
+    Route::post('mailing-config/test', [MailingConfigController::class, 'test']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Préférences de l'application
+    |--------------------------------------------------------------------------
+    */
+    Route::get('app-preferences',  [AppPreferenceController::class, 'show']);
+    Route::post('app-preferences', [AppPreferenceController::class, 'save']);
 
 });

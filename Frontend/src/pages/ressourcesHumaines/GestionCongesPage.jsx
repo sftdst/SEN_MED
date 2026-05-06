@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+﻿import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { colors, radius, shadows, spacing } from '../../theme'
 import { showToast } from '../../components/ui/Toast'
 import Button from '../../components/ui/Button'
@@ -242,8 +242,8 @@ export default function GestionCongesPage() {
                   <td style={{ padding: '12px 16px' }}>{c.DateDebut}</td>
                   <td style={{ padding: '12px 16px' }}>{c.DateFin}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <button onClick={() => openEdit(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid ${colors.bleu}40`, borderRadius: radius.sm, background: 'transparent', color: colors.bleu, cursor: 'pointer' }}>✏️</button>
-                    <button onClick={() => setCertificatModal(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid ${colors.orange}40`, borderRadius: radius.sm, background: 'transparent', color: colors.orange, cursor: 'pointer' }}>🖨️</button>
+                    <button onClick={() => openEdit(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid var(--app-primary-40, #002f5940)`, borderRadius: radius.sm, background: 'transparent', color: colors.bleu, cursor: 'pointer' }}>✏️</button>
+                    <button onClick={() => setCertificatModal(c)} style={{ marginRight: 8, padding: '6px 10px', border: `1px solid var(--app-accent-40, #ff763140)`, borderRadius: radius.sm, background: 'transparent', color: colors.orange, cursor: 'pointer' }}>🖨️</button>
                     <button onClick={() => handleDelete(c.id)} style={{ padding: '6px 10px', border: `1px solid ${colors.danger}40`, borderRadius: radius.sm, background: 'transparent', color: colors.danger, cursor: 'pointer' }}>🗑️</button>
                   </td>
                 </tr>
@@ -380,7 +380,7 @@ export default function GestionCongesPage() {
                   {/* Durée */}
                   <div style={{
                     background: colors.bleu + '08',
-                    border: `1px solid ${colors.bleu}22`,
+                    border: `1px solid var(--app-primary-22, #002f5922)`,
                     borderRadius: radius.sm,
                     padding: '12px 16px',
                     marginBottom: 24,
