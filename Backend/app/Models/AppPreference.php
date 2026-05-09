@@ -10,6 +10,7 @@ class AppPreference extends Model
         'app_name', 'app_slogan', 'app_initial',
         'primary_color', 'accent_color', 'theme_mode',
         'density', 'sidebar_default', 'language', 'currency',
-        'date_format', 'default_page',
+        'date_format', 'default_page', 'logo_url',
+        'phone', 'email', 'address', 'map_url', 'hours',
     ];
 }

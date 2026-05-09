@@ -22,6 +22,12 @@ return new class extends Migration
             $table->string('currency', 10)->default('FCFA');
             $table->string('date_format', 20)->default('DD/MM/YYYY');
             $table->string('default_page', 100)->default('/');
+            $table->string('logo_url', 500)->nullable();
+            $table->string('phone', 30)->default('+221 33 000 00 00');
+            $table->string('email', 100)->default('contact@senmed.sn');
+            $table->string('address', 300)->default('Dakar, Senegal');
+            $table->string('map_url', 500)->nullable();
+            $table->string('hours', 100)->default('Lun - Sam : 08h00 - 18h00');
             $table->timestamps();
         });
     }

@@ -28,14 +28,17 @@ function Ico({ name, size = 15 }) {
     case 'tag':         return <svg {...p}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
     case 'userPlus':    return <svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
     case 'calendarOk':  return <svg {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18m-9 5 2 2 4-4"/></svg>
+    case 'inbox':       return <svg {...p}><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
     case 'userX':       return <svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>
     case 'fileText':    return <svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     case 'settings':    return <svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    case 'globe':       return <svg {...p}><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/></svg>
     case 'shield':      return <svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     case 'flask':       return <svg {...p}><path d="M9 3h6M9 3v8L5.2 17A2 2 0 0 0 7 20h10a2 2 0 0 0 1.8-3L15 11V3"/></svg>
     case 'building':    return <svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 9v12M15 9v12"/></svg>
     case 'hospital':    return <svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
     case 'handshake':   return <svg {...p}><path d="M11 17 9 19l-7-7 4-4 2.5 2.5"/><path d="m13 7-5.5 5.5M9.5 14.5 11 16l7-7-4-4-2 2"/><path d="m14 6 3-3 4 4-3.5 3.5"/></svg>
+    case 'image':       return <svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     case 'crossMed':    return <svg {...p} fill="currentColor" stroke="none"><rect x="9.5" y="2" width="5" height="20" rx="2.5"/><rect x="2" y="9.5" width="20" height="5" rx="2.5"/></svg>
     case 'chevron':     return <svg {...p}><polyline points="6 9 12 15 18 9"/></svg>
     case 'logout':      return <svg {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
@@ -65,13 +68,16 @@ const navItemsDef = [
   {
     group: 'GESTION RDV', groupIcon: 'calendar',
     items: [
-      { to: '/rendezvous', label: 'Gestion des RDV', permission: 'rendezvous', icon: 'calendar' },
+      { to: '/rendezvous',          label: 'Gestion des RDV',  permission: 'rendezvous', icon: 'calendar'   },
+      { to: '/rendezvous/demandes', label: 'Demandes',          permission: 'rendezvous', icon: 'inbox'      },
+      { to: '/planning',            label: 'Emplois du temps',  permission: 'rendezvous', icon: 'calendarOk' },
     ],
   },
   {
     group: 'SOINS INFIRMIERS', groupIcon: 'activity',
     items: [
-      { to: '/dossier-soins', label: 'Dossier de Soins Infirmiers', permission: 'dossier-soins', icon: 'activity' },
+      { to: '/dossier-soins',        label: 'Dossier de Soins',  permission: 'dossier-soins', icon: 'activity' },
+      { to: '/dossier-soins/images', label: 'Galerie d\'images', permission: 'dossier-soins', icon: 'image'    },
     ],
   },
   {
@@ -100,6 +106,7 @@ const navItemsDef = [
     group: 'CONFIGURATION', groupIcon: 'settings',
     items: [
       { to: '/config-systeme',        label: 'Configuration système', permission: 'config-systeme',   icon: 'settings' },
+      { to: '/config-page-web',       label: 'Page web',              permission: 'config-systeme',   icon: 'globe' },
       { to: '/config-sanitaire',      label: 'Config. sanitaire',     permission: 'config-sanitaire', icon: 'hospital' },
       { to: '/formulaires',           label: 'Formulaires',           permission: 'formulaires',      icon: 'fileText' },
       { to: '/config-profils-droits', label: 'Profil et droits',      permission: 'profil-droits',    icon: 'shield' },

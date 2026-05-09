@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MailingConfigController;
 use App\Http\Controllers\Api\AppPreferenceController;
+use App\Http\Controllers\Api\WebPublicController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -276,6 +277,9 @@ Route::prefix('v1')->group(function () {
     | Module Rendez-Vous (Appointments)
     |--------------------------------------------------------------------------
     */
+    Route::get('appointments/demandes',          [AppointmentController::class, 'demandesListe']);
+    Route::patch('appointments/{id}/accepter',   [AppointmentController::class, 'accepter']);
+    Route::patch('appointments/{id}/rejeter',    [AppointmentController::class, 'rejeter']);
     Route::get('appointments/creneaux-disponibles', [AppointmentController::class, 'creneauxDisponibles']);
     Route::apiResource('appointments', AppointmentController::class)
         ->parameters(['appointments' => 'appointment']);
@@ -418,8 +422,10 @@ Route::prefix('v1')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    // Dashboard (avant apiResource pour éviter conflit de route)
-    Route::get('nursing-dossiers/dashboard', [NursingDossierController::class, 'dashboard']);
+    // Routes spéciales (avant apiResource pour éviter conflits)
+    Route::get('nursing-dossiers/dashboard',       [NursingDossierController::class, 'dashboard']);
+    Route::get('nursing-dossiers/images',          [NursingDossierController::class, 'imagesGallery']);
+    Route::post('nursing-dossiers/images/upload',  [NursingDossierController::class, 'quickUploadImage']);
 
     // CRUD principal
     Route::apiResource('nursing-dossiers', NursingDossierController::class)
@@ -496,5 +502,41 @@ Route::prefix('v1')->group(function () {
     */
     Route::get('app-preferences',  [AppPreferenceController::class, 'show']);
     Route::post('app-preferences', [AppPreferenceController::class, 'save']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Publique - Page Web
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('public')->group(function () {
+        Route::get('preferences', [WebPublicController::class, 'preferences']);
+        Route::get('slides',      [WebPublicController::class, 'slides']);
+        Route::get('about',       [WebPublicController::class, 'about']);
+        Route::get('services',    [WebPublicController::class, 'services']);
+        Route::get('specialistes', [WebPublicController::class, 'specialistes']);
+        Route::get('partenaires', [WebPublicController::class, 'partenaires']);
+        Route::post('contact',      [WebPublicController::class, 'contact']);
+        Route::post('appointments', [WebPublicController::class, 'publicAppointment']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Admin - Gestion Page Web
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('web/admin')->group(function () {
+        // Slides (diaporama)
+        Route::get('slides',                  [WebPublicController::class, 'adminSlidesList']);
+        Route::post('slides',                 [WebPublicController::class, 'adminSlidesStore']);
+        Route::put('slides/{id}',             [WebPublicController::class, 'adminSlidesUpdate']);
+        Route::delete('slides/{id}',          [WebPublicController::class, 'adminSlidesDestroy']);
+        Route::patch('slides/{id}/toggle',    [WebPublicController::class, 'adminSlidesToggle']);
+        // Section À propos
+        Route::get('about',                   [WebPublicController::class, 'adminAboutGet']);
+        Route::post('about',                  [WebPublicController::class, 'adminAboutSave']);
+        // Messages de contact
+        Route::get('contacts',                [WebPublicController::class, 'adminContactsList']);
+        Route::patch('contacts/{id}/read',    [WebPublicController::class, 'adminContactMarkRead']);
+    });
 
 });

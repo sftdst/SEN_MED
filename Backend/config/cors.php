@@ -19,8 +19,18 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // Origines autorisées (frontend Vite sur port 5173 ou 3000)
-    'allowed_origins' => ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'],
+    // Origines autorisées
+    'allowed_origins' => [
+      // Production
+      'https://lamadoneadn.com',
+      'https://www.lamadoneadn.com',
+      'https://admin.lamadoneadn.com',
+      'https://adnsoins.lamadoneadn.com',
+      // Développement local
+      'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176',
+      'http://127.0.0.1:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:5175', 'http://127.0.0.1:5176',
+      'http://localhost:3000', 'http://127.0.0.1:3000',
+    ],
 
     'allowed_origins_patterns' => [],
 

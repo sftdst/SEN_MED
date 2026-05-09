@@ -47,6 +47,12 @@ class AppPreferenceController extends Controller
             'currency'        => 'required|in:FCFA,EUR,USD',
             'date_format'     => 'required|in:DD/MM/YYYY,MM/DD/YYYY,YYYY-MM-DD',
             'default_page'    => 'required|string|max:100',
+            'logo_url'        => 'nullable|string|max:500',
+            'phone'           => 'nullable|string|max:30',
+            'email'           => 'nullable|string|max:100',
+            'address'         => 'nullable|string|max:300',
+            'map_url'         => 'nullable|string|max:500',
+            'hours'           => 'nullable|string|max:100',
         ]);
 
         $pref = AppPreference::first() ?? new AppPreference();

@@ -893,6 +893,142 @@ class NursingDossierController extends Controller
         ]);
     }
 
+    // ── GALERIE D'IMAGES ──────────────────────────────────────────────────────
+
+    /**
+     * GET /api/v1/nursing-dossiers/images
+     * Agrège toutes les images nursing avec métadonnées patient.
+     * Filtres : type, search, date_debut, date_fin
+     */
+    public function imagesGallery(Request $request): JsonResponse
+    {
+        $query = NursingSurveillance::with([
+            'dossier:id,patient_id',
+            'dossier.patient:patient_id,first_name,last_name,patient_code,patient_name',
+        ])
+        ->whereNotNull('images')
+        ->where('images', '!=', 'null')
+        ->where('images', '!=', '[]');
+
+        if ($request->filled('type') && $request->type !== 'tout') {
+            $query->where('type_surveillance', $request->type);
+        }
+        if ($request->filled('date_debut')) {
+            $query->whereDate('date_surveillance', '>=', $request->date_debut);
+        }
+        if ($request->filled('date_fin')) {
+            $query->whereDate('date_surveillance', '<=', $request->date_fin);
+        }
+        if ($request->filled('search')) {
+            $s = '%' . $request->search . '%';
+            $query->whereHas('dossier.patient', function ($q) use ($s) {
+                $q->where('patient_name', 'like', $s)
+                  ->orWhere('first_name',  'like', $s)
+                  ->orWhere('last_name',   'like', $s)
+                  ->orWhere('patient_code','like', $s);
+            });
+        }
+
+        $surveillances = $query->orderBy('date_surveillance', 'desc')->limit(100)->get();
+
+        $result = [];
+        foreach ($surveillances as $surv) {
+            $imgPaths = $surv->images ?? [];
+            if (!is_array($imgPaths) || empty($imgPaths)) continue;
+
+            $patient    = $surv->dossier?->patient;
+            $nomPatient = $patient
+                ? ($patient->patient_name ?? trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '')))
+                : 'Patient inconnu';
+
+            foreach ($imgPaths as $path) {
+                $result[] = [
+                    'key'             => $surv->id . '_' . md5($path),
+                    'path'            => $path,
+                    'url'             => Storage::disk('public')->url($path),
+                    'surveillance_id' => $surv->id,
+                    'dossier_id'      => $surv->dossier_id,
+                    'type'            => $surv->type_surveillance,
+                    'date'            => $surv->date_surveillance?->toDateString(),
+                    'observations'    => $surv->observations,
+                    'patient_name'    => $nomPatient,
+                    'patient_code'    => $patient?->patient_code,
+                ];
+            }
+        }
+
+        return response()->json(['success' => true, 'data' => $result, 'total' => count($result)]);
+    }
+
+    /**
+     * POST /api/v1/nursing-dossiers/images/upload
+     * Upload rapide depuis la galerie (crée une surveillance si inexistante ce jour).
+     */
+    public function quickUploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'dossier_id'   => 'required|integer|exists:nursing_dossiers,id',
+            'type'         => 'required|string|in:plaie,diabete,autre',
+            'date'         => 'nullable|date',
+            'observations' => 'nullable|string|max:1000',
+        ]);
+
+        $dossierId = $request->integer('dossier_id');
+        $type      = $request->input('type');
+        $date      = $request->input('date', now()->toDateString());
+
+        $surv = NursingSurveillance::firstOrCreate(
+            ['dossier_id' => $dossierId, 'type_surveillance' => $type, 'date_surveillance' => $date],
+            ['observations' => $request->input('observations', ''), 'images' => []]
+        );
+
+        $storagePath = "nursing/plaies/{$dossierId}";
+        $filename    = Str::uuid() . '.jpg';
+        $fullPath    = "{$storagePath}/{$filename}";
+
+        if ($request->hasFile('image')) {
+            $request->validate(['image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120']);
+            Storage::disk('public')->put($fullPath, file_get_contents($request->file('image')->getRealPath()));
+        } elseif ($request->filled('image_base64')) {
+            $base64 = $request->input('image_base64');
+            if (str_contains($base64, ',')) $base64 = explode(',', $base64, 2)[1];
+            $decoded = base64_decode($base64);
+            if ($decoded === false || strlen($decoded) < 100) {
+                return response()->json(['message' => 'Image base64 invalide.'], 422);
+            }
+            Storage::disk('public')->put($fullPath, $decoded);
+        } else {
+            return response()->json(['message' => 'Aucune image fournie.'], 422);
+        }
+
+        $images   = $surv->images ?? [];
+        $images[] = $fullPath;
+        $surv->update(['images' => $images]);
+
+        $dossier    = NursingDossier::with('patient:patient_id,patient_name,first_name,last_name,patient_code')->find($dossierId);
+        $patient    = $dossier?->patient;
+        $nomPatient = $patient
+            ? ($patient->patient_name ?? trim(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '')))
+            : 'Patient inconnu';
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'key'             => $surv->id . '_' . md5($fullPath),
+                'path'            => $fullPath,
+                'url'             => Storage::disk('public')->url($fullPath),
+                'surveillance_id' => $surv->id,
+                'dossier_id'      => $dossierId,
+                'type'            => $type,
+                'date'            => $date,
+                'observations'    => $request->input('observations', ''),
+                'patient_name'    => $nomPatient,
+                'patient_code'    => $patient?->patient_code,
+            ],
+            'message' => 'Image ajoutée avec succès.',
+        ], 201);
+    }
+
     // ── DASHBOARD ─────────────────────────────────────────────────────────────
 
     /**

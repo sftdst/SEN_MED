@@ -167,6 +167,9 @@ export const rendezVousApi = {
   creer:                (data)     => api.post('/appointments', data),
   modifier:             (id, data) => api.put(`/appointments/${id}`, data),
   supprimer:            (id)       => api.delete(`/appointments/${id}`),
+  demandes:             (params)   => api.get('/appointments/demandes', { params }),
+  accepter:             (id, data) => api.patch(`/appointments/${id}/accepter`, data),
+  rejeter:              (id, data) => api.patch(`/appointments/${id}/rejeter`, data),
   creneauxDisponibles:  (params)   => api.get('/appointments/creneaux-disponibles', { params }),
 }
 
@@ -337,6 +340,11 @@ export const nursingApi = {
   // Surveillances (plaie / diabète)
   getSurveillances:    (id, params)   => api.get(`/nursing-dossiers/${id}/surveillances`, { params }),
   storeSurveillance:   (id, data)     => api.post(`/nursing-dossiers/${id}/surveillances`, data),
+  // Galerie globale d'images
+  imagesGallery:       (params)       => api.get('/nursing-dossiers/images', { params }),
+  quickUpload:         (data)         => api.post('/nursing-dossiers/images/upload', data),
+  deleteImage:         (dossierId, survId, path) =>
+    api.delete(`/nursing-dossiers/${dossierId}/surveillances/${survId}/images`, { data: { path } }),
 }
 
 // ── Rôles et Permissions ───────────────────────────────────────
@@ -376,6 +384,33 @@ export const ficheAttApi = {
   webcam:    (data)   => api.post('/fiches-att', data),
   supprimer: (id)     => api.delete(`/fiches-att/${id}`),
   serveUrl:  (id)     => `${api.defaults.baseURL}/fiches-att/${id}/serve`,
+}
+
+// ── Page Web Publique ────────────────────────────────────────────
+export const webPageApi = {
+  preferences: () => api.get('/public/preferences'),
+  slides:      () => api.get('/public/slides'),
+  about:       () => api.get('/public/about'),
+  services:    () => api.get('/public/services'),
+  specialistes:() => api.get('/public/specialistes'),
+  partenaires: () => api.get('/public/partenaires'),
+  contact:     (data) => api.post('/public/contact', data),
+}
+
+// ── Administration Page Web ──────────────────────────────────────
+export const webAdminApi = {
+  // Diaporama (slides)
+  slides:       ()           => api.get('/web/admin/slides'),
+  createSlide:  (data)       => api.post('/web/admin/slides', data),
+  updateSlide:  (id, data)   => api.put(`/web/admin/slides/${id}`, data),
+  deleteSlide:  (id)         => api.delete(`/web/admin/slides/${id}`),
+  toggleSlide:  (id)         => api.patch(`/web/admin/slides/${id}/toggle`),
+  // Section À propos
+  about:        ()           => api.get('/web/admin/about'),
+  saveAbout:    (data)       => api.post('/web/admin/about', data),
+  // Messages de contact reçus
+  contacts:     ()           => api.get('/web/admin/contacts'),
+  markRead:     (id)         => api.patch(`/web/admin/contacts/${id}/read`),
 }
  
  

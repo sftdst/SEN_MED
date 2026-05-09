@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('nursing_dossiers', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('patient_id');
-            $table->bigInteger('adt_id')->nullable();
+            $table->unsignedBigInteger('adt_id')->nullable();
             $table->bigInteger('hospital_id')->default(1);
             $table->date('date_debut');
             $table->date('date_fin')->nullable();

@@ -4,9 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Patient;
+use App\Models\MailingConfig;
+use App\Models\Personnel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class AppointmentController extends Controller
@@ -187,6 +192,235 @@ class AppointmentController extends Controller
             ->update($validated);
 
         return response()->json(['success' => true, 'message' => 'Rendez-vous mis à jour']);
+    }
+
+    /**
+     * Liste des demandes issues du site web
+     */
+    public function demandesListe(Request $request): JsonResponse
+    {
+        $query = DB::table('app_txn_appointments')
+            ->where('created_user_id', 'WEB')
+            ->orderBy('created_dttm', 'desc');
+
+        if ($request->filled('statut')) {
+            $query->where('statut_app', $request->statut);
+        }
+        if ($request->filled('date_debut')) {
+            $query->whereDate('appointment_date', '>=', $request->date_debut);
+        }
+        if ($request->filled('date_fin')) {
+            $query->whereDate('appointment_date', '<=', $request->date_fin);
+        }
+        if ($request->filled('recherche')) {
+            $q = '%' . $request->recherche . '%';
+            $query->where(function ($sub) use ($q) {
+                $sub->where('nom_personne', 'like', $q)
+                    ->orWhere('telephone',   'like', $q)
+                    ->orWhere('email',       'like', $q)
+                    ->orWhere('appointment_id', 'like', $q);
+            });
+        }
+
+        return response()->json(['success' => true, 'data' => $query->get()]);
+    }
+
+    /**
+     * Accepter une demande — assigne médecin/créneau/type et envoie l'email de confirmation
+     */
+    public function accepter(Request $request, string $id): JsonResponse
+    {
+        $data = $request->validate([
+            'consulting_doctor_id' => 'required|string|max:20',
+            'appointment_date'     => 'nullable|date',
+            'start_time'           => 'required|date_format:H:i',
+            'end_time'             => 'required|date_format:H:i',
+            'appointment_type'     => 'nullable|string|max:20',
+        ]);
+
+        $demande = DB::table('app_txn_appointments')
+            ->where('appointment_id', $id)
+            ->where('created_user_id', 'WEB')
+            ->first();
+
+        if (!$demande) {
+            return response()->json(['success' => false, 'message' => 'Demande introuvable'], 404);
+        }
+
+        $dateStr = Carbon::parse($data['appointment_date'] ?? $demande->appointment_date)->toDateString();
+
+        DB::table('app_txn_appointments')
+            ->where('appointment_id', $id)
+            ->update([
+                'consulting_doctor_id' => $data['consulting_doctor_id'],
+                'appointment_date'     => $dateStr,
+                'start_time'           => $dateStr . ' ' . $data['start_time'] . ':00',
+                'end_time'             => $dateStr . ' ' . $data['end_time'] . ':00',
+                'appointment_type'     => $data['appointment_type'] ?? 'consultation',
+                'statut_app'           => 1,
+            ]);
+
+        // Nom du médecin pour l'email
+        $medecin = Personnel::find((int) $data['consulting_doctor_id']);
+        $doctorName = $medecin
+            ? 'Dr. ' . ($medecin->staff_name ?? trim(($medecin->first_name ?? '') . ' ' . ($medecin->last_name ?? '')))
+            : null;
+
+        // Email de confirmation
+        if ($demande->email) {
+            try {
+                $dateFormatted = Carbon::parse($dateStr)->locale('fr')->isoFormat('dddd D MMMM YYYY');
+                $html = $this->buildConfirmationHtml(
+                    $demande->nom_personne ?? 'Patient',
+                    $dateFormatted,
+                    $data['start_time'],
+                    $data['end_time'],
+                    $doctorName,
+                    $data['appointment_type'] ?? 'consultation',
+                    $id
+                );
+                $this->sendMail($demande->email, $demande->nom_personne ?? 'Patient', 'Confirmation de votre rendez-vous', $html);
+            } catch (\Exception $e) {
+                Log::warning('Mail confirmation RDV non envoyé: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Demande acceptée — email de confirmation envoyé']);
+    }
+
+    /**
+     * Rejeter une demande — envoie l'email de rejet avec motif
+     */
+    public function rejeter(Request $request, string $id): JsonResponse
+    {
+        $demande = DB::table('app_txn_appointments')
+            ->where('appointment_id', $id)
+            ->where('created_user_id', 'WEB')
+            ->first();
+
+        if (!$demande) {
+            return response()->json(['success' => false, 'message' => 'Demande introuvable'], 404);
+        }
+
+        $motif = trim($request->input('motif', ''));
+
+        DB::table('app_txn_appointments')
+            ->where('appointment_id', $id)
+            ->update([
+                'statut_app'          => 2,
+                'motif_annule_report' => $motif ?: null,
+            ]);
+
+        // Email de rejet
+        if ($demande->email) {
+            try {
+                $html = $this->buildRejetHtml(
+                    $demande->nom_personne ?? 'Patient',
+                    Carbon::parse($demande->appointment_date)->locale('fr')->isoFormat('dddd D MMMM YYYY'),
+                    $motif,
+                    $id
+                );
+                $this->sendMail($demande->email, $demande->nom_personne ?? 'Patient', 'Votre demande de rendez-vous', $html);
+            } catch (\Exception $e) {
+                Log::warning('Mail rejet RDV non envoyé: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Demande rejetée — email envoyé']);
+    }
+
+    // ── Helpers mail ──────────────────────────────────────────────────────────
+
+    private function sendMail(string $to, string $toName, string $subject, string $html): void
+    {
+        $cfg = MailingConfig::first();
+        if (!$cfg) {
+            throw new \RuntimeException('Configuration mail non trouvée');
+        }
+
+        Config::set('mail.mailers.smtp', [
+            'transport'  => 'smtp',
+            'host'       => $cfg->host,
+            'port'       => (int) $cfg->port,
+            'encryption' => $cfg->encryption === 'none' ? null : $cfg->encryption,
+            'username'   => $cfg->username,
+            'password'   => $cfg->password,
+        ]);
+        Config::set('mail.from.address', $cfg->from_email);
+        Config::set('mail.from.name',    $cfg->from_name);
+
+        Mail::html($html, function ($msg) use ($to, $toName, $subject, $cfg) {
+            $msg->to($to, $toName)
+                ->from($cfg->from_email, $cfg->from_name)
+                ->subject($subject);
+        });
+    }
+
+    private function buildConfirmationHtml(string $nom, string $date, string $debut, string $fin, ?string $medecin, string $type, string $ref): string
+    {
+        $typeLabel = match($type) {
+            'bilan'       => 'Bilan médical',
+            'suivi'       => 'Suivi médical',
+            'urgence'     => 'Urgence',
+            'visite'      => 'Visite à domicile',
+            'autre'       => 'Autre',
+            default       => 'Consultation',
+        };
+        $medecinLine = $medecin ? "<p><strong>👨‍⚕️ Médecin :</strong> {$medecin}</p>" : '';
+
+        return <<<HTML
+<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif">
+<div style="max-width:580px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.10)">
+  <div style="background:#003268;padding:28px 32px">
+    <h1 style="margin:0;color:#fff;font-size:20px">✅ Rendez-vous confirmé</h1>
+  </div>
+  <div style="padding:28px 32px">
+    <p style="font-size:15px;color:#333">Bonjour <strong>{$nom}</strong>,</p>
+    <p style="font-size:14px;color:#555">Votre demande de rendez-vous a été <strong style="color:#2e7d32">acceptée</strong>. Voici les détails :</p>
+    <div style="background:#f0f7f0;border:1px solid #c8e6c9;border-radius:8px;padding:18px 20px;margin:20px 0">
+      <p style="margin:6px 0"><strong>📅 Date :</strong> {$date}</p>
+      <p style="margin:6px 0"><strong>🕐 Horaire :</strong> {$debut} – {$fin}</p>
+      {$medecinLine}
+      <p style="margin:6px 0"><strong>🏥 Type :</strong> {$typeLabel}</p>
+      <p style="margin:6px 0"><strong>📋 Référence :</strong> <code>{$ref}</code></p>
+    </div>
+    <p style="font-size:14px;color:#555">Merci de vous présenter quelques minutes avant l'heure prévue. En cas d'empêchement, merci de nous prévenir.</p>
+  </div>
+  <div style="background:#f8f9fa;padding:16px 32px;font-size:12px;color:#999;text-align:center">
+    Ce message a été envoyé automatiquement — merci de ne pas y répondre directement.
+  </div>
+</div>
+</body></html>
+HTML;
+    }
+
+    private function buildRejetHtml(string $nom, string $date, string $motif, string $ref): string
+    {
+        $motifLine = $motif ? "<p style='margin:6px 0'><strong>Motif :</strong> {$motif}</p>" : '';
+
+        return <<<HTML
+<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif">
+<div style="max-width:580px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.10)">
+  <div style="background:#003268;padding:28px 32px">
+    <h1 style="margin:0;color:#fff;font-size:20px">📋 Demande de rendez-vous</h1>
+  </div>
+  <div style="padding:28px 32px">
+    <p style="font-size:15px;color:#333">Bonjour <strong>{$nom}</strong>,</p>
+    <p style="font-size:14px;color:#555">Nous avons bien reçu votre demande de rendez-vous du <strong>{$date}</strong>, mais nous ne sommes malheureusement pas en mesure de la confirmer.</p>
+    <div style="background:#fdecea;border:1px solid #f5c6cb;border-radius:8px;padding:18px 20px;margin:20px 0">
+      <p style="margin:6px 0"><strong>📋 Référence :</strong> <code>{$ref}</code></p>
+      {$motifLine}
+    </div>
+    <p style="font-size:14px;color:#555">N'hésitez pas à nous recontacter pour fixer une nouvelle date ou à utiliser notre formulaire de demande de rendez-vous.</p>
+  </div>
+  <div style="background:#f8f9fa;padding:16px 32px;font-size:12px;color:#999;text-align:center">
+    Ce message a été envoyé automatiquement — merci de ne pas y répondre directement.
+  </div>
+</div>
+</body></html>
+HTML;
     }
 
     /**

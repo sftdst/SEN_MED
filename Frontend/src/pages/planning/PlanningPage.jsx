@@ -69,7 +69,7 @@ const TABS = [
   { key: 'semaine',     label: '📅 Planning Semaine' },
   { key: 'mois',        label: '🗓️ Calendrier Mois' },
   { key: 'stats',       label: '📊 Tableau de bord' },
-  { key: 'horaires',    label: '🕐 Horaires CRUD' },
+  { key: 'horaires',    label: '🕐 Emplois du temps' },
   { key: 'exceptions',  label: '🚫 Absences' },
   { key: 'feries',      label: '🏖️ Jours fériés' },
   { key: 'dispos',      label: '⭐ Dispos fériés' },
@@ -914,7 +914,7 @@ function PlanningHebdomadaire({ medecins }) {
     { key: 'IDmedecin_horaire', title: 'Actions', align: 'center', width: 100,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-          <Button size="sm" variant="secondary" onClick={() => openEdit(r)}>✏️</Button>
+          <Button size="sm" variant="secondary" onClick={() => openEdit(r)}>Modifier</Button>
           <Button size="sm" variant="danger"    onClick={() => setConfirm(r)}>🗑️</Button>
         </div>
       )
@@ -926,7 +926,7 @@ function PlanningHebdomadaire({ medecins }) {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         <Select name="filterMed" value={filterMed} onChange={e => setFilterMed(e.target.value)}
           options={medOptions} placeholder="Filtrer par médecin" style={{ minWidth: 260, marginBottom: 0 }} />
-        <Button onClick={openCreate} icon="➕">Ajouter une plage</Button>
+        <Button onClick={openCreate} icon="➕">Nouveau planning</Button>
         <div style={{ color: colors.gray500, fontSize: 13, marginLeft: 'auto' }}>{data.length} plage(s)</div>
       </div>
 
@@ -1023,7 +1023,7 @@ function Exceptions({ medecins }) {
     { key: 'IDmedecin_exception', title: 'Actions', align: 'center', width: 100,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-          <Button size="sm" variant="secondary" onClick={() => openEdit(r)}>✏️</Button>
+          <Button size="sm" variant="secondary" onClick={() => openEdit(r)}>Modifier</Button>
           <Button size="sm" variant="danger"    onClick={() => setConfirm(r)}>🗑️</Button>
         </div>
       )
@@ -1106,7 +1106,7 @@ function JoursFeries() {
     { key: 'IDjour_ferie', title: 'Actions', align: 'center', width: 100,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-          <Button size="sm" variant="secondary" onClick={() => openEdit(r)}>✏️</Button>
+          <Button size="sm" variant="secondary" onClick={() => openEdit(r)}>Modifier</Button>
           <Button size="sm" variant="danger"    onClick={() => setConfirm(r)}>🗑️</Button>
         </div>
       )
@@ -1192,7 +1192,7 @@ function FerieDisponibilites({ medecins }) {
     { key: 'IDmedecin_ferie', title: 'Actions', align: 'center', width: 100,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-          <Button size="sm" variant="secondary" onClick={() => openEdit(r)}>✏️</Button>
+          <Button size="sm" variant="secondary" onClick={() => openEdit(r)}>Modifier</Button>
           <Button size="sm" variant="danger"    onClick={() => setConfirm(r)}>🗑️</Button>
         </div>
       )
@@ -1237,7 +1237,7 @@ function FerieDisponibilites({ medecins }) {
 // PAGE PRINCIPALE
 // ──────────────────────────────────────────────────────────
 export default function PlanningPage() {
-  const [tab,      setTab]      = useState('semaine')
+  const [tab,      setTab]      = useState('horaires')
   const [medecins, setMedecins] = useState([])
 
   useEffect(() => {
@@ -1288,3 +1288,5 @@ export default function PlanningPage() {
     </div>
   )
 }
+
+

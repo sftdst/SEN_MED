@@ -2,7 +2,6 @@
 import { colors, radius, shadows } from '../../theme'
 import { mailingApi } from '../../api/index'
 import { useTheme } from '../../contexts/ThemeContext'
-
 const MENU_ITEMS = [
   { key: 'accueil',       label: 'Tableau de bord',       icon: '🏠' },
   { key: 'pays',          label: 'Pays',                  icon: '🌍' },
