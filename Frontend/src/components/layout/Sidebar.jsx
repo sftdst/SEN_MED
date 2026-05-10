@@ -260,7 +260,7 @@ function NavGroup({ group, collapsed }) {
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-export default function Sidebar({ collapsed = false }) {
+export default function Sidebar({ collapsed = false, isMobile = false, isOpen = false, onClose }) {
   const { hasPermission, user, logout } = useAuth()
   const { prefs } = useTheme()
   const W = collapsed ? 66 : 248
@@ -281,6 +281,14 @@ export default function Sidebar({ collapsed = false }) {
     }
   }, [])
 
+  // Fermer la sidebar mobile lors d'une navigation
+  const location = useLocation()
+  useEffect(() => {
+    if (isMobile && isOpen && onClose) {
+      onClose()
+    }
+  }, [location.pathname, isMobile, isOpen, onClose])
+
   const filteredNav = navItemsDef
     .map(g => ({ ...g, items: g.items.filter(it => !it.permission || hasPermission(it.permission)) }))
     .filter(g => g.items.length > 0)
@@ -289,17 +297,47 @@ export default function Sidebar({ collapsed = false }) {
     ? user.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('')
     : 'U'
 
+  // Largeurs
+  const W = collapsed ? 66 : 248
+  const mobileWidth = 260
+  // En mobile, on affiche toujours les labels (pas de mode collapsed)
+  const displayCollapsed = isMobile ? false : collapsed
+
+  // Style de base commun
+  const baseCommon = {
+    background: 'linear-gradient(175deg, #003268 0%, #001e3d 100%)',
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    boxShadow: '4px 0 28px rgba(0,0,0,0.32)',
+  }
+
+  // Style final selon le mode
+  const asideStyle = isMobile
+    ? {
+        ...baseCommon,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: mobileWidth,
+        minWidth: mobileWidth,
+        transform: `translateX(${isOpen ? 0 : '-100%'})`,
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 1000,
+      }
+    : {
+        ...baseCommon,
+        width: W,
+        minWidth: W,
+        position: 'sticky',
+        top: 0,
+        transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 100,
+      }
+
   return (
-    <aside style={{
-      width: W, minWidth: W,
-      background: 'linear-gradient(175deg, #003268 0%, #001e3d 100%)',
-      height: '100vh',
-      position: 'sticky', top: 0,
-      display: 'flex', flexDirection: 'column',
-      transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-      overflow: 'hidden', zIndex: 100,
-      boxShadow: '4px 0 28px rgba(0,0,0,0.32)',
-    }}>
+    <aside style={asideStyle}>
 
       {/* Barre accent en haut */}
       <div style={{
@@ -349,7 +387,7 @@ export default function Sidebar({ collapsed = false }) {
         padding: '4px 0 12px',
       }}>
         {filteredNav.map((group, idx) => (
-          <NavGroup key={idx} group={group} collapsed={collapsed} />
+          <NavGroup key={idx} group={group} collapsed={displayCollapsed} />
         ))}
       </nav>
 

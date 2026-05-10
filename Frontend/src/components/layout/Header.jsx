@@ -44,7 +44,7 @@ if (!document.getElementById(STYLE_ID)) {
   document.head.appendChild(s)
 }
 
-export default function Header({ onToggleSidebar }) {
+export default function Header({ onToggleSidebar, isMobile, onToggleMobileSidebar, mobileSidebarOpen }) {
   const { pathname } = useLocation()
   const { logout, user } = useAuth()
   const { setChatOpen, chatOpen, unreadTotal, currentUser, hasNewMsg } = useChat()
@@ -53,40 +53,61 @@ export default function Header({ onToggleSidebar }) {
   const displayName = currentUser?.display_name || user?.first_name || user?.nom || 'Utilisateur'
   const initials = displayName.substring(0, 1).toUpperCase()
 
+  // Styles conditionnels
+  const headerStyle = {
+    height: 60,
+    background: colors.white,
+    borderBottom: `1px solid ${colors.gray200}`,
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0 24px',
+    gap: 16,
+    position: 'sticky',
+    top: 0,
+    zIndex: 50,
+    boxShadow: shadows.sm,
+  }
+
+  if (isMobile) {
+    headerStyle.padding = '0 12px'
+    headerStyle.height = 56
+    headerStyle.minHeight = 56
+    headerStyle.gap = 8
+  }
+
   return (
-    <header style={{
-      height: 60,
-      background: colors.white,
-      borderBottom: `1px solid ${colors.gray200}`,
-      display: 'flex', alignItems: 'center',
-      padding: '0 24px', gap: 16,
-      position: 'sticky', top: 0, zIndex: 50,
-      boxShadow: shadows.sm,
-    }}>
+    <header style={headerStyle}>
 
       {/* Toggle sidebar */}
       <button
-        onClick={onToggleSidebar}
+        onClick={isMobile ? onToggleMobileSidebar : onToggleSidebar}
+        title={isMobile ? (mobileSidebarOpen ? 'Fermer le menu' : 'Ouvrir le menu') : 'Menu'}
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          color: colors.gray600, fontSize: 20, padding: 4,
+          color: colors.gray600,
+          fontSize: isMobile ? 18 : 20,
+          padding: isMobile ? 2 : 4,
           display: 'flex', alignItems: 'center',
         }}
-      >☰</button>
+      >
+        {isMobile ? (mobileSidebarOpen ? '✕' : '☰') : '☰'}
+      </button>
 
       {/* Breadcrumb */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ color: colors.gray400, fontSize: 13 }}>SenMed</span>
-        <span style={{ color: colors.gray300, fontSize: 13 }}>/</span>
+        {!isMobile && <span style={{ color: colors.gray400, fontSize: 13 }}>SenMed</span>}
+        {!isMobile && <span style={{ color: colors.gray300, fontSize: 13 }}>/</span>}
         <span style={{ color: colors.bleu, fontSize: 14, fontWeight: 600 }}>{title}</span>
       </div>
 
       <div style={{ flex: 1 }} />
 
       {/* Date */}
-      <div style={{ fontSize: 13, color: colors.gray500 }}>
-        {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-      </div>
+      {!isMobile && (
+        <div style={{ fontSize: 13, color: colors.gray500 }}>
+          {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </div>
+      )}
 
       {/* Chat button */}
       <button
@@ -129,24 +150,28 @@ export default function Header({ onToggleSidebar }) {
       </button>
 
       {/* Notification bell */}
-      <div style={{
-        width: 38, height: 38, borderRadius: '50%',
-        background: colors.gray100,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer', fontSize: 17, position: 'relative',
-      }}>
-        🔔
-        <span style={{
-          position: 'absolute', top: 7, right: 7,
-          width: 8, height: 8, borderRadius: '50%',
-          background: colors.orange,
-        }} />
-      </div>
+      {!isMobile && (
+        <div style={{
+          width: 38, height: 38, borderRadius: '50%',
+          background: colors.gray100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', fontSize: 17, position: 'relative',
+        }}>
+          🔔
+          <span style={{
+            position: 'absolute', top: 7, right: 7,
+            width: 8, height: 8, borderRadius: '50%',
+            background: colors.orange,
+          }} />
+        </div>
+      )}
 
       {/* User name */}
-      <span style={{ fontSize: 13, color: colors.gray600, fontWeight: 500 }}>
-        {displayName}
-      </span>
+      {!isMobile && (
+        <span style={{ fontSize: 13, color: colors.gray600, fontWeight: 500 }}>
+          {displayName}
+        </span>
+      )}
 
       {/* Avatar + logout */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
