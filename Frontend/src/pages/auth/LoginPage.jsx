@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
+import api from '../../api/axios'
 
 /* ── Styles globaux ─────────────────────────────────────────────────────── */
 const STYLE_ID = 'senmed-login-v3'
@@ -116,12 +117,96 @@ if (!document.getElementById(STYLE_ID)) {
 }
 
 /* ── Composant ───────────────────────────────────────────────────────────── */
+function ForgotPasswordModal({ accent, onClose }) {
+  const [email,   setEmail]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [done,    setDone]    = useState(false)
+  const [err,     setErr]     = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!email) return
+    setLoading(true); setErr('')
+    try {
+      await api.post('/auth/forgot-password', { email })
+      setDone(true)
+    } catch {
+      setErr('Une erreur est survenue. Veuillez réessayer.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 100, padding: 16, fontFamily: "'Inter', sans-serif",
+    }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{
+        background: '#fff', borderRadius: 18, width: '100%', maxWidth: 400,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden',
+      }}>
+        <div style={{ height: 4, background: `linear-gradient(90deg, #003268, ${accent})` }} />
+        <div style={{ padding: '28px 28px 24px' }}>
+          {done ? (
+            <div style={{ textAlign: 'center', padding: '8px 0' }}>
+              <div style={{ fontSize: 44, marginBottom: 12 }}>📧</div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: '#1e293b', marginBottom: 8 }}>Email envoyé !</div>
+              <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
+                Si un compte existe avec cet email, vous recevrez un mot de passe temporaire dans quelques instants.
+              </div>
+              <button onClick={onClose} style={{
+                marginTop: 20, padding: '10px 28px', borderRadius: 10, border: 'none',
+                background: accent, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              }}>Fermer</button>
+            </div>
+          ) : (
+            <>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b', marginBottom: 6 }}>Mot de passe oublié</div>
+                <div style={{ fontSize: 13, color: '#64748b' }}>
+                  Entrez votre email. Si le compte existe, vous recevrez un mot de passe temporaire.
+                </div>
+              </div>
+              {err && <div style={{ background: '#fef2f2', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626', marginBottom: 14 }}>{err}</div>}
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <input
+                  className="lg-input"
+                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="votre@email.com" autoFocus disabled={loading}
+                  style={{ paddingLeft: 14 }}
+                />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type="button" onClick={onClose} style={{
+                    flex: 1, padding: '11px', borderRadius: 10, border: '1.5px solid #e2e8f0',
+                    background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151',
+                  }}>Annuler</button>
+                  <button type="submit" disabled={loading || !email} style={{
+                    flex: 2, padding: '11px', borderRadius: 10, border: 'none',
+                    background: loading || !email ? '#9ca3af' : accent,
+                    color: '#fff', cursor: loading || !email ? 'not-allowed' : 'pointer',
+                    fontSize: 13, fontWeight: 700,
+                  }}>
+                    {loading ? 'Envoi...' : 'Envoyer le lien'}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function LoginPage() {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [showPwd,  setShowPwd]  = useState(false)
   const [loading,  setLoading]  = useState(false)
   const [focus,    setFocus]    = useState(null)
+  const [forgotOpen, setForgotOpen] = useState(false)
   const emailRef = useRef()
 
   const { login, error, isAuthenticated } = useAuth()
@@ -408,7 +493,25 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
+
+            {/* Lien mot de passe oublié */}
+            <div className="row-anim" style={{ animationDelay:'.26s', textAlign:'center', marginTop:14 }}>
+              <button type="button" onClick={() => setForgotOpen(true)} style={{
+                background:'none', border:'none', cursor:'pointer',
+                fontSize:12, color:'#9ca3af', fontFamily:"'Inter',sans-serif",
+                textDecoration:'underline', textDecorationColor:'#d1d5db',
+                transition:'color .2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = accent}
+              onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+              >
+                Mot de passe oublié ?
+              </button>
+            </div>
           </form>
+
+          {/* Modal mot de passe oublié */}
+          {forgotOpen && <ForgotPasswordModal accent={accent} onClose={() => setForgotOpen(false)} />}
 
         </div>
 

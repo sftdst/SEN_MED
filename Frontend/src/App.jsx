@@ -35,6 +35,7 @@ import DossierSoinsPage from './pages/dossierSoins/DossierSoinsPage'
 import DossierSoinsDetailPage from './pages/dossierSoins/DossierSoinsDetailPage'
 import ImagesNursingPage from './pages/dossierSoins/ImagesNursingPage'
 import DPEPage from './pages/patients/DPEPage'
+import UsersPage from './pages/configUtilisateurs/UsersPage'
 import LoginPage from './pages/auth/LoginPage'
 
 function AppRoutes() {
@@ -81,6 +82,7 @@ function AppRoutes() {
         <Route path="ressources-humaines/contrats" element={<GestionContratsPage />} />
         <Route path="dossier-soins"        element={<DossierSoinsPage />} />
         <Route path="dossier-soins/images" element={<ImagesNursingPage />} />
+        <Route path="config-utilisateurs"  element={<UsersPage />} />
        </Route>
 
        {/* Consultation et DSI hors Layout (protégés) */}
