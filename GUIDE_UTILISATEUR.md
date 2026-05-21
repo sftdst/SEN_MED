@@ -1,731 +1,412 @@
-# Guide Technique & Utilisateur — SenMed
+# Guide Utilisateur — Plateforme SEN MED
 
-> **Plateforme de gestion médicale intégrée**  
-> Version : 1.0 — Avril 2026  
-> Développé par : **DST Computing**
+> Version 2.0 · Mai 2026 · ADN Soins
 
 ---
 
 ## Table des matières
 
-1. [Présentation générale](#1-présentation-générale)
-2. [Architecture technique](#2-architecture-technique)
-3. [Installation & démarrage](#3-installation--démarrage)
-4. [Navigation dans l'application](#4-navigation-dans-lapplication)
-5. [Module Accueil & Tableau de bord](#5-module-accueil--tableau-de-bord)
-6. [Module Patients](#6-module-patients)
-7. [Module Visites](#7-module-visites)
-8. [Module Salle d'attente](#8-module-salle-dattente)
-9. [Module Consultation](#9-module-consultation)
-10. [Module Hospitalisation](#10-module-hospitalisation)
-11. [Module Transferts](#11-module-transferts)
-12. [Module Rendez-vous](#12-module-rendez-vous)
-13. [Module Espace Médecin](#13-module-espace-médecin)
-14. [Module Pharmacie](#14-module-pharmacie)
-15. [Module Comptabilité & Paiements](#15-module-comptabilité--paiements)
-16. [Module Ressources Humaines](#16-module-ressources-humaines)
-17. [Module Configuration](#17-module-configuration)
-18. [Module Formulaires (Modèles de documents)](#18-module-formulaires-modèles-de-documents)
-19. [Structure de la base de données](#19-structure-de-la-base-de-données)
-20. [API Backend — Référence rapide](#20-api-backend--référence-rapide)
+1. [Connexion et accès](#1-connexion-et-accès)
+2. [Navigation générale](#2-navigation-générale)
+3. [Tableau de bord](#3-tableau-de-bord)
+4. [Patients](#4-patients)
+5. [Visites et Consultations](#5-visites-et-consultations)
+6. [Rendez-vous](#6-rendez-vous)
+7. [Planning du personnel](#7-planning-du-personnel)
+8. [Hospitalisation](#8-hospitalisation)
+9. [Dossier de Soins Infirmiers (DSI)](#9-dossier-de-soins-infirmiers-dsi)
+10. [Pharmacie](#10-pharmacie)
+11. [Comptabilité et Paiements](#11-comptabilité-et-paiements)
+12. [Formulaires et Certificats](#12-formulaires-et-certificats)
+13. [Configuration système](#13-configuration-système)
+14. [FAQ et problèmes courants](#14-faq-et-problèmes-courants)
 
 ---
 
-## 1. Présentation générale
+## 1. Connexion et accès
 
-**SenMed** est une plateforme de gestion médicale complète conçue pour les établissements de santé (cliniques, hôpitaux, centres de santé). Elle centralise l'ensemble des flux administratifs, cliniques et financiers dans une interface web unifiée.
+### 1.1 Se connecter
 
-### Fonctionnalités couvertes
+1. Ouvrez le navigateur et accédez à l'adresse de l'application.
+2. Saisissez votre **adresse email** et votre **mot de passe**.
+3. Cliquez sur **Se connecter**.
 
-| Domaine | Fonctionnalités |
-|---------|----------------|
-| **Clinique** | Patients, visites, consultations, signes vitaux, prescriptions, examens |
-| **Hospitalisation** | Gestion des chambres, admissions, sorties, transferts |
-| **Rendez-vous** | Planning médecin, créneaux, réservations |
-| **Pharmacie** | Stock, commandes, fournisseurs, approvisionnements, inventaires |
-| **Comptabilité** | Facturation automatique, paiements, crédits patients, partenaires |
-| **Ressources humaines** | Personnel, congés, absences, contrats |
-| **Configuration** | Paramétrage système, tarification, formulaires de documents |
+> **Remarque :** Seuls les comptes avec le statut **Actif** peuvent se connecter. Si votre compte est désactivé, contactez l'administrateur.
 
----
+### 1.2 Première connexion
 
-## 2. Architecture technique
+Lors de votre première connexion (ou après une réinitialisation de mot de passe par un administrateur), une fenêtre s'affiche automatiquement avec deux choix :
 
-### Stack Frontend
+- **Conserver** : garde le mot de passe temporaire fourni. Vous pourrez le modifier plus tard depuis votre profil.
+- **Changer mon mot de passe** : saisissez le mot de passe temporaire reçu, choisissez un nouveau mot de passe (minimum 6 caractères) et confirmez-le.
 
-| Technologie | Version | Rôle |
-|-------------|---------|------|
-| **React** | 19.2 | Framework UI |
-| **React Router DOM** | 7.14 | Navigation SPA |
-| **Vite** | 8.0 | Build & serveur dev |
-| **Axios** | 1.14 | Appels API HTTP |
-| **Recharts** | 3.8 | Graphiques & courbes |
-| **React Big Calendar** | 1.19 | Planning |
-| **QRCode.react** | 4.2 | Génération QR code |
-| **date-fns** | 4.1 | Manipulation des dates |
+### 1.3 Mot de passe oublié
 
-### Stack Backend
+1. Sur l'écran de connexion, cliquez sur **Mot de passe oublié ?**
+2. Saisissez votre adresse email et cliquez sur **Envoyer**.
+3. Si un compte actif existe avec cet email, un **mot de passe temporaire** vous sera envoyé par email.
+4. Connectez-vous avec ce mot de passe temporaire — la fenêtre de première connexion s'affichera pour vous inviter à en définir un nouveau.
 
-| Technologie | Version | Rôle |
-|-------------|---------|------|
-| **Laravel** | 12.0 | Framework API REST |
-| **PHP** | 8.2+ | Langage serveur |
-| **Laravel Sanctum** | 4.0 | Authentification API (Bearer token) |
-| **MySQL / MariaDB** | — | Base de données relationnelle |
-| **L5-Swagger** | — | Documentation API auto |
-| **Laravel Sail** | — | Environnement Docker |
+> Pour des raisons de sécurité, l'application ne confirme jamais si un email est enregistré ou non dans le système.
 
-### Structure des dossiers
+### 1.4 Se déconnecter
 
-```
-SEN_MED/
-├── Frontend/               # Application React
-│   └── src/
-│       ├── pages/          # Composants page (un dossier par module)
-│       ├── components/     # Composants réutilisables (Layout, Sidebar…)
-│       ├── api/            # Couche API (axios + endpoints)
-│       ├── App.jsx         # Routeur principal
-│       └── theme.js        # Charte graphique (couleurs, espacements)
-│
-├── Backend/                # API Laravel
-│   ├── app/
-│   │   ├── Http/Controllers/Api/   # 28 contrôleurs REST
-│   │   └── Models/                 # Modèles Eloquent
-│   ├── database/
-│   │   └── migrations/             # 50+ tables
-│   └── routes/api.php              # Définition des routes API v1
-│
-└── MOBILE/                 # Application mobile Flutter (iOS / Android)
-```
-
-### Communication Frontend ↔ Backend
-
-```
-Frontend (React)  ──[HTTP/JSON]──▶  API Laravel  ──▶  MySQL
-                  ◀──[JSON]───────
-```
-
-- **Base URL dev :** `http://localhost:8000/api/v1`
-- **Authentification :** Bearer Token (stocké dans `localStorage.senmed_token`)
-- **Format :** JSON (`Content-Type: application/json`)
-- **Timeout par défaut :** 10 secondes
+Cliquez sur votre avatar en haut à droite, puis sur **Se déconnecter**.
 
 ---
 
-## 3. Installation & démarrage
+## 2. Navigation générale
 
-### Prérequis
+### 2.1 Barre latérale (Sidebar)
 
-- PHP 8.2+ & Composer
-- Node.js 18+ & npm
-- MySQL 8.0+ ou MariaDB 10.6+
+La barre latérale gauche regroupe tous les modules de l'application par catégorie :
 
-### Backend (Laravel)
+| Catégorie | Modules disponibles |
+|-----------|---------------------|
+| **PRINCIPAL** | Tableau de bord |
+| **CLINIQUE** | Patients, Visites, Salle d'attente |
+| **PLANNING** | Rendez-vous, Horaires, Calendrier |
+| **SOINS** | Hospitalisations, Chambres, DSI |
+| **PHARMACIE** | Produits, Fournisseurs, Commandes, Inventaire |
+| **FINANCES** | Comptabilité, Paiements |
+| **DOCUMENTS** | Formulaires, Certificats |
+| **CONFIGURATION** | Utilisateurs, Rôles, Préférences, Mailing |
 
-```bash
-cd Backend
+> Seuls les menus correspondant aux **permissions de votre rôle** sont visibles.
 
-# 1. Installer les dépendances
-composer install
+### 2.2 Réduire la sidebar
 
-# 2. Copier et configurer l'environnement
-cp .env.example .env
-# Éditer .env : DB_DATABASE, DB_USERNAME, DB_PASSWORD
+Cliquez sur le bouton **≡** dans l'en-tête pour réduire ou agrandir la barre latérale. En mode réduit, seules les icônes sont affichées.
 
-# 3. Générer la clé d'application
-php artisan key:generate
+### 2.3 Mode sombre / clair
 
-# 4. Exécuter les migrations (crée toutes les tables + données initiales)
-php artisan migrate
+Le thème peut être changé depuis **Configuration > Préférences**. Il est appliqué instantanément à toute l'interface.
 
-# 5. Démarrer le serveur
-php artisan serve
-# → disponible sur http://localhost:8000
-```
+### 2.4 Version mobile
 
-### Frontend (React)
-
-```bash
-cd Frontend
-
-# 1. Installer les dépendances
-npm install
-
-# 2. Démarrer en développement
-npm run dev
-# → disponible sur http://localhost:5173
-
-# 3. Build production
-npm run build
-```
+Sur smartphone ou tablette, la barre latérale se masque automatiquement. Appuyez sur le bouton **≡** pour l'afficher.
 
 ---
 
-## 4. Navigation dans l'application
+## 3. Tableau de bord
 
-La barre latérale (sidebar) est organisée en **5 groupes** repliables :
+Le tableau de bord affiche un résumé en temps réel de l'activité de l'établissement :
 
-### ACCUEIL
-| Menu | Route | Description |
-|------|-------|-------------|
-| Tableau de bord | `/` | Vue synthétique de l'activité |
-| Patients | `/patients` | Gestion du dossier patient |
-| Visites | `/visites` | Suivi des visites en cours |
-| Salle d'attente | `/salle-attente` | File d'attente temps réel |
-| Hospitalisation | `/hospitalisation` | Gestion des chambres & admissions |
-| Transferts | `/transferts` | Transferts inter-services |
-| Espace médical | `/planning` | Planning médecin |
-| Gestion des RDV | `/rendezvous` | Rendez-vous patients |
+- Nombre de patients enregistrés
+- Visites et rendez-vous du jour
+- Taux d'occupation des lits
+- Alertes de stock pharmacie
+- Dernières activités
 
-### ESPACE MÉDECIN
-| Menu | Route | Description |
-|------|-------|-------------|
-| Tableau de bord | `/espace-medecin` | Dashboard médecin |
-
-### GESTION PHARMACEUTIQUE
-| Menu | Route | Description |
-|------|-------|-------------|
-| Pharmacie | `/pharmacie` | Stock, commandes, inventaires |
-
-### COMPTABILITÉ
-| Menu | Route | Description |
-|------|-------|-------------|
-| Comptabilité | `/comptabilite` | Factures, paiements, crédits |
-
-### ADMINISTRATION
-| Menu | Route | Description |
-|------|-------|-------------|
-| Utilisateurs | `/personnels` | Gestion du personnel |
-| Départements | `/departements` | Organigramme |
-| Types de service | `/type-services` | Catégories de services |
-| Services | `/services` | Services de l'établissement |
-| Hôpitaux | `/hopitaux` | Gestion des établissements |
-| Partenaires | `/partenaires` | Mutuelles, assurances |
-
-### RESSOURCES HUMAINES
-| Menu | Route | Description |
-|------|-------|-------------|
-| Gestion personnel | `/personnels` | Fiches du personnel |
-| Gestion congés | `/ressources-humaines/conges` | Demandes et suivi congés |
-| Absences & retards | `/ressources-humaines/absences` | Pointage absences |
-| Gestion contrats | `/ressources-humaines/contrats` | Contrats de travail |
-
-### CONFIGURATION
-| Menu | Route | Description |
-|------|-------|-------------|
-| Configuration système | `/config-systeme` | Paramètres généraux |
-| Config. sanitaire | `/config-sanitaire` | Paramètres cliniques |
-| **Formulaires** | `/formulaires` | Modèles de documents & certificats |
-| Tarification | `/tarification` | Grilles tarifaires |
+Les statistiques sont actualisées à chaque chargement de la page.
 
 ---
 
-## 5. Module Accueil & Tableau de bord
+## 4. Patients
 
-Le tableau de bord centralise les indicateurs clés de l'établissement :
-- Nombre de patients du jour
-- Visites en attente en salle d'attente
-- Taux d'occupation des chambres
-- Alertes stock pharmacie
+### 4.1 Liste des patients
 
----
+Accédez à **Clinique > Patients**. Utilisez la barre de recherche pour filtrer par nom, prénom ou numéro de dossier.
 
-## 6. Module Patients
+### 4.2 Créer un patient
 
-### Accéder à un patient
-1. Cliquer sur **Patients** dans la sidebar
-2. Rechercher par nom, prénom, code patient ou téléphone
-3. Cliquer sur la ligne du patient pour accéder à son dossier
+1. Cliquez sur **+ Nouveau patient**.
+2. Remplissez : nom, prénom, date de naissance, sexe, contact, adresse, couverture médicale.
+3. Pour les patients assurés, sélectionnez le **partenaire** et le **type de couverture**.
+4. Cliquez sur **Enregistrer**.
 
-### Créer un patient
-- **Création rapide** (accueil/réception) : champs minimaux (nom, prénom, date de naissance, sexe, téléphone)
-- **Création complète** : informations civiles, couverture sociale, partenaire/mutuelle, contacts d'urgence
+### 4.3 Fiche patient
 
-### Informations disponibles dans le dossier patient
-- Identité complète + photo QR code
-- Historique des visites
-- Historique des rendez-vous
-- Couverture sociale (partenaire + type de couverture)
+La fiche patient regroupe :
 
-### Carte patient
-- Bouton **Générer la carte** : produit une carte avec QR code intégrant l'identifiant unique du patient
+- **Informations générales** : identité, contacts, couvertures
+- **Historique des visites**
+- **Rendez-vous à venir**
+- **Hospitalisations**
+- **Carte patient** avec QR code (générée automatiquement)
+
+### 4.4 Création rapide
+
+En cas d'urgence, utilisez le bouton **Création rapide** pour enregistrer un patient avec le minimum d'informations. Les données peuvent être complétées ultérieurement.
 
 ---
 
-## 7. Module Visites
+## 5. Visites et Consultations
 
-Une **visite** représente un passage du patient dans l'établissement (consultation, urgence, suivi...).
+### 5.1 Créer une visite
 
-### Créer une visite
-1. Aller dans **Visites** → **Nouvelle visite**
-2. Sélectionner le patient (existant ou créer)
-3. Choisir le type de visite, le service, le médecin
-4. Valider → le patient apparaît en **Salle d'attente**
+1. Depuis la fiche patient, cliquez sur **+ Nouvelle visite**, ou accédez à **Clinique > Visites**.
+2. Sélectionnez le patient, le médecin, le type de visite et la caisse.
+3. Validez pour créer la visite et ouvrir la page de consultation.
 
-### Statuts d'une visite
-| Statut | Description |
-|--------|-------------|
-| En attente | Patient dans la salle d'attente |
-| En cours | Patient vu par le médecin |
-| Terminée | Consultation complétée |
-| Facturée | Facture générée |
+### 5.2 Salle d'attente
 
----
+Le module **Salle d'attente** liste les patients en attente de prise en charge. Cliquez sur **Marquer comme vu** pour retirer un patient de la file.
 
-## 8. Module Salle d'attente
+### 5.3 Consultation médicale
 
-Vue temps réel de tous les patients en attente de prise en charge.
+La page de consultation est divisée en onglets :
 
-- Affiche le patient, l'heure d'arrivée, le motif, le médecin assigné
-- Bouton **Marquer comme vu** → passe la visite en statut "En cours" et ouvre la consultation
-- Tri par heure d'arrivée (FIFO)
+| Onglet | Contenu |
+|--------|---------|
+| **Vitaux** | Tension, température, poids, taille, saturation… |
+| **Examen clinique** | Plaintes, antécédents, observations |
+| **Diagnostics** | Codes de diagnostic |
+| **Procédures** | Imagerie, bilans, actes cliniques |
+| **Médicaments** | Prescriptions |
+| **Ordonnance** | Aperçu et impression de l'ordonnance |
+| **Facturation** | Actes facturés, montant total |
 
----
+### 5.4 Ordonnance
 
-## 9. Module Consultation
-
-> La page de consultation s'ouvre en **plein écran** (hors barre latérale) pour maximiser l'espace de travail.
-
-### Accéder à une consultation
-- Depuis la Salle d'attente → cliquer **Marquer comme vu**
-- Depuis la liste des Visites → cliquer sur une visite active
-
-### Barre d'outils de consultation
-
-La barre supérieure contient des boutons d'accès rapide aux différentes sections :
-
-| Bouton | Fonction |
-|--------|----------|
-| **Notes** | Notes cliniques libres (ADT Notes) |
-| **S.Vitaux** | Saisie et suivi des signes vitaux |
-| **Médicaments** | Prescriptions de la visite |
-| **Procédures** | Actes et procédures cliniques |
-| **Labo** | Examens de laboratoire |
-| **Ordonnance** | Rédaction de l'ordonnance |
-| **Matrice** | Comparatif multi-visites du patient |
-
-### Signes vitaux (S.Vitaux)
-
-Formulaire de saisie avec :
-- **Température** en °F avec conversion automatique en °C (et vice-versa)
-- **Tension artérielle** : bras gauche et bras droit (systolique / diastolique)
-- **Pouls**, **SPO2**, **Respiration**
-- **Taille** + **Poids** → **IMC calculé automatiquement**
-- Indicateurs colorés : 🟢 Normal · 🟣 Avertissement · 🔴 Critique
-
-Les mesures sont sauvegardées avec **date et heure** et affichées dans un **tableau** (toutes les prises de la visite courante) et un **graphique courbes** avec :
-- Courbes lissées (Bézier naturel)
-- Lignes de référence clinique (SPO2 ≥ 95, TA ≤ 140)
-- Légende groupée (Bras Gauche / Bras Droite)
-
-### Facturation automatique
-À la validation de la consultation, une facture est **automatiquement générée** selon la tarification du médecin et les actes réalisés.
+L'ordonnance est générée automatiquement à partir des médicaments prescrits. Elle peut être imprimée directement depuis l'onglet **Ordonnance**.
 
 ---
 
-## 10. Module Hospitalisation
+## 6. Rendez-vous
 
-### Gestion des chambres
-- Vue **dashboard** : chambres disponibles, occupées, à nettoyer
-- Chaque chambre a un **type** (standard, privée, réanimation...), un **nombre de lits**, et des **équipements** associés
+### 6.1 Prendre un rendez-vous
 
-### Admettre un patient
-1. Aller dans **Hospitalisation** → **Nouvelle admission**
-2. Sélectionner le patient, le médecin responsable, la chambre
-3. Indiquer le motif d'admission et la date d'entrée prévue
-4. Valider → la chambre passe en statut **Occupée**
+1. Accédez à **Planning > Rendez-vous > + Nouveau rendez-vous**.
+2. Sélectionnez le patient, le médecin, la date et le créneau.
+3. Les créneaux disponibles sont calculés automatiquement selon les horaires du médecin.
 
-### Sortie de patient
-- Bouton **Sortie** sur la fiche d'hospitalisation
-- Saisir la date/heure de sortie et le type de sortie (guéri, transféré, à la demande...)
-- La chambre repasse en statut **À nettoyer** puis **Disponible**
+### 6.2 Demandes en ligne
 
----
+Les rendez-vous soumis depuis le site public apparaissent dans **Demandes en attente**. L'agent peut les **accepter** (en assignant un créneau) ou les **rejeter** avec un motif.
 
-## 11. Module Transferts
+### 6.3 Horaires des médecins
 
-Gestion des transferts de patients entre services ou établissements.
-
-### Workflow d'un transfert
-```
-Créé  →  En attente de validation  →  Validé  →  Effectué
-                                   ↘  Annulé
-```
-
-- **Créer un transfert** : sélectionner le patient, service/établissement d'origine et destination, motif
-- **Valider** : bouton Valider sur la fiche de transfert
-- **Annuler** : possible tant que le transfert n'est pas effectué
+Chaque médecin dispose d'un planning hebdomadaire défini dans **Planning > Horaires**. Des **exceptions** (absences, congés) peuvent être ajoutées pour bloquer des périodes spécifiques.
 
 ---
 
-## 12. Module Rendez-vous
+## 7. Planning du personnel
 
-### Prendre un rendez-vous
-1. Aller dans **Gestion des RDV** → **Nouveau RDV**
-2. Sélectionner le patient, le médecin, la spécialité
-3. Consulter les **créneaux disponibles** (calculés automatiquement selon le planning du médecin)
-4. Choisir la date et l'heure → confirmer
+### 7.1 Horaires
 
-### Planning médecin
-- Chaque médecin a un **planning hebdomadaire** (jours, heures d'ouverture)
-- Les **absences** et **jours fériés** sont pris en compte
-- Sénégal : les jours fériés officiels peuvent être **initialisés automatiquement**
+Définissez les horaires hebdomadaires de chaque membre du personnel : jours travaillés, heures de début et de fin, durée des créneaux de consultation.
 
----
+### 7.2 Exceptions
 
-## 13. Module Espace Médecin
+Ajoutez des exceptions pour les absences ponctuelles ou les indisponibilités. Une exception bloque la création de rendez-vous sur la période concernée.
 
-Tableau de bord dédié au médecin connecté :
-- Ses rendez-vous du jour
-- Ses patients en attente
-- Ses consultations récentes
-- Accès rapide à une consultation depuis la fiche
+### 7.3 Jours fériés
+
+Le module **Jours fériés** permet d'initialiser automatiquement les jours fériés sénégalais pour une année donnée. Les membres du personnel disponibles ces jours-là peuvent le déclarer via les **disponibilités jours fériés**.
 
 ---
 
-## 14. Module Pharmacie
+## 8. Hospitalisation
 
-### Gestion du stock
+### 8.1 Admettre un patient
 
-| Section | Description |
-|---------|-------------|
-| **Articles** | Catalogue des produits (médicaments, consommables) |
-| **Fournisseurs** | Répertoire des fournisseurs avec leurs produits |
-| **Commandes** | Suivi des bons de commande (en attente, validée, reçue) |
-| **Approvisionnements** | Réceptions de marchandises |
-| **Mouvements** | Historique des entrées/sorties de stock |
-| **Inventaires** | Inventaires périodiques avec clôture |
+1. Accédez à **Soins > Hospitalisations > + Nouvelle admission**.
+2. Sélectionnez le patient, le médecin responsable, la chambre et le lit.
+3. Indiquez la date et le motif d'admission, puis validez.
 
-### Alertes stock
-Les articles en dessous du **seuil minimum** sont signalés automatiquement.
+### 8.2 Tableau de bord hospitalisations
 
-### Workflow commande
-```
-Brouillon  →  Envoyée au fournisseur  →  Partiellement reçue  →  Reçue
-                                      ↘  Annulée
-```
+Le dashboard affiche en temps réel :
 
----
+- Patients hospitalisés en cours
+- Durée moyenne de séjour
+- Taux d'occupation des lits par service
 
-## 15. Module Comptabilité & Paiements
+### 8.3 Sortie de patient
 
-### Facturation
-- Les factures sont **générées automatiquement** à la fin d'une consultation ou d'une hospitalisation
-- Elles incluent les actes, procédures, médicaments et frais de chambre
+Depuis la fiche d'hospitalisation, cliquez sur **Sortie du patient**. Indiquez la date et le motif (guérison, transfert, sortie contre avis médical, décès).
 
-### Paiement d'une facture
-1. Aller dans **Comptabilité** → onglet **Factures en attente**
-2. Sélectionner la facture
-3. Choisir le mode de paiement (espèces, virement, assurance...)
-4. Valider → un **reçu** est généré
+### 8.4 Gestion des chambres
 
-### Crédits patients
-- Si un patient a un solde créditeur, il est visible dans l'onglet **Crédits**
-- Possible de **solder tous les crédits** d'un patient en une opération
-
-### Partenaires & tiers payant
-- Les patients couverts par une mutuelle/assurance ont leur **part partenaire** automatiquement calculée selon le type de couverture
+Accédez à **Soins > Chambres** pour gérer les lits et équipements de chaque chambre. Après nettoyage, marquez une chambre comme **propre** pour la rendre disponible.
 
 ---
 
-## 16. Module Ressources Humaines
+## 9. Dossier de Soins Infirmiers (DSI)
 
-### Personnel
-- Fiche complète : informations civiles, poste, département, service, contrat
-- **Création rapide** disponible pour une prise en charge immédiate
+Le DSI regroupe toutes les informations du suivi infirmier d'un patient hospitalisé.
 
-### Congés
-- Soumission d'une demande de congé (date début/fin, type)
-- Workflow de validation (en attente → approuvé / refusé)
-- Calcul automatique du nombre de jours
+### 9.1 Créer un dossier
 
-### Absences & retards
-- Enregistrement manuel ou automatique
-- Historique par employé et par période
+Depuis la fiche d'hospitalisation, cliquez sur **Ouvrir le DSI**. Le dossier est automatiquement lié à l'admission en cours.
 
-### Contrats
-- Suivi des contrats (CDD, CDI, stage...)
-- Alertes sur les contrats arrivant à échéance
+### 9.2 Onglets du DSI
 
----
+| Onglet | Contenu |
+|--------|---------|
+| **Informations** | Contacts d'urgence, intervenants de soins |
+| **Traitements** | Prescriptions infirmières, posologie, horaires |
+| **Diagramme de soins** | Saisie quotidienne des actes réalisés |
+| **Transmissions** | Notes entre équipes soignantes |
+| **Évaluations** | Échelles standardisées (douleur, escarre, chutes…) |
+| **Surveillances** | Suivi de plaies et diabète avec photos |
 
-## 17. Module Configuration
+### 9.3 Galerie d'images
 
-### Configuration système (`/config-systeme`)
-Paramètres généraux de l'établissement :
-- Informations de l'hôpital (nom, adresse, logo)
-- Paramètres d'affichage
-- Gestion des utilisateurs et droits d'accès
-
-### Config. sanitaire (`/config-sanitaire`)
-Paramètres cliniques :
-- Types d'examens cliniques
-- Signes fonctionnels
-- Plans de soins
-- Imagerie médicale disponible
-- Types d'analyses de laboratoire
-
-### Tarification (`/tarification`)
-- Grilles tarifaires par médecin, spécialité, acte
-- Résolution automatique du tarif lors de la facturation
+Les photos de plaies et surveillances sont accessibles depuis **DSI > Images**, filtrables par patient ou par date.
 
 ---
 
-## 18. Module Formulaires (Modèles de documents)
+## 10. Pharmacie
 
-Ce module permet de **créer et gérer des modèles de certificats** et documents médicaux délivrés aux patients.
+### 10.1 Catalogue de produits
 
-### Interface — 3 colonnes
+Accédez à **Pharmacie > Produits** pour gérer médicaments, consommables et réactifs. Chaque produit dispose d'un seuil d'alerte de stock minimum.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  [Nouveau]  [Sauvegarder]  [Supprimer]               Barre d'actions       │
-├──────────────────┬───────────────────────────────────┬──────────────────────┤
-│  Modèles de doc. │  Description | En-tête            │  Liste des variables │
-│  ─────────────── │  ──────────────────────────────── │  ──────────────────  │
-│  🔍 Recherche    │  Éditeur WYSIWYG avec toolbar      │  adresse_du_patient  │
-│  ─────────────── │  (Police, Taille, Gras, Italique,  │  age_du_patient      │
-│  Certificat acc. │   Souligné, Barré, Couleurs,       │  date_edition        │
-│  Certificat décès│   Alignements, Listes, Lien)       │  doctor              │
-│  Sick Leave      │                                    │  ...                 │
-│  ...             │                                    │  [+ Ajouter]         │
-└──────────────────┴───────────────────────────────────┴──────────────────────┘
-```
+### 10.2 Fournisseurs
 
-### Créer un modèle de document
-1. Cliquer **Nouveau** dans la barre du haut
-2. Saisir la **Description** (nom du modèle) et **l'En-tête** (titre qui apparaîtra sur le document imprimé)
-3. Rédiger le contenu dans l'éditeur en utilisant la barre d'outils de mise en forme
-4. Insérer des variables dynamiques (voir ci-dessous)
-5. Cliquer **Sauvegarder**
+Gérez vos fournisseurs et leurs coordonnées depuis **Pharmacie > Fournisseurs**.
 
-### Utiliser les variables dynamiques
+### 10.3 Commandes et approvisionnements
 
-Les variables permettent de **personnaliser automatiquement** le document lors de sa génération pour un patient.
+1. Créez une commande fournisseur depuis **Pharmacie > Commandes**.
+2. Sélectionnez le fournisseur et ajoutez les produits avec les quantités commandées.
+3. À réception des produits, enregistrez l'**approvisionnement** pour mettre à jour le stock automatiquement.
 
-**3 façons d'insérer une variable :**
+### 10.4 Mouvements de stock
 
-| Méthode | Comment |
-|---------|---------|
-| **Clic simple** | Cliquer sur la variable dans la liste de droite → insérée à la position du curseur |
-| **Glisser-déposer** | Faire glisser la variable depuis la liste droite vers l'endroit voulu dans l'éditeur |
-| **Manuel** | Taper directement `{{nom_variable}}` dans le texte |
+Tous les mouvements (entrées, sorties, corrections) sont tracés automatiquement. Consultez l'historique par produit depuis **Pharmacie > Mouvements**.
 
-**Format de remplacement :** `{{nom_variable}}` → valeur réelle lors de la génération
+### 10.5 Inventaire
 
-**Exemple de contenu :**
-```
-Je soussigné, {{doctor}}, certifie avoir examiné ce jour {{civilite_du_patient}}
-{{nom_du_patient}} {{prenom_du_patient}}, né(e) le {{date_de_naissance_du_patient}},
-demeurant à {{adresse_du_patient}}.
-
-Fait à {{adresse_hopital}}, le {{date_edition}}.
-```
-
-### Variables système disponibles (pré-définies)
-
-| Variable | Valeur remplacée |
-|----------|-----------------|
-| `{{nom_du_patient}}` | Nom de famille du patient |
-| `{{prenom_du_patient}}` | Prénom du patient |
-| `{{age_du_patient}}` | Âge du patient |
-| `{{date_de_naissance_du_patient}}` | Date de naissance |
-| `{{adresse_du_patient}}` | Adresse du patient |
-| `{{sexe_du_patient}}` | Sexe |
-| `{{civilite_du_patient}}` | M. / Mme |
-| `{{telephone_du_patient}}` | Téléphone |
-| `{{emploi_du_patient}}` | Profession |
-| `{{doctor}}` | Médecin traitant |
-| `{{civilite_du_praticien}}` | Civilité du médecin |
-| `{{diagnostic}}` | Diagnostic de la visite |
-| `{{date_visite}}` | Date de la consultation |
-| `{{date_edition}}` | Date d'édition du document |
-| `{{nom_hopital}}` | Nom de l'établissement |
-| `{{adresse_hopital}}` | Adresse de l'établissement |
-| `{{date_du_service}}` | Date du service |
-
-> Les variables système (en bleu) ne peuvent pas être supprimées.
-
-### Ajouter une variable personnalisée
-1. Cliquer **+ Ajouter une variable** dans la colonne droite
-2. Saisir le **nom technique** (minuscules, chiffres, underscores uniquement)  
-   Ex : `duree_arret_travail`
-3. Saisir le **libellé** affiché dans la liste  
-   Ex : *Durée de l'arrêt de travail*
-4. Valider → la variable est disponible immédiatement
-
-### Modifier un modèle existant
-1. Cliquer sur le modèle dans la liste gauche
-2. Le contenu se charge dans l'éditeur
-3. Modifier puis **Sauvegarder** (bouton devient orange si des modifications non sauvegardées sont détectées)
-
-### Supprimer un modèle
-1. Sélectionner le modèle dans la liste
-2. Cliquer **Supprimer** dans la barre du haut
-3. Confirmer la suppression
+1. Créez un inventaire depuis **Pharmacie > Inventaires**.
+2. Saisissez les quantités réelles constatées pour chaque produit.
+3. **Clôturez** l'inventaire pour recalibrer les stocks officiels du système.
 
 ---
 
-## 19. Structure de la base de données
+## 11. Comptabilité et Paiements
 
-### Schéma des tables principales
+### 11.1 Factures en attente
 
-```
-Tables Organisation
-─────────────────────────────
-gen_mst_hospital              Établissements de santé
-gen_mst_departement           Départements
-gen_mst_type_service          Types de service
-gen_mst_service               Services
-hr_mst_user                   Personnel / Utilisateurs
+**Comptabilité > Factures en attente** liste toutes les factures non soldées, filtrables par patient ou partenaire assureur.
 
-Tables Planification
-─────────────────────────────
-medecin_horaire               Planning hebdomadaire médecin
-medecin_exception             Absences/exceptions
-jours_feries                  Jours fériés (Sénégal)
-app_txn_appointments          Rendez-vous
+### 11.2 Enregistrer un paiement
 
-Tables Patients & Clinique
-─────────────────────────────
-gen_mst_patient               Dossier patient
-gen_mst_partenaire_header     Partenaires (mutuelles, assurances)
-gen_mst_partenaire_dtl        Types de couverture
-clinic_txn_adt                Visites / admissions
-clinic_txn_adt_notes          Notes de consultation
-clinic_txn_patient_notes      Notes patient
-clinic_txn_vital_sign         Signes vitaux (par prise)
-clinic_txn_medication         Prescriptions médicaments
-clinic_txn_procedures         Procédures cliniques
-lab_txn_procedures            Examens laboratoire
-clinic_txn_ordonnances        Ordonnances
-clinic_txn_long_term_medication Traitements chroniques
+1. Cliquez sur une facture.
+2. Choisissez le mode de paiement (espèces, chèque, virement, assurance).
+3. Saisissez le montant encaissé et validez.
 
-Tables Hospitalisation
-─────────────────────────────
-hosp_chambres                 Chambres
-hosp_equipements              Équipements
-hosp_chambre_equipements      Équipements par chambre
-hosp_hospitalisations         Admissions en hospitalisation
-hosp_fiches_att               Fiches d'attachement (examens, photos)
-hosp_transferts               Transferts inter-services
+### 11.3 Crédits patients assurés
 
-Tables Facturation
-─────────────────────────────
-bill_txn_bill_hd              En-têtes de factures
-bill_txn_bill_details         Lignes de facturation
-bill_txn_patient_payments     Paiements patients
-gen_mst_medcin_tarif          Tarification médecins
+Les patients bénéficiant d'une assurance peuvent avoir des crédits préautorisés. Consultez leur solde et leurs factures depuis **Comptabilité > Crédits patients**.
 
-Tables Pharmacie
-─────────────────────────────
-ph_mst_item                   Articles (médicaments, consommables)
-ph_mst_fournisseur            Fournisseurs
-ph_mst_commande               Bons de commande
-ph_mst_approvisionnement      Réceptions
-ph_mst_stock                  Stock par article
-ph_mst_mouvement_stock        Mouvements de stock
-ph_mst_inventaire             Inventaires
-ph_mst_inventaire_detail      Détail des inventaires
+### 11.4 Solde global d'un patient
 
-Tables Formulaires
-─────────────────────────────
-doc_templates                 Modèles de documents (HTML avec {{variables}})
-template_variables            Variables (système + personnalisées)
-```
+Pour régler toutes les factures impayées d'un patient en une seule opération, utilisez **Solder le patient** depuis l'historique des paiements.
 
 ---
 
-## 20. API Backend — Référence rapide
+## 12. Formulaires et Certificats
 
-Toutes les routes sont préfixées par `/api/v1/`.
+### 12.1 Modèles de documents
 
-### Patients
-```
-GET    /patients              Liste des patients
-POST   /patients              Créer un patient complet
-POST   /patients/creation-rapide  Création rapide
-GET    /patients/{id}         Détail d'un patient
-PUT    /patients/{id}         Modifier
-DELETE /patients/{id}         Supprimer
-GET    /patients/{id}/carte   Générer la carte QR
-```
+Accédez à **Documents > Formulaires** pour créer et gérer vos templates : certificats médicaux, attestations, courriers. Les modèles utilisent des **variables dynamiques** (ex: `{{patient.nom}}`, `{{date}}`) remplacées automatiquement à la génération.
 
-### Visites
-```
-GET    /visites               Liste des visites
-POST   /visites               Créer une visite
-GET    /visites/{id}          Détail d'une visite
-GET    /salle-attente         File d'attente
-PATCH  /salle-attente/{id}/marquer-vu  Marquer comme vu
-```
+### 12.2 Générer un certificat
 
-### Consultation
-```
-GET    /consultations/{visite}              Fiche complète
-POST   /consultations/{visite}/sauvegarder  Sauvegarder
-GET    /consultations/{visite}/vitalsigns   Signes vitaux
-POST   /consultations/{visite}/vitalsigns   Ajouter une prise
-GET    /consultations/{visite}/medications  Prescriptions
-POST   /consultations/{visite}/medications  Ajouter
-GET    /consultations/{visite}/ordonnance   Ordonnance
-POST   /consultations/{visite}/ordonnance   Sauvegarder ordonnance
-GET    /consultations/{visite}/factures     Factures de la visite
-GET    /patients/{id}/matrix                Matrice comparatif visites
-```
+Depuis une consultation ou une fiche patient :
 
-### Formulaires & Variables
-```
-GET    /formulaires                    Liste des modèles
-POST   /formulaires                    Créer un modèle
-GET    /formulaires/{id}               Détail
-PUT    /formulaires/{id}               Modifier
-DELETE /formulaires/{id}               Supprimer
-GET    /formulaires/variables          Liste des variables
-POST   /formulaires/variables          Créer une variable personnalisée
-PUT    /formulaires/variables/{id}     Modifier le libellé
-DELETE /formulaires/variables/{id}     Supprimer (personnalisées uniquement)
-```
+1. Cliquez sur **Générer un document**.
+2. Sélectionnez le template souhaité.
+3. Vérifiez l'aperçu, puis imprimez ou téléchargez en PDF.
 
-### Pharmacie
-```
-GET    /pharmacie/items               Catalogue articles
-POST   /pharmacie/commandes           Nouvelle commande
-GET    /pharmacie/inventaires         Inventaires
-POST   /pharmacie/inventaires/{id}/cloturer  Clôturer un inventaire
-```
-
-### Paiements
-```
-GET    /paiements/historique          Historique paiements
-POST   /paiements/{billId}/payer      Enregistrer un paiement
-POST   /paiements/patient/{id}/solder Solder tous les crédits
-```
+Les certificats générés sont conservés dans l'historique du patient.
 
 ---
 
-## Charte graphique
+## 13. Configuration système
 
-| Élément | Valeur |
-|---------|--------|
-| Couleur principale (Navy) | `#002f59` |
-| Couleur accent (Orange) | `#ff7631` |
-| Fond général | `#f4f6fa` |
-| Texte principal | `#1e293b` |
-| Texte secondaire | `#64748b` |
-| Police | System UI / sans-serif |
-| Rayon des cartes | `10px` |
+> Cette section est réservée aux utilisateurs ayant la permission **config-systeme** (rôle Administrateur).
+
+### 13.1 Gestion des utilisateurs
+
+Accédez à **Configuration > Utilisateurs**.
+
+#### Créer un utilisateur
+
+1. Cliquez sur **+ Nouvel utilisateur**.
+2. Dans le champ **Nom complet**, commencez à taper le nom. Si la personne figure dans le répertoire du personnel, elle apparaît dans une liste déroulante — sélectionnez-la pour remplir automatiquement le nom, l'email et lier le compte au membre du personnel.
+3. Définissez un mot de passe temporaire. L'utilisateur sera automatiquement invité à le changer lors de sa première connexion.
+4. Assignez un **rôle** et choisissez le **statut** (Actif/Inactif).
+5. Ajoutez optionnellement une **photo de profil**.
+6. Cliquez sur **Créer l'utilisateur**.
+
+#### Modifier un utilisateur
+
+Cliquez sur l'icône **✎** sur la ligne de l'utilisateur. Tous les champs sont modifiables, y compris la photo.
+
+#### Réinitialiser un mot de passe
+
+Cliquez sur l'icône **🔑** pour définir un nouveau mot de passe temporaire. L'utilisateur sera invité à le changer à sa prochaine connexion.
+
+#### Activer / Désactiver un compte
+
+Cliquez sur **Désactiver** ou **Activer** sur la ligne de l'utilisateur. Un compte désactivé ne peut pas se connecter.
+
+> Il est impossible de désactiver ou supprimer son propre compte.
+
+### 13.2 Rôles et permissions
+
+Accédez à **Configuration > Rôles** pour gérer les profils d'accès.
+
+- Chaque rôle regroupe un ensemble de **permissions** (ex: `patients`, `pharmacie`, `config-systeme`).
+- Chaque utilisateur est associé à un seul rôle qui détermine les modules accessibles.
+
+### 13.3 Préférences de l'application
+
+Accédez à **Configuration > Préférences** pour personnaliser :
+
+- Nom et logo de l'application
+- Couleur principale de l'interface
+- Thème par défaut (clair / sombre)
+- Coordonnées de l'établissement
+
+### 13.4 Configuration Email (SMTP)
+
+Accédez à **Configuration > Mailing** pour paramétrer l'envoi d'emails :
+
+- Hôte SMTP, port, chiffrement (SSL/TLS)
+- Identifiants de connexion
+- Adresse et nom d'expéditeur
+- Bouton **Tester** pour envoyer un email de vérification
+
+> La configuration email est indispensable pour que la fonctionnalité **Mot de passe oublié** fonctionne correctement.
+
+### 13.5 Page Web publique
+
+Gérez le contenu du site public depuis **Configuration > Page Web** :
+
+- **Diaporama** : images du carrousel d'accueil (ajout, réorganisation, activation/désactivation)
+- **À propos** : présentation de l'établissement
+- **Messages de contact** : consultation des messages reçus via le formulaire du site
 
 ---
 
-## Support & Contact
+## 14. FAQ et problèmes courants
 
-Pour toute question ou anomalie, contacter l'équipe technique :
+**Je ne peux pas me connecter**
+Vérifiez que le verrouillage majuscules (Verr. Maj) n'est pas activé. Utilisez **Mot de passe oublié ?** pour recevoir un mot de passe temporaire. Si le problème persiste, votre compte est peut-être désactivé — contactez votre administrateur.
 
-> **DST Computing**  
-> Développement de solutions numériques pour la santé  
-> Plateforme SenMed — v1.0
+**Je ne reçois pas l'email de mot de passe oublié**
+Vérifiez votre dossier **Spam / Courrier indésirable**. Assurez-vous que l'email saisi correspond exactement à celui enregistré dans le système. L'administrateur peut également réinitialiser votre mot de passe directement depuis la gestion des utilisateurs.
+
+**Un module n'apparaît pas dans le menu**
+Votre rôle ne dispose pas de la permission pour ce module. Contactez votre administrateur pour ajuster vos droits d'accès.
+
+**La page affiche une erreur après connexion**
+Videz le cache du navigateur (Ctrl + Maj + R), puis déconnectez-vous et reconnectez-vous.
+
+**Le stock d'un produit semble incorrect**
+Consultez l'historique des **Mouvements de stock** pour identifier la source de l'écart. Un **inventaire** permet de recalibrer les quantités officielles.
+
+**Comment imprimer une ordonnance ou un certificat ?**
+Depuis la consultation ou la fiche patient, cliquez sur **Générer un document**, sélectionnez le template et utilisez la fonction d'impression du navigateur (Ctrl + P).
+
+**La fonctionnalité Mot de passe oublié ne fonctionne pas**
+La configuration SMTP n'est probablement pas renseignée. Un administrateur doit compléter **Configuration > Mailing** et tester l'envoi.
 
 ---
 
-*Document généré le 28 avril 2026*
+*Pour toute assistance technique, contactez l'équipe DST Computing.*

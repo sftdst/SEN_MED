@@ -39,8 +39,12 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MailingConfigController;
 use App\Http\Controllers\Api\AppPreferenceController;
 use App\Http\Controllers\Api\WebPublicController;
+<<<<<<< HEAD
 use App\Http\Controllers\Api\MatMedEquipementController;
 use App\Http\Controllers\Api\MatMedLocationController;
+=======
+use App\Http\Controllers\Api\UserController;
+>>>>>>> b597751ac6eb8ceaea344fa8928cff0c45672b44
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -58,9 +62,12 @@ Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('login',    [AuthController::class, 'login']);
         Route::post('register', [AuthController::class, 'register']);
-        Route::post('logout',   [AuthController::class, 'logout'])->middleware('auth:sanctum');
-        Route::get('me',       [AuthController::class, 'me'])->middleware('auth:sanctum');
-        Route::post('refresh', [AuthController::class, 'refresh'])->middleware('auth:sanctum');
+        Route::post('logout',          [AuthController::class, 'logout'])->middleware('auth:sanctum');
+        Route::get('me',              [AuthController::class, 'me'])->middleware('auth:sanctum');
+        Route::post('refresh',        [AuthController::class, 'refresh'])->middleware('auth:sanctum');
+        Route::post('forgot-password',[AuthController::class, 'forgotPassword']);
+        Route::post('change-password',[AuthController::class, 'changePassword'])->middleware('auth:sanctum');
+        Route::post('keep-password',  [AuthController::class, 'keepPassword'])->middleware('auth:sanctum');
     });
 
     // Hôpitaux / Organisations
@@ -475,6 +482,16 @@ Route::prefix('v1')->group(function () {
     Route::post('chat/conversations/{conv}/messages',     [ChatController::class, 'sendMessage']);
     Route::put('chat/conversations/{conv}/read',          [ChatController::class, 'markRead']);
     Route::get('chat/unread-count',                       [ChatController::class, 'unreadCount']);
+
+    // ── Gestion des Utilisateurs ──────────────────────────────────────────────
+    Route::get('users',                     [UserController::class, 'index']);
+    Route::post('users',                    [UserController::class, 'store']);
+    Route::get('users/{user}',              [UserController::class, 'show']);
+    Route::post('users/{user}',             [UserController::class, 'update']); // POST pour multipart/form-data
+    Route::delete('users/{user}',           [UserController::class, 'destroy']);
+    Route::patch('users/{user}/toggle',     [UserController::class, 'toggleActive']);
+    Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword']);
+    Route::delete('users/{user}/photo',     [UserController::class, 'deletePhoto']);
 
     // ── Gestion des Profils et Droits ─────────────────────────────────────────
     Route::get('roles',                          [RolePermissionController::class, 'index']);

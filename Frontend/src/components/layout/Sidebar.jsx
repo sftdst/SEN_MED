@@ -111,6 +111,7 @@ const navItemsDef = [
       { to: '/config-sanitaire',      label: 'Config. sanitaire',     permission: 'config-sanitaire', icon: 'hospital' },
       { to: '/formulaires',           label: 'Formulaires',           permission: 'formulaires',      icon: 'fileText' },
       { to: '/config-profils-droits', label: 'Profil et droits',      permission: 'profil-droits',    icon: 'shield' },
+      { to: '/config-utilisateurs',   label: 'Utilisateurs',          permission: 'config-systeme',   icon: 'users' },
     ],
   },
   {
@@ -264,7 +265,10 @@ function NavGroup({ group, collapsed }) {
 export default function Sidebar({ collapsed = false, isMobile = false, isOpen = false, onClose }) {
   const { hasPermission, user, logout } = useAuth()
   const { prefs } = useTheme()
+<<<<<<< HEAD
 
+=======
+>>>>>>> b597751ac6eb8ceaea344fa8928cff0c45672b44
   // Scrollbar fine injectée une fois
   useEffect(() => {
     const id = 'sb-scroll-css'

@@ -4,26 +4,23 @@ import api from '../api/axios'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(() => localStorage.getItem('senmed_token'))
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [user, setUser]                       = useState(null)
+  const [token, setToken]                     = useState(() => localStorage.getItem('senmed_token'))
+  const [loading, setLoading]                 = useState(true)
+  const [error, setError]                     = useState(null)
+  const [mustChangePassword, setMustChange]   = useState(false)
 
-  // Charger l'utilisateur depuis l'API si token présent
   const loadUser = useCallback(async () => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
-
+    if (!token) { setLoading(false); return }
     try {
       const res = await api.get('/auth/me')
       if (res.data.success) {
-        setUser(res.data.data.user)
+        const u = res.data.data.user
+        setUser(u)
+        setMustChange(!!u.must_change_password)
         setError(null)
       }
-    } catch (err) {
-      console.error('Erreur chargement user:', err)
+    } catch {
       localStorage.removeItem('senmed_token')
       setToken(null)
       setUser(null)
@@ -33,14 +30,10 @@ export function AuthProvider({ children }) {
   }, [token])
 
   useEffect(() => {
-    if (token) {
-      loadUser()
-    } else {
-      setLoading(false)
-    }
+    if (token) loadUser()
+    else setLoading(false)
   }, [token, loadUser])
 
-  // Connexion
   const login = async (email, password) => {
     try {
       setError(null)
@@ -50,6 +43,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('senmed_token', newToken)
         setToken(newToken)
         setUser(userData)
+        setMustChange(!!userData.must_change_password)
         return { success: true }
       }
     } catch (err) {
@@ -59,7 +53,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Inscription
   const register = async (userData) => {
     try {
       setError(null)
@@ -69,54 +62,63 @@ export function AuthProvider({ children }) {
         localStorage.setItem('senmed_token', newToken)
         setToken(newToken)
         setUser(newUser)
+        setMustChange(!!newUser.must_change_password)
         return { success: true }
       }
     } catch (err) {
-      const message = err.response?.data?.message || 'Erreur d\'inscription'
+      const message = err.response?.data?.message || "Erreur d'inscription"
       setError(message)
       return { success: false, error: message }
     }
   }
 
-  // Déconnexion
   const logout = async () => {
-    try {
-      await api.post('/auth/logout')
-    } catch (err) {
-      console.error('Erreur déconnexion:', err)
-    } finally {
+    try { await api.post('/auth/logout') } catch {}
+    finally {
       localStorage.removeItem('senmed_token')
       setToken(null)
       setUser(null)
+      setMustChange(false)
     }
   }
 
-  // Vérifie si l'utilisateur a une permission spécifique
+  // Changer son propre mot de passe
+  const changePassword = async (currentPassword, newPassword) => {
+    const res = await api.post('/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    })
+    if (res.data.success) {
+      setMustChange(false)
+      setUser(u => ({ ...u, must_change_password: false }))
+    }
+    return res.data
+  }
+
+  // Conserver le mot de passe actuel (première connexion)
+  const keepPassword = async () => {
+    await api.post('/auth/keep-password')
+    setMustChange(false)
+    setUser(u => ({ ...u, must_change_password: false }))
+  }
+
   const hasPermission = (permissionKey) => {
     if (!user || !user.role) return false
     return user.role.permissions?.some(p => p.key === permissionKey) || false
   }
 
-  // Vérifie si l'utilisateur a un rôle spécifique
-  const hasRole = (roleKey) => {
-    return user?.role?.key === roleKey
-  }
-
-  const value = {
-    user,
-    token,
-    loading,
-    error,
-    login,
-    register,
-    logout,
-    hasPermission,
-    hasRole,
-    isAuthenticated: !!user,
-  }
+  const hasRole = (roleKey) => user?.role?.key === roleKey
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user, token, loading, error,
+      login, register, logout,
+      hasPermission, hasRole,
+      isAuthenticated: !!user,
+      mustChangePassword,
+      changePassword,
+      keepPassword,
+    }}>
       {children}
     </AuthContext.Provider>
   )
@@ -125,8 +127,6 @@ export function AuthProvider({ children }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider')
   return context
 }

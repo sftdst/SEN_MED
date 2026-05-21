@@ -348,6 +348,18 @@ export const nursingApi = {
     api.delete(`/nursing-dossiers/${dossierId}/surveillances/${survId}/images`, { data: { path } }),
 }
 
+// ── Utilisateurs ──────────────────────────────────────────────
+export const userApi = {
+  liste:          (params)       => api.get('/users', { params }),
+  detail:         (id)           => api.get(`/users/${id}`),
+  creer:          (data)         => api.post('/users', data),
+  modifier:       (id, data)     => api.post(`/users/${id}`, data), // POST multipart
+  supprimer:      (id)           => api.delete(`/users/${id}`),
+  toggleActif:    (id)           => api.patch(`/users/${id}/toggle`),
+  resetPassword:  (id, data)     => api.post(`/users/${id}/reset-password`, data),
+  deletePhoto:    (id)           => api.delete(`/users/${id}/photo`),
+}
+
 // ── Rôles et Permissions ───────────────────────────────────────
 export const rolePermissionApi = {
   // Rôles

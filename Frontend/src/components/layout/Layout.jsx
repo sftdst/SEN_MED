@@ -7,6 +7,7 @@ import { ToastContainer } from '../ui/Toast'
 import { ChatProvider } from '../../contexts/ChatContext'
 import ChatDrawer from '../chat/ChatDrawer'
 import { useTheme } from '../../contexts/ThemeContext'
+import ChangePasswordPrompt from '../ChangePasswordPrompt'
 
 export default function Layout() {
   const [collapsed, setCollapsed] = useState(false)
@@ -64,6 +65,7 @@ export default function Layout() {
           </main>
         </div>
 
+        <ChangePasswordPrompt />
         <ToastContainer />
         <ChatDrawer />
       </div>
