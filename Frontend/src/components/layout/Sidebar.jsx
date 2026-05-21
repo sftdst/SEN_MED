@@ -83,7 +83,8 @@ const navItemsDef = [
   {
     group: 'PHARMACIE', groupIcon: 'pill',
     items: [
-      { to: '/pharmacie', label: 'Pharmacie', permission: 'pharmacie', icon: 'pill' },
+      { to: '/pharmacie',         label: 'Pharmacie',        permission: 'pharmacie',         icon: 'pill' },
+      { to: '/materiel-medical',  label: 'Matériel Médical', permission: 'materiel-medical',  icon: 'activity' },
     ],
   },
   {
@@ -263,7 +264,6 @@ function NavGroup({ group, collapsed }) {
 export default function Sidebar({ collapsed = false, isMobile = false, isOpen = false, onClose }) {
   const { hasPermission, user, logout } = useAuth()
   const { prefs } = useTheme()
-  const W = collapsed ? 66 : 248
 
   // Scrollbar fine injectée une fois
   useEffect(() => {

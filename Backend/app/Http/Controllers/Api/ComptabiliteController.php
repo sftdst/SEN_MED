@@ -199,6 +199,59 @@ class ComptabiliteController extends Controller
     }
 
     /**
+     * Recettes diverses (Matériel Médical, Pharmacie, etc.)
+     */
+    public function recettes(Request $request): JsonResponse
+    {
+        $request->validate([
+            'date_debut'  => 'nullable|date',
+            'date_fin'    => 'nullable|date',
+            'source'      => 'nullable|string',
+            'search'      => 'nullable|string|max:100',
+            'per_page'    => 'nullable|integer|min:1|max:200',
+        ]);
+
+        $q = DB::table('gen_mst_recette');
+
+        if ($request->filled('date_debut')) {
+            $q->whereDate('date_recette', '>=', $request->date_debut);
+        }
+        if ($request->filled('date_fin')) {
+            $q->whereDate('date_recette', '<=', $request->date_fin);
+        }
+        if ($request->filled('source')) {
+            $q->where('source', $request->source);
+        }
+        if ($request->filled('search')) {
+            $s = '%' . $request->search . '%';
+            $q->where(function ($w) use ($s) {
+                $w->where('libelle', 'like', $s)
+                  ->orWhere('client_nom', 'like', $s)
+                  ->orWhere('reference', 'like', $s);
+            });
+        }
+
+        $q->orderByDesc('date_recette');
+
+        $perPage = (int) $request->get('per_page', 30);
+        $rows    = $q->paginate($perPage);
+
+        $totaux = DB::table('gen_mst_recette')
+            ->when($request->filled('date_debut'), fn($q) => $q->whereDate('date_recette', '>=', $request->date_debut))
+            ->when($request->filled('date_fin'),   fn($q) => $q->whereDate('date_recette', '<=', $request->date_fin))
+            ->when($request->filled('source'),     fn($q) => $q->where('source', $request->source))
+            ->selectRaw('COUNT(*) as nb_recettes, SUM(montant) as total, source')
+            ->groupBy('source')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $rows,
+            'totaux'  => $totaux,
+        ]);
+    }
+
+    /**
      * Liste des partenaires pour le filtre.
      */
     public function partenaires(): JsonResponse

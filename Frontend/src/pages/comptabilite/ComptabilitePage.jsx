@@ -3,16 +3,18 @@ import { colors, radius, shadows } from '../../theme'
 import FacturesTab from './FacturesTab'
 import HistoriqueTab from './HistoriqueTab'
 import CreditPatientTab from './CreditPatientTab'
+import RecettesTab from './RecettesTab'
 
 const MENU_ITEMS = [
-  { key: 'accueil',       label: 'Tableau de bord', icon: '🏠' },
-  { key: 'factures',      label: 'Factures',        icon: '📄' },
-  { key: 'historique',    label: 'Historique paiement', icon: '📜' },
-  { key: 'credits',       label: 'Crédit patient',   icon: '💸' },
-  { key: 'rapports',      label: 'Rapports',        icon: '📊' },
-  { key: 'avances',       label: 'Gestion avances', icon: '💵' },
-  { key: 'partenaires',   label: 'Partenaire',      icon: '🤝' },
-  { key: 'devis',         label: 'Devis',           icon: '📋' },
+  { key: 'accueil',       label: 'Tableau de bord',   icon: '🏠' },
+  { key: 'factures',      label: 'Factures',           icon: '📄' },
+  { key: 'historique',    label: 'Historique paiement',icon: '📜' },
+  { key: 'credits',       label: 'Crédit patient',     icon: '💸' },
+  { key: 'recettes',      label: 'Recettes diverses',  icon: '💰' },
+  { key: 'rapports',      label: 'Rapports',           icon: '📊' },
+  { key: 'avances',       label: 'Gestion avances',    icon: '💵' },
+  { key: 'partenaires',   label: 'Partenaire',         icon: '🤝' },
+  { key: 'devis',         label: 'Devis',              icon: '📋' },
 ]
 
 function PlaceholderTab({ item }) {
@@ -152,6 +154,7 @@ export default function ComptabilitePage() {
           {activeTab === 'factures'    && <FacturesTab />}
           {activeTab === 'historique'  && <HistoriqueTab />}
           {activeTab === 'credits'     && <CreditPatientTab onPayer={null} />}
+          {activeTab === 'recettes'    && <RecettesTab />}
           {['rapports','avances','partenaires','devis'].includes(activeTab) && (
             <PlaceholderTab item={MENU_ITEMS.find(m => m.key === activeTab)} />
           )}

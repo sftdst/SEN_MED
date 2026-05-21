@@ -257,6 +257,7 @@ export const comptabiliteApi = {
   creditsPatients:     (params) => api.get('/comptabilite/credits-patients', { params }),
   creditPatientFactures:(patientId) => api.get(`/comptabilite/credits-patients/${patientId}/factures`),
   partenaires:         () => api.get('/comptabilite/partenaires'),
+  recettes:            (params) => api.get('/comptabilite/recettes', { params }),
 }
 
 // ── Paiements ────────────────────────────────────────────────
@@ -395,6 +396,29 @@ export const webPageApi = {
   specialistes:() => api.get('/public/specialistes'),
   partenaires: () => api.get('/public/partenaires'),
   contact:     (data) => api.post('/public/contact', data),
+}
+
+// ── Matériel Médical : Équipements ──────────────────────────────
+export const matMedEquipementApi = {
+  liste:      (params) => api.get('/materiel-medical/equipements', { params }),
+  detail:     (id)     => api.get(`/materiel-medical/equipements/${id}`),
+  creer:      (data)   => api.post('/materiel-medical/equipements', data),
+  modifier:   (id, data) => api.put(`/materiel-medical/equipements/${id}`, data),
+  supprimer:  (id)     => api.delete(`/materiel-medical/equipements/${id}`),
+  stats:      ()       => api.get('/materiel-medical/equipements/stats'),
+  metadata:   ()       => api.get('/materiel-medical/equipements/metadata'),
+}
+
+// ── Matériel Médical : Locations ─────────────────────────────────
+export const matMedLocationApi = {
+  liste:              (params)       => api.get('/materiel-medical/locations', { params }),
+  detail:             (id)           => api.get(`/materiel-medical/locations/${id}`),
+  creer:              (data)         => api.post('/materiel-medical/locations', data),
+  ajouterDiagnostic:  (id, data)     => api.post(`/materiel-medical/locations/${id}/diagnostic`, data),
+  encaisserAcompte:   (id, data)     => api.post(`/materiel-medical/locations/${id}/acompte`, data),
+  cloturer:           (id, data)     => api.post(`/materiel-medical/locations/${id}/cloturer`, data),
+  reporting:          (params)       => api.get('/materiel-medical/locations/reporting', { params }),
+  historiqueEquipement:(equipId)     => api.get(`/materiel-medical/locations/historique/${equipId}`),
 }
 
 // ── Administration Page Web ──────────────────────────────────────

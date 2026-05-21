@@ -31,7 +31,8 @@ class RolePermissionSeeder extends Seeder
             ['key' => 'dossier-soins', 'label' => 'Dossier de Soins Infirmiers'],
         ],
         'GESTION PHARMACEUTIQUE' => [
-            ['key' => 'pharmacie', 'label' => 'Pharmacie'],
+            ['key' => 'pharmacie',        'label' => 'Pharmacie'],
+            ['key' => 'materiel-medical', 'label' => 'Matériel Médical'],
         ],
         'COMPTABILITÉ' => [
             ['key' => 'comptabilite', 'label' => 'Comptabilité'],
@@ -113,7 +114,7 @@ class RolePermissionSeeder extends Seeder
             'color' => '#9c27b0',
             'modules' => [
                 'dashboard', 'patients', 'visites', 'salle-attente', 'hospitalisation',
-                'transferts', 'rendezvous', 'espace-medecin', 'dossier-soins', 'pharmacie',
+                'transferts', 'rendezvous', 'espace-medecin', 'dossier-soins', 'pharmacie', 'materiel-medical',
                 'comptabilite', 'tarification', 'personnels', 'conges', 'absences-retards',
                 'contrats', 'config-systeme', 'config-sanitaire', 'formulaires', 'laboratoire',
                 'departements', 'hopitaux', 'partenaires', 'profil-droits',

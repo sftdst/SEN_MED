@@ -35,6 +35,7 @@ import DossierSoinsPage from './pages/dossierSoins/DossierSoinsPage'
 import DossierSoinsDetailPage from './pages/dossierSoins/DossierSoinsDetailPage'
 import ImagesNursingPage from './pages/dossierSoins/ImagesNursingPage'
 import DPEPage from './pages/patients/DPEPage'
+import MatMedPage from './pages/materielMedical/MatMedPage'
 import LoginPage from './pages/auth/LoginPage'
 
 function AppRoutes() {
@@ -64,6 +65,7 @@ function AppRoutes() {
         <Route path="visites" element={<VisitesPage />} />
         <Route path="salle-attente" element={<SalleAttentePage />} />
         <Route path="pharmacie" element={<PharmaciePage />} />
+        <Route path="materiel-medical" element={<MatMedPage />} />
         <Route path="comptabilite" element={<ComptabilitePage />} />
         <Route path="config-systeme" element={<ConfigSystemePage />} />
         <Route path="config-page-web" element={<ConfigPageWebPage />} />

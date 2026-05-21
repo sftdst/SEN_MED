@@ -39,6 +39,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MailingConfigController;
 use App\Http\Controllers\Api\AppPreferenceController;
 use App\Http\Controllers\Api\WebPublicController;
+use App\Http\Controllers\Api\MatMedEquipementController;
+use App\Http\Controllers\Api\MatMedLocationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -330,6 +332,7 @@ Route::prefix('v1')->group(function () {
     Route::get('comptabilite/credits-patients',                          [ComptabiliteController::class, 'creditsPatients']);
     Route::get('comptabilite/credits-patients/{patientId}/factures',     [ComptabiliteController::class, 'creditPatientFactures']);
     Route::get('comptabilite/partenaires',          [ComptabiliteController::class, 'partenaires']);
+    Route::get('comptabilite/recettes',             [ComptabiliteController::class, 'recettes']);
 
     /*
     |--------------------------------------------------------------------------
@@ -538,5 +541,26 @@ Route::prefix('v1')->group(function () {
         Route::get('contacts',                [WebPublicController::class, 'adminContactsList']);
         Route::patch('contacts/{id}/read',    [WebPublicController::class, 'adminContactMarkRead']);
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Matériel Médical
+    |--------------------------------------------------------------------------
+    */
+    // Équipements — routes spéciales avant apiResource
+    Route::get('materiel-medical/equipements/stats',    [MatMedEquipementController::class, 'stats']);
+    Route::get('materiel-medical/equipements/metadata', [MatMedEquipementController::class, 'metadata']);
+    Route::apiResource('materiel-medical/equipements',  MatMedEquipementController::class)
+        ->parameters(['materiel-medical/equipements' => 'equipement']);
+
+    // Locations — routes spéciales avant apiResource
+    Route::get('materiel-medical/locations/reporting',                   [MatMedLocationController::class, 'reporting']);
+    Route::get('materiel-medical/locations/historique/{equipementId}',   [MatMedLocationController::class, 'historiqueEquipement']);
+    Route::post('materiel-medical/locations/{location}/diagnostic',      [MatMedLocationController::class, 'ajouterDiagnostic']);
+    Route::post('materiel-medical/locations/{location}/acompte',         [MatMedLocationController::class, 'encaisserAcompte']);
+    Route::post('materiel-medical/locations/{location}/cloturer',        [MatMedLocationController::class, 'cloturerDossier']);
+    Route::apiResource('materiel-medical/locations',                     MatMedLocationController::class)
+        ->parameters(['materiel-medical/locations' => 'location'])
+        ->only(['index', 'show', 'store']);
 
 });
