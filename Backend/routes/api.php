@@ -39,12 +39,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MailingConfigController;
 use App\Http\Controllers\Api\AppPreferenceController;
 use App\Http\Controllers\Api\WebPublicController;
-<<<<<<< HEAD
 use App\Http\Controllers\Api\MatMedEquipementController;
 use App\Http\Controllers\Api\MatMedLocationController;
-=======
 use App\Http\Controllers\Api\UserController;
->>>>>>> b597751ac6eb8ceaea344fa8928cff0c45672b44
 
 Route::get('/user', function (Request $request) {
     return $request->user();
