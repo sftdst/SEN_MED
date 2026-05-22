@@ -265,10 +265,6 @@ function NavGroup({ group, collapsed }) {
 export default function Sidebar({ collapsed = false, isMobile = false, isOpen = false, onClose }) {
   const { hasPermission, user, logout } = useAuth()
   const { prefs } = useTheme()
-<<<<<<< HEAD
-
-=======
->>>>>>> b597751ac6eb8ceaea344fa8928cff0c45672b44
   // Scrollbar fine injectée une fois
   useEffect(() => {
     const id = 'sb-scroll-css'

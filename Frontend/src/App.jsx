@@ -35,11 +35,8 @@ import DossierSoinsPage from './pages/dossierSoins/DossierSoinsPage'
 import DossierSoinsDetailPage from './pages/dossierSoins/DossierSoinsDetailPage'
 import ImagesNursingPage from './pages/dossierSoins/ImagesNursingPage'
 import DPEPage from './pages/patients/DPEPage'
-<<<<<<< HEAD
 import MatMedPage from './pages/materielMedical/MatMedPage'
-=======
 import UsersPage from './pages/configUtilisateurs/UsersPage'
->>>>>>> b597751ac6eb8ceaea344fa8928cff0c45672b44
 import LoginPage from './pages/auth/LoginPage'
 
 function AppRoutes() {
