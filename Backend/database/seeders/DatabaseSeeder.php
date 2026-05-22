@@ -38,6 +38,7 @@ $this->call([
               RolePermissionSeeder::class,
               UserSeeder::class,
               WebAboutSeeder::class,
+              MatMedSeeder::class,
           ]);
     }
 }
