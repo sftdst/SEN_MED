@@ -128,7 +128,7 @@ class AppointmentController extends Controller
             'lien_parente'         => $validated['lien_parente'] ?? null,
             'email_patient'        => $validated['email_patient'] ?? null,
             'visit_place'          => $validated['visit_place'] ?? null,
-            'statut_app'           => 0,
+            'statut_app'           => in_array($validated['visit_place'] ?? '', ['cabinet', 'hopital']) ? 1 : 0,
             'status_id'            => 1,
             'created_user_id'      => 'USR0000001',
             'created_dttm'         => now(),

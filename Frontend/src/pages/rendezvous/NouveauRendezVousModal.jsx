@@ -7,8 +7,8 @@ import { showToast } from '../../components/ui/Toast'
 
 // ── Constantes ───────────────────────────────────────────────────────────────
 const TYPES_PATIENT = [
-  { value: 'habituel',  label: 'Patient habituel' },
-  { value: 'nouveau',   label: 'Nouveau patient'  },
+  { value: 'habituel', label: 'Patient connu',        icon: '🔍', desc: 'Déjà enregistré dans le système' },
+  { value: 'nouveau',  label: 'Patient non habituel', icon: '👤', desc: 'Saisie manuelle des informations' },
 ]
 
 const TYPES_RDV = [
@@ -643,20 +643,67 @@ export default function NouveauRendezVousModal({
                 />
               </div>
 
-              {/* Ligne 1 : Type patient + Type RDV */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div>
-                  <FieldLabel required>Type de patient</FieldLabel>
-                  <FieldSelect value={form.type_patient} onChange={e => set('type_patient', e.target.value)}>
-                    {TYPES_PATIENT.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </FieldSelect>
+              {/* Ligne 1 : Type patient (cards) + Type RDV */}
+              <div style={{ marginBottom: 14 }}>
+                <FieldLabel required>Type de patient</FieldLabel>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {TYPES_PATIENT.map(t => {
+                    const actif = form.type_patient === t.value
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => {
+                          set('type_patient', t.value)
+                          handlePatientClear()
+                        }}
+                        style={{
+                          padding: '12px 14px',
+                          border: `2px solid ${actif ? colors.bleu : colors.gray200}`,
+                          borderRadius: radius.md,
+                          background: actif ? `linear-gradient(135deg, var(--app-primary-0a,#002f590a), var(--app-primary-05,#002f5905))` : colors.white,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.15s',
+                          boxShadow: actif ? `0 0 0 3px ${colors.bleu}22` : 'none',
+                          display: 'flex', alignItems: 'center', gap: 10,
+                        }}
+                      >
+                        <span style={{
+                          fontSize: 22,
+                          width: 36, height: 36, borderRadius: radius.full,
+                          background: actif ? colors.bleu : colors.gray100,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0, transition: 'all 0.15s',
+                        }}>{t.icon}</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: actif ? colors.bleu : colors.gray800 }}>
+                            {t.label}
+                          </div>
+                          <div style={{ fontSize: 11, color: colors.gray500, marginTop: 2 }}>
+                            {t.desc}
+                          </div>
+                        </div>
+                        {actif && (
+                          <div style={{
+                            marginLeft: 'auto', width: 18, height: 18,
+                            borderRadius: '50%', background: colors.bleu,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: colors.white, fontSize: 10, fontWeight: 700, flexShrink: 0,
+                          }}>✓</div>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
-                <div>
-                  <FieldLabel>Type de rendez-vous</FieldLabel>
-                  <FieldSelect value={form.appointment_type} onChange={e => set('appointment_type', e.target.value)}>
-                    {TYPES_RDV.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </FieldSelect>
-                </div>
+              </div>
+
+              {/* Type RDV */}
+              <div style={{ marginBottom: 14 }}>
+                <FieldLabel>Type de rendez-vous</FieldLabel>
+                <FieldSelect value={form.appointment_type} onChange={e => set('appointment_type', e.target.value)}>
+                  {TYPES_RDV.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </FieldSelect>
               </div>
 
               {/* Ligne 2 : Créneau souhaité + disponible */}
@@ -726,7 +773,7 @@ export default function NouveauRendezVousModal({
 
               <Divider />
               <SectionTitle icon="👤" title="Informations du patient"
-                subtitle={form.type_patient === 'habituel' ? 'Recherchez le patient dans la base de données' : 'Saisissez les informations du nouveau patient'} />
+                subtitle={form.type_patient === 'habituel' ? 'Recherchez le patient connu dans la base de données' : 'Saisissez les informations du patient non habituel'} />
 
               {/* Patient habituel : autocomplete */}
               {form.type_patient === 'habituel' ? (
@@ -750,7 +797,7 @@ export default function NouveauRendezVousModal({
                 </div>
               ) : (
                 <div style={{ marginBottom: 14 }}>
-                  <FieldLabel required>Nom complet du patient</FieldLabel>
+                  <FieldLabel required>Nom complet du patient non habituel</FieldLabel>
                   <FieldInput
                     value={form.nom_patient_affiche}
                     onChange={e => set('nom_patient_affiche', e.target.value)}

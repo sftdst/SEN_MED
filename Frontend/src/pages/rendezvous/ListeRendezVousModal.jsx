@@ -345,6 +345,87 @@ export default function ListeRendezVousModal({ open, onClose }) {
     showToast(`Reportage de ${rdv.patient_nom_complet || 'ce RDV'} — fonctionnalité à venir`)
   }
 
+  // ── Impression ─────────────────────────────────────────────────────────────
+  const imprimer = (periode) => {
+    const now   = new Date()
+    const heure = now.getHours()
+    let liste   = [...filtered]
+
+    const parseHeure = (t) => parseInt((t || '00:00').toString().slice(11, 13) || (t || '00').toString().slice(0, 2), 10)
+
+    if (periode === 'journee') {
+      liste = liste.filter(r => parseHeure(r.start_time) < 14)
+    } else if (periode === 'soir') {
+      liste = liste.filter(r => parseHeure(r.start_time) >= 14)
+    }
+    // 'tous' → pas de filtre horaire
+
+    const titre = periode === 'journee'
+      ? 'Liste des RDV — Journée (matin)'
+      : periode === 'soir'
+      ? 'Liste des RDV — Soir / Après-midi'
+      : 'Liste complète des Rendez-vous'
+    const dateStr = fmtDate(dateDebut) + (dateFin !== dateDebut ? ` → ${fmtDate(dateFin)}` : '')
+
+    const lignes = liste.map((r, i) => {
+      const nom    = r.patient_nom_complet?.trim() || r.nom_patient || '—'
+      const medecin = r.medecin_nom || '—'
+      const hD     = fmtTime(r.start_time)
+      const hF     = fmtTime(r.end_time)
+      const date   = fmtDate(r.appointment_date)
+      const statut = STATUTS[r.statut_app]?.label || '—'
+      const motif  = r.motif || r.remarks || '—'
+      const lieu   = r.visit_place || '—'
+      return `
+        <tr style="background:${i % 2 === 0 ? '#f8f9fa' : '#fff'}">
+          <td style="padding:8px 12px;font-weight:700;color:#1565c0">${i + 1}</td>
+          <td style="padding:8px 12px;font-weight:600">${nom}</td>
+          <td style="padding:8px 12px">${date}</td>
+          <td style="padding:8px 12px;font-weight:700;color:#2e7d32">${hD} – ${hF}</td>
+          <td style="padding:8px 12px">${medecin}</td>
+          <td style="padding:8px 12px">${motif}</td>
+          <td style="padding:8px 12px">${lieu}</td>
+          <td style="padding:8px 12px">
+            <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+              background:${STATUTS[r.statut_app]?.bg || '#eee'};
+              color:${STATUTS[r.statut_app]?.color || '#333'}">${statut}</span>
+          </td>
+        </tr>`
+    }).join('')
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>${titre}</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 24px; color: #212529; }
+  h1   { color: #002f59; font-size: 18px; margin-bottom: 4px; }
+  .sub { color: #6c757d; font-size: 12px; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: #002f59; color: #fff; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+  tbody tr:hover { background: #e3f2fd !important; }
+  td { border-bottom: 1px solid #dee2e6; }
+  .footer { margin-top: 16px; font-size: 11px; color: #adb5bd; text-align: right; }
+  @media print { body { margin: 10px; } }
+</style>
+</head><body>
+  <h1>🏥 SenMed — ${titre}</h1>
+  <div class="sub">Période : ${dateStr} · Imprimé le ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · ${liste.length} rendez-vous</div>
+  <table>
+    <thead><tr>
+      <th>#</th><th>Patient</th><th>Date</th><th>Horaire</th>
+      <th>Personnel</th><th>Motif</th><th>Lieu</th><th>Statut</th>
+    </tr></thead>
+    <tbody>${lignes || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#adb5bd">Aucun rendez-vous</td></tr>'}</tbody>
+  </table>
+  <div class="footer">SenMed — Document généré automatiquement</div>
+  <script>window.onload = () => { window.print() }<\/script>
+</body></html>`
+
+    const win = window.open('', '_blank', 'width=900,height=700')
+    win.document.write(html)
+    win.document.close()
+  }
+
   if (!open) return null
 
   const nomConfirm = confirmData?.rdv?.patient_nom_complet || confirmData?.rdv?.nom_patient || 'ce patient'
@@ -626,19 +707,73 @@ export default function ListeRendezVousModal({ open, onClose }) {
           <span style={{ fontSize: 11, color: '#adb5bd' }}>
             Période : {fmtDate(dateDebut)} → {fmtDate(dateFin)}
           </span>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '8px 22px', borderRadius: radius.sm, cursor: 'pointer',
-              border: `1.5px solid ${colors.bleu}`, background: 'transparent',
-              color: colors.bleu, fontSize: 12, fontWeight: 700,
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = colors.bleu; e.currentTarget.style.color = '#fff' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.bleu }}
-          >
-            Fermer
-          </button>
+
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {/* Bouton impression journée */}
+            <button
+              onClick={() => imprimer('journee')}
+              title="Imprimer les RDV de la matinée (avant 14h)"
+              style={{
+                padding: '8px 16px', borderRadius: radius.sm, cursor: 'pointer',
+                border: '1.5px solid #2e7d32', background: '#e8f5e9',
+                color: '#2e7d32', fontSize: 12, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#2e7d32'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#e8f5e9'; e.currentTarget.style.color = '#2e7d32' }}
+            >
+              🖨️ Journée
+            </button>
+
+            {/* Bouton impression soir */}
+            <button
+              onClick={() => imprimer('soir')}
+              title="Imprimer les RDV du soir (à partir de 14h)"
+              style={{
+                padding: '8px 16px', borderRadius: radius.sm, cursor: 'pointer',
+                border: '1.5px solid #6a1b9a', background: '#f3e5f5',
+                color: '#6a1b9a', fontSize: 12, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#6a1b9a'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#f3e5f5'; e.currentTarget.style.color = '#6a1b9a' }}
+            >
+              🖨️ Soir
+            </button>
+
+            {/* Bouton impression complète */}
+            <button
+              onClick={() => imprimer('tous')}
+              title="Imprimer toute la liste filtrée"
+              style={{
+                padding: '8px 16px', borderRadius: radius.sm, cursor: 'pointer',
+                border: `1.5px solid ${colors.orange}`, background: '#fff8f5',
+                color: colors.orange, fontSize: 12, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = colors.orange; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#fff8f5'; e.currentTarget.style.color = colors.orange }}
+            >
+              🖨️ Tout
+            </button>
+
+            <button
+              onClick={onClose}
+              style={{
+                padding: '8px 22px', borderRadius: radius.sm, cursor: 'pointer',
+                border: `1.5px solid ${colors.bleu}`, background: 'transparent',
+                color: colors.bleu, fontSize: 12, fontWeight: 700,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = colors.bleu; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.bleu }}
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       </div>
 

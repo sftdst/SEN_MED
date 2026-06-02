@@ -15,10 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
      ->withMiddleware(function (Middleware $middleware): void {
-         $middleware->appendToGroup('api', [
-             \Illuminate\Http\Middleware\HandleCors::class,
-         ]);
-         
+         // HandleCors doit être global pour intercepter les requêtes OPTIONS preflight
+         // avant que le routage ne soit résolu
+         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
+
          // Aliases des middlewares de route
          $middleware->alias([
              'permission' => CheckPermission::class,

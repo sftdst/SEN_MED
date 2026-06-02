@@ -487,9 +487,9 @@ export default function RendezVousPage() {
     [lundi]
   )
 
-  // ── Chargement médecins (staff_type = medecin) ───────────────────────────
+  // ── Chargement de tout le personnel ─────────────────────────────────────
   useEffect(() => {
-    personnelApi.liste({ staff_type: 'medecin', per_page: 200 })
+    personnelApi.liste({ per_page: 200 })
       .then(r => {
         const list = r.data?.data?.data ?? r.data?.data ?? []
         setMedecins(list)
@@ -676,7 +676,7 @@ export default function RendezVousPage() {
         {/* Sélecteur médecin */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <label style={{ fontSize: 12, fontWeight: 600, color: colors.gray700, whiteSpace: 'nowrap' }}>
-            Médecin :
+            Personnel :
           </label>
           <select
             value={medecinId}
@@ -688,11 +688,11 @@ export default function RendezVousPage() {
               outline: 'none', fontWeight: 500,
             }}
           >
-            <option value="">-- Sélectionner un médecin --</option>
+            <option value="">-- Sélectionner un personnel --</option>
             {medecins.map(m => (
               <option key={m.id} value={String(m.id)}>
-                Dr. {m.first_name} {m.last_name}
-                {m.specialization ? ` — ${m.specialization}` : ''}
+                {m.staff_type === 'medecin' ? 'Dr. ' : ''}{m.first_name} {m.last_name}
+                {m.specialization ? ` — ${m.specialization}` : m.fonction ? ` — ${m.fonction}` : ''}
               </option>
             ))}
           </select>
@@ -821,7 +821,7 @@ export default function RendezVousPage() {
         onClose={() => { setModalOpen(false); setSelectedSlot(null) }}
         medecinId={medecinIdNum}
         medecinNom={medecinSelectionne
-          ? `Dr. ${medecinSelectionne.first_name} ${medecinSelectionne.last_name}${medecinSelectionne.specialization ? ` (${medecinSelectionne.specialization})` : ''}`
+          ? `${medecinSelectionne.staff_type === 'medecin' ? 'Dr. ' : ''}${medecinSelectionne.first_name} ${medecinSelectionne.last_name}${medecinSelectionne.specialization ? ` (${medecinSelectionne.specialization})` : medecinSelectionne.fonction ? ` (${medecinSelectionne.fonction})` : ''}`
           : ''}
         slotChoisi={slotChoisi}
         onSaved={() => { chargerRdvs(); setModalOpen(false); setSelectedSlot(null) }}

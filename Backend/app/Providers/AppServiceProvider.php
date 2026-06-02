@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Fruitcake\Cors\CorsService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +12,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Lier CorsService avec les options du fichier config/cors.php
+        // (Laravel ne fait pas cette liaison automatiquement)
+        $this->app->singleton(CorsService::class, function ($app) {
+            return new CorsService($app['config']->get('cors', []));
+        });
     }
 
     /**
