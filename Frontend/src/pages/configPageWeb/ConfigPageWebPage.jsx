@@ -808,13 +808,402 @@ function MessagesPage() {
   )
 }
 
+/* ─── Stars display ────────────────────────────────────────────────────────── */
+function Stars({ note = 5 }) {
+  return (
+    <span style={{ color: '#f59e0b', fontSize: 13, letterSpacing: 1 }}>
+      {'★'.repeat(Math.max(0, Math.min(5, note)))}{'☆'.repeat(Math.max(0, 5 - Math.min(5, note)))}
+    </span>
+  )
+}
+
+/* ─── Testimonial Modal ─────────────────────────────────────────────────────── */
+
+const EMPTY_TESTI = { nom: '', role: 'Patient', photo: '', texte: '', note: 5, is_active: true, sort_order: 0 }
+
+function TestimonialModal({ item, onClose, onSaved }) {
+  const isEdit = Boolean(item?.id)
+  const [form, setForm] = useState(isEdit ? { ...item } : { ...EMPTY_TESTI })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
+  const setCheck = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.checked }))
+
+  const handleSave = async () => {
+    if (!form.nom.trim()) { setError('Le nom est requis'); return }
+    if (!form.texte.trim()) { setError('Le témoignage est requis'); return }
+    setSaving(true); setError(null)
+    try {
+      if (isEdit) {
+        await webAdminApi.updateTestimonial(form.id, form)
+      } else {
+        await webAdminApi.createTestimonial(form)
+      }
+      onSaved()
+    } catch { setError("Erreur lors de l'enregistrement") }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{
+        background: colors.white, borderRadius: radius.lg, width: 520,
+        maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+      }}>
+        <div style={{
+          padding: '16px 20px', borderBottom: `1px solid ${colors.gray200}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: colors.gray900 }}>
+            {isEdit ? 'Modifier le témoignage' : 'Nouveau témoignage'}
+          </h3>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: colors.gray500, fontSize: 22, lineHeight: 1, padding: '0 4px',
+          }}>×</button>
+        </div>
+
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Alert type="error" text={error} onClose={() => setError(null)} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <InputField label="Nom du patient *" value={form.nom} onChange={set('nom')} placeholder="Aminata Sow" />
+            <InputField label="Rôle / Titre" value={form.role || ''} onChange={set('role')} placeholder="Patient" />
+          </div>
+          <InputField label="Témoignage *" value={form.texte || ''} onChange={set('texte')}
+            placeholder="Décrivez votre expérience…" rows={4} />
+          <div style={{ display: 'grid', gridTemplateColumns: '120px 120px 1fr', gap: 12, alignItems: 'end' }}>
+            <div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: colors.gray700, display: 'block', marginBottom: 5 }}>Note (1-5)</span>
+              <select value={form.note ?? 5} onChange={e => setForm(f => ({ ...f, note: Number(e.target.value) }))} style={{
+                width: '100%', padding: '9px 12px', border: `1.5px solid ${colors.gray300}`,
+                borderRadius: radius.sm, fontSize: 13, fontFamily: 'inherit', background: colors.white,
+              }}>
+                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} étoile{n > 1 ? 's' : ''}</option>)}
+              </select>
+            </div>
+            <InputField label="Ordre" type="number" value={form.sort_order ?? 0} onChange={set('sort_order')} placeholder="0" />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 24 }}>
+              <input type="checkbox" checked={!!form.is_active} onChange={setCheck('is_active')}
+                style={{ width: 16, height: 16, accentColor: colors.bleu }} />
+              <span style={{ fontSize: 13, color: colors.gray700 }}>Visible sur le site</span>
+            </label>
+          </div>
+        </div>
+
+        <div style={{
+          padding: '14px 20px', borderTop: `1px solid ${colors.gray200}`,
+          display: 'flex', justifyContent: 'flex-end', gap: 10,
+        }}>
+          <Btn variant="ghost" onClick={onClose}>Annuler</Btn>
+          <Btn onClick={handleSave} disabled={saving}>
+            {saving ? 'Enregistrement…' : isEdit ? 'Mettre à jour' : 'Créer'}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Tab 5: Témoignages ────────────────────────────────────────────────────── */
+
+function TestimonialsPage() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [modal, setModal] = useState(null)
+  const [alert, setAlert] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data } = await webAdminApi.testimonials()
+      setItems(Array.isArray(data) ? data : [])
+    } catch {
+      setAlert({ type: 'error', text: 'Erreur de chargement des témoignages' })
+    } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const handleToggle = async (id) => {
+    try { await webAdminApi.toggleTestimonial(id); load() }
+    catch { setAlert({ type: 'error', text: 'Erreur lors du changement de statut' }) }
+  }
+
+  const handleDelete = async (item) => {
+    if (!window.confirm(`Supprimer le témoignage de "${item.nom}" ?`)) return
+    try { await webAdminApi.deleteTestimonial(item.id); load() }
+    catch { setAlert({ type: 'error', text: 'Erreur lors de la suppression' }) }
+  }
+
+  return (
+    <div>
+      <Alert type={alert?.type} text={alert?.text} onClose={() => setAlert(null)} />
+      <SectionCard
+        title={`Témoignages patients (${items.length})`}
+        action={<Btn size="sm" onClick={() => setModal('new')}><IcoPlus /> Nouveau témoignage</Btn>}
+      >
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Spinner /></div>
+        ) : items.length === 0 ? (
+          <div style={{
+            textAlign: 'center', padding: '40px 20px', color: colors.gray400,
+            fontSize: 14, border: `2px dashed ${colors.gray200}`, borderRadius: radius.sm,
+          }}>
+            Aucun témoignage. Cliquez sur "+ Nouveau témoignage" pour commencer.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {items.map(item => (
+              <div key={item.id} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 14,
+                padding: '12px 14px', borderRadius: radius.sm,
+                border: `1px solid ${colors.gray200}`, background: colors.white,
+              }}>
+                {/* Avatar */}
+                <div style={{
+                  width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                  background: `linear-gradient(135deg, ${colors.bleu}, #0050a0)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontSize: 13, fontWeight: 800,
+                }}>
+                  {(item.nom || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('')}
+                </div>
+
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 3 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: colors.gray900 }}>{item.nom}</span>
+                    <span style={{ fontSize: 11, color: colors.gray400 }}>{item.role}</span>
+                    <Stars note={item.note} />
+                  </div>
+                  <div style={{
+                    fontSize: 12, color: colors.gray600, lineHeight: 1.5,
+                    overflow: 'hidden', display: '-webkit-box',
+                    WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  }}>
+                    {item.texte}
+                  </div>
+                </div>
+
+                <span style={{ fontSize: 11, color: colors.gray400, flexShrink: 0 }}>#{item.sort_order}</span>
+                <Badge active={item.is_active} />
+
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <Btn size="sm" variant={item.is_active ? 'ghost' : 'success'}
+                    onClick={() => handleToggle(item.id)}
+                    title={item.is_active ? 'Désactiver' : 'Activer'}>
+                    {item.is_active ? 'Désact.' : 'Activer'}
+                  </Btn>
+                  <Btn size="sm" variant="ghost" onClick={() => setModal(item)} title="Modifier"><IcoEdit /></Btn>
+                  <Btn size="sm" variant="danger" onClick={() => handleDelete(item)} title="Supprimer"><IcoTrash /></Btn>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {modal && (
+        <TestimonialModal
+          item={modal === 'new' ? null : modal}
+          onClose={() => setModal(null)}
+          onSaved={() => { setModal(null); load(); setAlert({ type: 'success', text: 'Témoignage enregistré.' }) }}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─── FAQ Modal ─────────────────────────────────────────────────────────────── */
+
+const EMPTY_FAQ = { question: '', reponse: '', is_active: true, sort_order: 0 }
+
+function FaqModal({ item, onClose, onSaved }) {
+  const isEdit = Boolean(item?.id)
+  const [form, setForm] = useState(isEdit ? { ...item } : { ...EMPTY_FAQ })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
+  const setCheck = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.checked }))
+
+  const handleSave = async () => {
+    if (!form.question.trim()) { setError('La question est requise'); return }
+    if (!form.reponse.trim()) { setError('La réponse est requise'); return }
+    setSaving(true); setError(null)
+    try {
+      if (isEdit) {
+        await webAdminApi.updateFaq(form.id, form)
+      } else {
+        await webAdminApi.createFaq(form)
+      }
+      onSaved()
+    } catch { setError("Erreur lors de l'enregistrement") }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{
+        background: colors.white, borderRadius: radius.lg, width: 540,
+        maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+      }}>
+        <div style={{
+          padding: '16px 20px', borderBottom: `1px solid ${colors.gray200}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: colors.gray900 }}>
+            {isEdit ? 'Modifier la question' : 'Nouvelle question FAQ'}
+          </h3>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: colors.gray500, fontSize: 22, lineHeight: 1, padding: '0 4px',
+          }}>×</button>
+        </div>
+
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Alert type="error" text={error} onClose={() => setError(null)} />
+          <InputField label="Question *" value={form.question || ''} onChange={set('question')}
+            placeholder="Comment prendre rendez-vous ?" />
+          <InputField label="Réponse *" value={form.reponse || ''} onChange={set('reponse')}
+            placeholder="Détaillez la réponse ici…" rows={5} />
+          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12, alignItems: 'end' }}>
+            <InputField label="Ordre d'affichage" type="number" value={form.sort_order ?? 0} onChange={set('sort_order')} placeholder="0" />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 24 }}>
+              <input type="checkbox" checked={!!form.is_active} onChange={setCheck('is_active')}
+                style={{ width: 16, height: 16, accentColor: colors.bleu }} />
+              <span style={{ fontSize: 13, color: colors.gray700 }}>Visible sur le site</span>
+            </label>
+          </div>
+        </div>
+
+        <div style={{
+          padding: '14px 20px', borderTop: `1px solid ${colors.gray200}`,
+          display: 'flex', justifyContent: 'flex-end', gap: 10,
+        }}>
+          <Btn variant="ghost" onClick={onClose}>Annuler</Btn>
+          <Btn onClick={handleSave} disabled={saving}>
+            {saving ? 'Enregistrement…' : isEdit ? 'Mettre à jour' : 'Créer'}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Tab 6: FAQ ────────────────────────────────────────────────────────────── */
+
+function FaqPage() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [modal, setModal] = useState(null)
+  const [alert, setAlert] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data } = await webAdminApi.faq()
+      setItems(Array.isArray(data) ? data : [])
+    } catch {
+      setAlert({ type: 'error', text: 'Erreur de chargement de la FAQ' })
+    } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const handleDelete = async (item) => {
+    if (!window.confirm(`Supprimer la question "${item.question.slice(0, 50)}…" ?`)) return
+    try { await webAdminApi.deleteFaq(item.id); load() }
+    catch { setAlert({ type: 'error', text: 'Erreur lors de la suppression' }) }
+  }
+
+  return (
+    <div>
+      <Alert type={alert?.type} text={alert?.text} onClose={() => setAlert(null)} />
+      <SectionCard
+        title={`Questions fréquentes (${items.length})`}
+        action={<Btn size="sm" onClick={() => setModal('new')}><IcoPlus /> Nouvelle question</Btn>}
+      >
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Spinner /></div>
+        ) : items.length === 0 ? (
+          <div style={{
+            textAlign: 'center', padding: '40px 20px', color: colors.gray400,
+            fontSize: 14, border: `2px dashed ${colors.gray200}`, borderRadius: radius.sm,
+          }}>
+            Aucune question FAQ. Cliquez sur "+ Nouvelle question" pour commencer.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {items.map(item => (
+              <div key={item.id} style={{
+                padding: '12px 14px', borderRadius: radius.sm,
+                border: `1px solid ${colors.gray200}`, background: colors.white,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  {/* Q badge */}
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                    background: colors.bleu,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff', fontSize: 12, fontWeight: 800,
+                  }}>Q</div>
+
+                  {/* Content */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: colors.gray900, marginBottom: 4 }}>
+                      {item.question}
+                    </div>
+                    <div style={{
+                      fontSize: 12, color: colors.gray600, lineHeight: 1.5,
+                      overflow: 'hidden', display: '-webkit-box',
+                      WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                    }}>
+                      {item.reponse}
+                    </div>
+                  </div>
+
+                  <span style={{ fontSize: 11, color: colors.gray400, flexShrink: 0 }}>#{item.sort_order}</span>
+                  <Badge active={item.is_active} />
+
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <Btn size="sm" variant="ghost" onClick={() => setModal(item)} title="Modifier"><IcoEdit /></Btn>
+                    <Btn size="sm" variant="danger" onClick={() => handleDelete(item)} title="Supprimer"><IcoTrash /></Btn>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {modal && (
+        <FaqModal
+          item={modal === 'new' ? null : modal}
+          onClose={() => setModal(null)}
+          onSaved={() => { setModal(null); load(); setAlert({ type: 'success', text: 'Question FAQ enregistrée.' }) }}
+        />
+      )}
+    </div>
+  )
+}
+
 /* ─── Page principale avec tabs ────────────────────────────────────────────── */
 
 const TABS = [
-  { key: 'accueil',  label: 'Accueil',    icon: '🏠' },
-  { key: 'slides',   label: 'Diaporama',  icon: '🖼️' },
-  { key: 'about',    label: 'À propos',   icon: '📝' },
-  { key: 'messages', label: 'Messages',   icon: '✉️' },
+  { key: 'accueil',       label: 'Accueil',        icon: '🏠' },
+  { key: 'slides',        label: 'Diaporama',       icon: '🖼️' },
+  { key: 'about',         label: 'À propos',        icon: '📝' },
+  { key: 'testimonials',  label: 'Témoignages',     icon: '💬' },
+  { key: 'faq',           label: 'FAQ',             icon: '❓' },
+  { key: 'messages',      label: 'Messages',        icon: '✉️' },
 ]
 
 export default function ConfigPageWebPage() {
@@ -873,10 +1262,12 @@ export default function ConfigPageWebPage() {
 
       {/* Tab content */}
       <div>
-        {activeTab === 'accueil'  && <AccueilTab />}
-        {activeTab === 'slides'   && <SlidesPage />}
-        {activeTab === 'about'    && <AboutPage />}
-        {activeTab === 'messages' && <MessagesPage />}
+        {activeTab === 'accueil'      && <AccueilTab />}
+        {activeTab === 'slides'       && <SlidesPage />}
+        {activeTab === 'about'        && <AboutPage />}
+        {activeTab === 'testimonials' && <TestimonialsPage />}
+        {activeTab === 'faq'          && <FaqPage />}
+        {activeTab === 'messages'     && <MessagesPage />}
       </div>
     </div>
   )

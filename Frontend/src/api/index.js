@@ -445,8 +445,19 @@ export const webAdminApi = {
   about:        ()           => api.get('/web/admin/about'),
   saveAbout:    (data)       => api.post('/web/admin/about', data),
   // Messages de contact reçus
-  contacts:     ()           => api.get('/web/admin/contacts'),
-  markRead:     (id)         => api.patch(`/web/admin/contacts/${id}/read`),
+  contacts:          ()          => api.get('/web/admin/contacts'),
+  markRead:          (id)        => api.patch(`/web/admin/contacts/${id}/read`),
+  // Témoignages
+  testimonials:      ()          => api.get('/web/admin/testimonials'),
+  createTestimonial: (data)      => api.post('/web/admin/testimonials', data),
+  updateTestimonial: (id, data)  => api.put(`/web/admin/testimonials/${id}`, data),
+  deleteTestimonial: (id)        => api.delete(`/web/admin/testimonials/${id}`),
+  toggleTestimonial: (id)        => api.patch(`/web/admin/testimonials/${id}/toggle`),
+  // FAQ
+  faq:               ()          => api.get('/web/admin/faq'),
+  createFaq:         (data)      => api.post('/web/admin/faq', data),
+  updateFaq:         (id, data)  => api.put(`/web/admin/faq/${id}`, data),
+  deleteFaq:         (id)        => api.delete(`/web/admin/faq/${id}`),
 }
  
  

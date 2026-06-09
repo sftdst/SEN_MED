@@ -1722,13 +1722,17 @@ function HomePage() {
       publicApi.services(),
       publicApi.specialistes(),
       publicApi.partenaires(),
-    ]).then(([p, s, a, sv, sp, par]) => {
-      if (p.status   === 'fulfilled') setTheme({ ...fallbackTheme,     ...(p.value?.data   || p.value) })
-      if (s.status   === 'fulfilled') setSlides(normalizeList(s.value,  fallbackSlides))
-      if (a.status   === 'fulfilled') setAbout({ ...fallbackAbout,      ...(a.value?.data   || a.value) })
-      if (sv.status  === 'fulfilled') setServices(normalizeList(sv.value,  fallbackServices))
-      if (sp.status  === 'fulfilled') setSpecialistes(normalizeList(sp.value,  fallbackSpecialistes))
-      if (par.status === 'fulfilled') setPartenaires(normalizeList(par.value,  fallbackPartenaires))
+      publicApi.testimonials(),
+      publicApi.faq(),
+    ]).then(([p, s, a, sv, sp, par, testi, faqRes]) => {
+      if (p.status     === 'fulfilled') setTheme({ ...fallbackTheme,        ...(p.value?.data     || p.value) })
+      if (s.status     === 'fulfilled') setSlides(normalizeList(s.value,      fallbackSlides))
+      if (a.status     === 'fulfilled') setAbout({ ...fallbackAbout,          ...(a.value?.data     || a.value) })
+      if (sv.status    === 'fulfilled') setServices(normalizeList(sv.value,    fallbackServices))
+      if (sp.status    === 'fulfilled') setSpecialistes(normalizeList(sp.value, fallbackSpecialistes))
+      if (par.status   === 'fulfilled') setPartenaires(normalizeList(par.value, fallbackPartenaires))
+      if (testi.status === 'fulfilled') setTestimonials(normalizeList(testi.value, fallbackTestimonials))
+      if (faqRes.status === 'fulfilled') setFaq(normalizeList(faqRes.value,   fallbackFAQ))
     }).finally(() => setLoading(false))
   }, [])
 

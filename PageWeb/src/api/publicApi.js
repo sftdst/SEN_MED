@@ -14,12 +14,14 @@ export const storageUrl = (path) => {
 }
 
 export const publicApi = {
-  preferences: () => getJson('/public/preferences'),
-  slides: () => getJson('/public/slides'),
-  about: () => getJson('/public/about'),
-  services: () => getJson('/public/services'),
+  preferences:  () => getJson('/public/preferences'),
+  slides:       () => getJson('/public/slides'),
+  about:        () => getJson('/public/about'),
+  services:     () => getJson('/public/services'),
   specialistes: () => getJson('/public/specialistes'),
-  partenaires: () => getJson('/public/partenaires'),
+  partenaires:  () => getJson('/public/partenaires'),
+  testimonials: () => getJson('/public/testimonials'),
+  faq:          () => getJson('/public/faq'),
   contact: async (payload) => {
     const response = await fetch(`${API_URL}/public/contact`, {
       method: 'POST',

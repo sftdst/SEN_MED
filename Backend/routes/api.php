@@ -526,12 +526,14 @@ Route::prefix('v1')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('public')->group(function () {
-        Route::get('preferences', [WebPublicController::class, 'preferences']);
-        Route::get('slides',      [WebPublicController::class, 'slides']);
-        Route::get('about',       [WebPublicController::class, 'about']);
-        Route::get('services',    [WebPublicController::class, 'services']);
+        Route::get('preferences',  [WebPublicController::class, 'preferences']);
+        Route::get('slides',       [WebPublicController::class, 'slides']);
+        Route::get('about',        [WebPublicController::class, 'about']);
+        Route::get('services',     [WebPublicController::class, 'services']);
         Route::get('specialistes', [WebPublicController::class, 'specialistes']);
-        Route::get('partenaires', [WebPublicController::class, 'partenaires']);
+        Route::get('partenaires',  [WebPublicController::class, 'partenaires']);
+        Route::get('testimonials', [WebPublicController::class, 'testimonials']);
+        Route::get('faq',          [WebPublicController::class, 'faq']);
         Route::post('contact',      [WebPublicController::class, 'contact']);
         Route::post('appointments', [WebPublicController::class, 'publicAppointment']);
     });
@@ -554,6 +556,17 @@ Route::prefix('v1')->group(function () {
         // Messages de contact
         Route::get('contacts',                [WebPublicController::class, 'adminContactsList']);
         Route::patch('contacts/{id}/read',    [WebPublicController::class, 'adminContactMarkRead']);
+        // Témoignages
+        Route::get('testimonials',              [WebPublicController::class, 'adminTestimonialsList']);
+        Route::post('testimonials',             [WebPublicController::class, 'adminTestimonialsStore']);
+        Route::put('testimonials/{id}',         [WebPublicController::class, 'adminTestimonialsUpdate']);
+        Route::delete('testimonials/{id}',      [WebPublicController::class, 'adminTestimonialsDestroy']);
+        Route::patch('testimonials/{id}/toggle',[WebPublicController::class, 'adminTestimonialsToggle']);
+        // FAQ
+        Route::get('faq',                       [WebPublicController::class, 'adminFaqList']);
+        Route::post('faq',                      [WebPublicController::class, 'adminFaqStore']);
+        Route::put('faq/{id}',                  [WebPublicController::class, 'adminFaqUpdate']);
+        Route::delete('faq/{id}',               [WebPublicController::class, 'adminFaqDestroy']);
     });
 
     /*
