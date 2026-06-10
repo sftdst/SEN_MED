@@ -62,7 +62,20 @@
       "Bash(npx tsc *)",
       "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8000/api/v1/auth/login\" -Method POST -ContentType \"application/json\" -Body '{\"email\":\"admin@senmed.sn\",\"password\":\"admin123\"}' -UseBasicParsing 2>&1)",
       "Bash(Get-ChildItem -Path \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Frontend\\\\src\" -Recurse -Include \"*hospital*\",\"*config*\" -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(grep -n '`' \"e:/CODING/DSTCOMPUTING/Plateforme/SEN_MED/Backend/app/Http/Controllers/Api/PaiementController.php\")",
+      "Bash(Get-ChildItem -Path \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\PageWeb\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Get-ChildItem -Path \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Backend\\\\app\\\\Models\" -File -Recurse)",
+      "Bash(Select-Object Name)",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\BAMBA\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--CODING-DSTCOMPUTING-Plateforme-SEN-MED\\\\db3022cc-3b61-4d77-bc27-59829fd14808\\\\tasks\\\\bxgygwpqe.output\" -Wait -Tail 5 2>&1)",
+      "PowerShell(dir \"e:\\\\CODING\\\\DSTCOMPUTING\\\\Plateforme\\\\SEN_MED\\\\Frontend\\\\dist\\\\assets\" | Select-Object Name, @{N='Size\\(KB\\)';E={[math]::Round\\($_.Length/1KB,0\\)}})",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git rm *)",
+      "Bash(git commit -m 'chore: add PageWeb .gitignore to exclude node_modules and dist *)",
+      "Bash(git pull *)"
     ]
   }
 }
