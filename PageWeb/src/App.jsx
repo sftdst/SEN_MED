@@ -1516,9 +1516,11 @@ function Skeleton() {
 function SubPage() {
   const navigate = useNavigate()
   const path = window.location.pathname
-  const config = PAGES_CONFIG[path]
+  const staticConfig = PAGES_CONFIG[path]
 
-  const [theme, setTheme]   = useState(fallbackTheme)
+  const [theme,   setTheme]   = useState(fallbackTheme)
+  const [config,  setConfig]  = useState(staticConfig || null)
+  const [pageLoading, setPageLoading] = useState(!staticConfig)
   const [rdvOpen, setRdvOpen] = useState(false)
   const [rdvDoctor, setRdvDoctor] = useState(null)
   const openRdv = (doc = null) => { setRdvDoctor(doc); setRdvOpen(true) }
@@ -1530,8 +1532,30 @@ function SubPage() {
   }, [])
 
   useEffect(() => {
+    setPageLoading(true)
+    publicApi.page(path)
+      .then(res => {
+        const data = res?.data || res
+        if (data && data.title) setConfig(data)
+        else if (staticConfig) setConfig(staticConfig)
+      })
+      .catch(() => { if (staticConfig) setConfig(staticConfig) })
+      .finally(() => setPageLoading(false))
     window.scrollTo(0, 0)
   }, [path])
+
+  if (pageLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header theme={theme} onRdv={openRdv} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="skeleton-section"><div className="container"><div className="skeleton-grid">
+            <div className="skeleton-card" /><div className="skeleton-card" /><div className="skeleton-card" />
+          </div></div></div>
+        </div>
+      </div>
+    )
+  }
 
   if (!config) {
     return (

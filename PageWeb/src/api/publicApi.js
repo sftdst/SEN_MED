@@ -22,6 +22,8 @@ export const publicApi = {
   partenaires:  () => getJson('/public/partenaires'),
   testimonials: () => getJson('/public/testimonials'),
   faq:          () => getJson('/public/faq'),
+  pages:        () => getJson('/public/pages'),
+  page:         (path) => getJson(`/public/page?path=${encodeURIComponent(path)}`),
   contact: async (payload) => {
     const response = await fetch(`${API_URL}/public/contact`, {
       method: 'POST',

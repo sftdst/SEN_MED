@@ -9,6 +9,7 @@ use App\Models\WebAbout;
 use App\Models\WebContact;
 use App\Models\WebTestimonial;
 use App\Models\WebFaq;
+use App\Models\WebPage;
 use App\Models\Service;
 use App\Models\Personnel;
 use App\Models\PartenaireHeader;
@@ -172,6 +173,27 @@ class WebPublicController extends Controller
         });
 
         return response()->json($result);
+    }
+
+    /* GET /api/v1/public/pages ──────────────────────────────────────────────── */
+    public function pages(): JsonResponse
+    {
+        return response()->json(
+            WebPage::where('is_active', true)->orderBy('sort_order')->get()
+        );
+    }
+
+    /* GET /api/v1/public/pages/{path} ───────────────────────────────────────── */
+    public function page(Request $request): JsonResponse
+    {
+        $path = '/' . ltrim($request->query('path', ''), '/');
+        $page = WebPage::where('path', $path)->where('is_active', true)->first();
+
+        if (!$page) {
+            return response()->json(['error' => 'Page introuvable'], 404);
+        }
+
+        return response()->json($page);
     }
 
     /* GET /api/v1/public/testimonials ─────────────────────────────────────── */
@@ -442,6 +464,40 @@ class WebPublicController extends Controller
     {
         WebFaq::findOrFail($id)->delete();
         return response()->json(['success' => true]);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       ADMIN — Pages internes du site
+       ═══════════════════════════════════════════════════════════════════════════ */
+
+    public function adminPagesList(): JsonResponse
+    {
+        return response()->json(WebPage::orderBy('sort_order')->get());
+    }
+
+    public function adminPagesShow(int $id): JsonResponse
+    {
+        return response()->json(WebPage::findOrFail($id));
+    }
+
+    public function adminPagesUpdate(Request $request, int $id): JsonResponse
+    {
+        $page = WebPage::findOrFail($id);
+        $data = $request->validate([
+            'title'       => 'sometimes|required|string|max:200',
+            'tag'         => 'nullable|string|max:100',
+            'icon'        => 'nullable|string|max:20',
+            'subtitle'    => 'nullable|string',
+            'description' => 'nullable|string',
+            'features'    => 'nullable|array',
+            'steps'       => 'nullable|array',
+            'details'     => 'nullable|array',
+            'info'        => 'nullable|array',
+            'is_active'   => 'nullable|boolean',
+            'sort_order'  => 'nullable|integer',
+        ]);
+        $page->update($data);
+        return response()->json($page->fresh());
     }
 
     /* POST /api/v1/public/appointments ──────────────────────────────────── */

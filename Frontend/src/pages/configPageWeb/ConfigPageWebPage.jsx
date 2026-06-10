@@ -808,6 +808,347 @@ function MessagesPage() {
   )
 }
 
+/* ─── Sub-items editor (features / steps / details) ───────────────────────── */
+function ItemsEditor({ label, value = [], onChange, fields }) {
+  const items = Array.isArray(value) ? value : []
+
+  const update = (i, k, v) => {
+    const next = items.map((it, idx) => idx === i ? { ...it, [k]: v } : it)
+    onChange(next)
+  }
+  const add = () => onChange([...items, Object.fromEntries(fields.map(f => [f.key, '']))])
+  const remove = (i) => onChange(items.filter((_, idx) => idx !== i))
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: colors.gray700 }}>{label}</span>
+        {items.length < 6 && (
+          <Btn size="sm" variant="ghost" onClick={add}><IcoPlus /> Ajouter</Btn>
+        )}
+      </div>
+      {items.length === 0 ? (
+        <div style={{
+          textAlign: 'center', padding: '16px', color: colors.gray400, fontSize: 12,
+          border: `2px dashed ${colors.gray200}`, borderRadius: radius.sm,
+        }}>Aucun élément — cliquez sur "Ajouter"</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {items.map((item, i) => (
+            <div key={i} style={{
+              border: `1px solid ${colors.gray200}`, borderRadius: radius.sm,
+              padding: '10px 12px', background: colors.gray50,
+            }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                {fields.map(f => (
+                  <div key={f.key} style={{ flex: f.flex || '1 1 120px', minWidth: f.min || 80 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: colors.gray600, display: 'block', marginBottom: 4 }}>{f.label}</label>
+                    {f.rows ? (
+                      <textarea value={item[f.key] || ''} onChange={e => update(i, f.key, e.target.value)}
+                        rows={f.rows} style={{
+                          width: '100%', border: `1.5px solid ${colors.gray300}`,
+                          borderRadius: radius.sm, padding: '6px 8px', fontSize: 12,
+                          fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box',
+                        }} />
+                    ) : (
+                      <input value={item[f.key] || ''} onChange={e => update(i, f.key, e.target.value)}
+                        style={{
+                          width: '100%', border: `1.5px solid ${colors.gray300}`,
+                          borderRadius: radius.sm, padding: '6px 8px', fontSize: 12,
+                          fontFamily: 'inherit', boxSizing: 'border-box',
+                        }} />
+                    )}
+                  </div>
+                ))}
+                <Btn size="sm" variant="danger" onClick={() => remove(i)} title="Supprimer"><IcoTrash /></Btn>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── Page Editor Modal ─────────────────────────────────────────────────────── */
+function PageEditorModal({ page, onClose, onSaved }) {
+  const [form, setForm] = useState({ ...page })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [tab, setTab] = useState('base')
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const handleSave = async () => {
+    if (!form.title?.trim()) { setError('Le titre est requis'); return }
+    setSaving(true); setError(null)
+    try {
+      await webAdminApi.updatePage(form.id, form)
+      onSaved()
+    } catch { setError("Erreur lors de l'enregistrement") }
+    finally { setSaving(false) }
+  }
+
+  const INNER_TABS = [
+    { key: 'base',     label: 'Infos' },
+    { key: 'features', label: 'Points forts' },
+    { key: 'steps',    label: 'Étapes' },
+    { key: 'details',  label: 'Pratique' },
+  ]
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000,
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      padding: '32px 16px', overflowY: 'auto',
+    }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{
+        background: colors.white, borderRadius: radius.lg, width: 680,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)', flexShrink: 0,
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '16px 20px', borderBottom: `1px solid ${colors.gray200}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: colors.gray50, borderRadius: `${radius.lg} ${radius.lg} 0 0`,
+        }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: colors.gray900 }}>
+              {form.icon} {form.title}
+            </div>
+            <div style={{ fontSize: 11, color: colors.gray500, marginTop: 2 }}>{form.path}</div>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: colors.gray500, fontSize: 22, lineHeight: 1, padding: '0 4px',
+          }}>×</button>
+        </div>
+
+        {/* Inner tab nav */}
+        <div style={{ display: 'flex', gap: 2, padding: '12px 20px 0', borderBottom: `1px solid ${colors.gray200}` }}>
+          {INNER_TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              padding: '7px 16px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+              background: tab === t.key ? colors.white : 'transparent',
+              color: tab === t.key ? colors.bleu : colors.gray500,
+              borderBottom: tab === t.key ? `2px solid ${colors.bleu}` : '2px solid transparent',
+              marginBottom: -1,
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: 20 }}>
+          <Alert type="error" text={error} onClose={() => setError(null)} />
+
+          {tab === 'base' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 140px', gap: 12 }}>
+                <InputField label="Icône" value={form.icon || ''} onChange={set('icon')} placeholder="🏥" />
+                <InputField label="Titre *" value={form.title || ''} onChange={set('title')} placeholder="Titre de la page" />
+                <InputField label="Tag / Catégorie" value={form.tag || ''} onChange={set('tag')} placeholder="Services médicaux" />
+              </div>
+              <InputField label="Sous-titre" value={form.subtitle || ''} onChange={set('subtitle')} placeholder="Une courte accroche descriptive…" />
+              <InputField label="Description" value={form.description || ''} onChange={set('description')} placeholder="Paragraphe de présentation de la page…" rows={5} />
+              {(form.path || '').startsWith('/payer/') && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <InputField
+                    label="Info — libellé (ex: Numéro Wave)"
+                    value={form.info?.label || ''}
+                    onChange={e => setForm(f => ({ ...f, info: { ...f.info, label: e.target.value } }))}
+                    placeholder="Numéro Wave"
+                  />
+                  <InputField
+                    label="Info — valeur"
+                    value={form.info?.value || ''}
+                    onChange={e => setForm(f => ({ ...f, info: { ...f.info, value: e.target.value } }))}
+                    placeholder="+221 77 XXX XX XX"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'features' && (
+            <ItemsEditor
+              label="Points forts (affichés comme cartes)"
+              value={form.features}
+              onChange={v => setForm(f => ({ ...f, features: v }))}
+              fields={[
+                { key: 'icon',  label: 'Icône', flex: '0 0 60px', min: 50 },
+                { key: 'title', label: 'Titre', flex: '1 1 120px', min: 100 },
+                { key: 'desc',  label: 'Description', flex: '2 1 200px', min: 150, rows: 2 },
+              ]}
+            />
+          )}
+
+          {tab === 'steps' && (
+            <ItemsEditor
+              label="Étapes du processus"
+              value={form.steps}
+              onChange={v => setForm(f => ({ ...f, steps: v }))}
+              fields={[
+                { key: 'num',   label: 'N°',   flex: '0 0 50px', min: 40 },
+                { key: 'title', label: 'Titre', flex: '1 1 120px', min: 100 },
+                { key: 'desc',  label: 'Description', flex: '2 1 200px', min: 150, rows: 2 },
+              ]}
+            />
+          )}
+
+          {tab === 'details' && (
+            <ItemsEditor
+              label="Informations pratiques"
+              value={form.details}
+              onChange={v => setForm(f => ({ ...f, details: v }))}
+              fields={[
+                { key: 'icon',  label: 'Icône', flex: '0 0 60px', min: 50 },
+                { key: 'label', label: 'Label', flex: '1 1 120px', min: 100 },
+                { key: 'value', label: 'Valeur', flex: '2 1 200px', min: 150 },
+              ]}
+            />
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: '14px 20px', borderTop: `1px solid ${colors.gray200}`,
+          display: 'flex', justifyContent: 'flex-end', gap: 10,
+        }}>
+          <Btn variant="ghost" onClick={onClose}>Annuler</Btn>
+          <Btn onClick={handleSave} disabled={saving}>
+            {saving ? 'Enregistrement…' : 'Enregistrer la page'}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Tab 7: Pages internes ─────────────────────────────────────────────────── */
+
+const TAG_COLORS = {
+  'Services médicaux': '#dbeafe',
+  'Ma Santé':          '#dcfce7',
+  'Formations':        '#fef9c3',
+  'Patient / Usager':  '#ffe4e6',
+  'Payer en ligne':    '#ede9fe',
+  'Pages':             '#e0f2fe',
+}
+
+function PagesTab() {
+  const [pages, setPages]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(null)
+  const [alert, setAlert]   = useState(null)
+  const [search, setSearch] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data } = await webAdminApi.adminPages()
+      setPages(Array.isArray(data) ? data : [])
+    } catch { setAlert({ type: 'error', text: 'Erreur de chargement des pages' }) }
+    finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filtered = pages.filter(p =>
+    !search || p.title?.toLowerCase().includes(search.toLowerCase()) ||
+    p.tag?.toLowerCase().includes(search.toLowerCase()) ||
+    p.path?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const groups = filtered.reduce((acc, p) => {
+    const k = p.tag || 'Autres'
+    if (!acc[k]) acc[k] = []
+    acc[k].push(p)
+    return acc
+  }, {})
+
+  return (
+    <div>
+      <Alert type={alert?.type} text={alert?.text} onClose={() => setAlert(null)} />
+      <SectionCard
+        title={`Pages internes du site (${pages.length})`}
+        action={
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher…"
+            style={{
+              padding: '6px 12px', border: `1.5px solid ${colors.gray300}`,
+              borderRadius: radius.sm, fontSize: 12, fontFamily: 'inherit', width: 200,
+            }}
+          />
+        }
+      >
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Spinner /></div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {Object.entries(groups).map(([tag, items]) => (
+              <div key={tag}>
+                <div style={{
+                  fontSize: 11, fontWeight: 800, letterSpacing: 1,
+                  color: colors.gray500, textTransform: 'uppercase', marginBottom: 8,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  <span style={{
+                    display: 'inline-block', padding: '2px 10px', borderRadius: 100,
+                    background: TAG_COLORS[tag] || colors.gray100,
+                    color: colors.gray700, textTransform: 'none', fontWeight: 700, fontSize: 12,
+                  }}>{tag}</span>
+                  <span style={{ color: colors.gray300 }}>({items.length})</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {items.map(page => (
+                    <div key={page.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 14px', borderRadius: radius.sm,
+                      border: `1px solid ${colors.gray200}`, background: colors.white,
+                      transition: 'box-shadow 0.15s',
+                    }}>
+                      <span style={{ fontSize: 20, flexShrink: 0 }}>{page.icon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: colors.gray900 }}>
+                          {page.title}
+                        </div>
+                        <div style={{ fontSize: 11, color: colors.gray400, marginTop: 1 }}>
+                          {page.path}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 11, color: colors.gray500, flexShrink: 0 }}>
+                        {[page.features?.length, page.steps?.length, page.details?.length]
+                          .filter(Boolean).join(' / ')} éléments
+                      </div>
+                      <Badge active={page.is_active} />
+                      <Btn size="sm" variant="ghost" onClick={() => setEditing(page)}>
+                        <IcoEdit /> Modifier
+                      </Btn>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {editing && (
+        <PageEditorModal
+          page={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null)
+            load()
+            setAlert({ type: 'success', text: 'Page mise à jour avec succès.' })
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
 /* ─── Stars display ────────────────────────────────────────────────────────── */
 function Stars({ note = 5 }) {
   return (
@@ -1201,6 +1542,7 @@ const TABS = [
   { key: 'accueil',       label: 'Accueil',        icon: '🏠' },
   { key: 'slides',        label: 'Diaporama',       icon: '🖼️' },
   { key: 'about',         label: 'À propos',        icon: '📝' },
+  { key: 'pages',         label: 'Pages',           icon: '📄' },
   { key: 'testimonials',  label: 'Témoignages',     icon: '💬' },
   { key: 'faq',           label: 'FAQ',             icon: '❓' },
   { key: 'messages',      label: 'Messages',        icon: '✉️' },
@@ -1265,6 +1607,7 @@ export default function ConfigPageWebPage() {
         {activeTab === 'accueil'      && <AccueilTab />}
         {activeTab === 'slides'       && <SlidesPage />}
         {activeTab === 'about'        && <AboutPage />}
+        {activeTab === 'pages'        && <PagesTab />}
         {activeTab === 'testimonials' && <TestimonialsPage />}
         {activeTab === 'faq'          && <FaqPage />}
         {activeTab === 'messages'     && <MessagesPage />}

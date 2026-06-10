@@ -534,6 +534,8 @@ Route::prefix('v1')->group(function () {
         Route::get('partenaires',  [WebPublicController::class, 'partenaires']);
         Route::get('testimonials', [WebPublicController::class, 'testimonials']);
         Route::get('faq',          [WebPublicController::class, 'faq']);
+        Route::get('pages',        [WebPublicController::class, 'pages']);
+        Route::get('page',         [WebPublicController::class, 'page']);
         Route::post('contact',      [WebPublicController::class, 'contact']);
         Route::post('appointments', [WebPublicController::class, 'publicAppointment']);
     });
@@ -567,6 +569,10 @@ Route::prefix('v1')->group(function () {
         Route::post('faq',                      [WebPublicController::class, 'adminFaqStore']);
         Route::put('faq/{id}',                  [WebPublicController::class, 'adminFaqUpdate']);
         Route::delete('faq/{id}',               [WebPublicController::class, 'adminFaqDestroy']);
+        // Pages internes
+        Route::get('pages',          [WebPublicController::class, 'adminPagesList']);
+        Route::get('pages/{id}',     [WebPublicController::class, 'adminPagesShow']);
+        Route::put('pages/{id}',     [WebPublicController::class, 'adminPagesUpdate']);
     });
 
     /*

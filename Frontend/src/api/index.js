@@ -458,6 +458,10 @@ export const webAdminApi = {
   createFaq:         (data)      => api.post('/web/admin/faq', data),
   updateFaq:         (id, data)  => api.put(`/web/admin/faq/${id}`, data),
   deleteFaq:         (id)        => api.delete(`/web/admin/faq/${id}`),
+  // Pages internes du site
+  adminPages:        ()          => api.get('/web/admin/pages'),
+  adminPage:         (id)        => api.get(`/web/admin/pages/${id}`),
+  updatePage:        (id, data)  => api.put(`/web/admin/pages/${id}`, data),
 }
  
  
