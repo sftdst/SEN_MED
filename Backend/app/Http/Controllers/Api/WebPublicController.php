@@ -7,6 +7,8 @@ use App\Models\AppPreference;
 use App\Models\WebSlide;
 use App\Models\WebAbout;
 use App\Models\WebContact;
+use App\Models\WebTestimonial;
+use App\Models\WebFaq;
 use App\Models\Service;
 use App\Models\Personnel;
 use App\Models\PartenaireHeader;
@@ -172,6 +174,55 @@ class WebPublicController extends Controller
         return response()->json($result);
     }
 
+    /* GET /api/v1/public/testimonials ─────────────────────────────────────── */
+    public function testimonials(): JsonResponse
+    {
+        $items = WebTestimonial::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderByDesc('created_at')
+            ->get(['id', 'nom', 'role', 'photo', 'texte', 'note']);
+
+        if ($items->isEmpty()) {
+            return response()->json($this->defaultTestimonials());
+        }
+
+        return response()->json($items);
+    }
+
+    private function defaultTestimonials(): array
+    {
+        return [
+            ['id' => 1, 'nom' => 'Aminata Sow',     'role' => 'Patient', 'photo' => '', 'texte' => 'Un accueil exceptionnel et un suivi médical de grande qualité. Je recommande vivement SenMed pour toute la famille.', 'note' => 5],
+            ['id' => 2, 'nom' => 'Ibrahima Diop',   'role' => 'Patient', 'photo' => '', 'texte' => 'La prise de rendez-vous est très simple et le personnel est à l\'écoute. Merci pour ce service précieux.',          'note' => 5],
+            ['id' => 3, 'nom' => 'Fatoumata Ba',    'role' => 'Patient', 'photo' => '', 'texte' => 'J\'ai été bien prise en charge du début à la fin. Les docteurs sont compétents et disponibles.',                     'note' => 4],
+        ];
+    }
+
+    /* GET /api/v1/public/faq ────────────────────────────────────────────────── */
+    public function faq(): JsonResponse
+    {
+        $items = WebFaq::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['id', 'question', 'reponse']);
+
+        if ($items->isEmpty()) {
+            return response()->json($this->defaultFaq());
+        }
+
+        return response()->json($items);
+    }
+
+    private function defaultFaq(): array
+    {
+        return [
+            ['id' => 1, 'question' => 'Comment prendre rendez-vous chez SenMed ?',          'reponse' => 'Vous pouvez prendre rendez-vous en ligne via notre site web, par téléphone, ou directement à l\'accueil.'],
+            ['id' => 2, 'question' => 'Quels sont vos horaires d\'ouverture ?',              'reponse' => 'Nous sommes ouverts du lundi au samedi de 08h00 à 18h00. Seul le service des urgences est actif les dimanches et jours fériés.'],
+            ['id' => 3, 'question' => 'Quels spécialistes sont disponibles ?',               'reponse' => 'SenMed regroupe des médecins généralistes, cardiologues, pédiatres, gynécologues et bien d\'autres spécialistes.'],
+            ['id' => 4, 'question' => 'Acceptez-vous les assurances santé ?',                'reponse' => 'Oui, nous collaborons avec de nombreuses mutuelles et compagnies d\'assurance. Contactez-nous pour vérifier votre couverture.'],
+        ];
+    }
+
     /* POST /api/v1/public/contact ───────────────────────────────────────────── */
     public function contact(Request $request): JsonResponse
     {
@@ -300,6 +351,97 @@ class WebPublicController extends Controller
         $contact = WebContact::findOrFail($id);
         $contact->update(['is_read' => true]);
         return response()->json($contact);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       ADMIN — Témoignages
+       ═══════════════════════════════════════════════════════════════════════════ */
+
+    public function adminTestimonialsList(): JsonResponse
+    {
+        return response()->json(WebTestimonial::orderBy('sort_order')->orderByDesc('created_at')->get());
+    }
+
+    public function adminTestimonialsStore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'nom'        => 'required|string|max:150',
+            'role'       => 'nullable|string|max:100',
+            'photo'      => 'nullable|string|max:500',
+            'texte'      => 'required|string',
+            'note'       => 'nullable|integer|min:1|max:5',
+            'is_active'  => 'nullable|boolean',
+            'sort_order' => 'nullable|integer',
+        ]);
+        return response()->json(WebTestimonial::create($data), 201);
+    }
+
+    public function adminTestimonialsUpdate(Request $request, int $id): JsonResponse
+    {
+        $item = WebTestimonial::findOrFail($id);
+        $data = $request->validate([
+            'nom'        => 'sometimes|required|string|max:150',
+            'role'       => 'nullable|string|max:100',
+            'photo'      => 'nullable|string|max:500',
+            'texte'      => 'sometimes|required|string',
+            'note'       => 'nullable|integer|min:1|max:5',
+            'is_active'  => 'nullable|boolean',
+            'sort_order' => 'nullable|integer',
+        ]);
+        $item->update($data);
+        return response()->json($item);
+    }
+
+    public function adminTestimonialsDestroy(int $id): JsonResponse
+    {
+        WebTestimonial::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function adminTestimonialsToggle(int $id): JsonResponse
+    {
+        $item = WebTestimonial::findOrFail($id);
+        $item->update(['is_active' => !$item->is_active]);
+        return response()->json($item);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       ADMIN — FAQ
+       ═══════════════════════════════════════════════════════════════════════════ */
+
+    public function adminFaqList(): JsonResponse
+    {
+        return response()->json(WebFaq::orderBy('sort_order')->orderBy('id')->get());
+    }
+
+    public function adminFaqStore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'question'   => 'required|string|max:500',
+            'reponse'    => 'required|string',
+            'is_active'  => 'nullable|boolean',
+            'sort_order' => 'nullable|integer',
+        ]);
+        return response()->json(WebFaq::create($data), 201);
+    }
+
+    public function adminFaqUpdate(Request $request, int $id): JsonResponse
+    {
+        $item = WebFaq::findOrFail($id);
+        $data = $request->validate([
+            'question'   => 'sometimes|required|string|max:500',
+            'reponse'    => 'sometimes|required|string',
+            'is_active'  => 'nullable|boolean',
+            'sort_order' => 'nullable|integer',
+        ]);
+        $item->update($data);
+        return response()->json($item);
+    }
+
+    public function adminFaqDestroy(int $id): JsonResponse
+    {
+        WebFaq::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
     }
 
     /* POST /api/v1/public/appointments ──────────────────────────────────── */
