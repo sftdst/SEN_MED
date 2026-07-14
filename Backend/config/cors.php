@@ -21,11 +21,14 @@ return [
 
     // Origines autorisées
     'allowed_origins' => [
-      // Production
+      // Production lamadoneadn
       'https://lamadoneadn.com',
       'https://www.lamadoneadn.com',
       'https://admin.lamadoneadn.com',
       'https://adnsoins.lamadoneadn.com',
+      // Production dstcomputing
+      'https://senmed.dstcomputing.com',
+      'https://apisenmed.dstcomputing.com',
       // Développement local
       'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176',
       'http://127.0.0.1:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:5175', 'http://127.0.0.1:5176',
