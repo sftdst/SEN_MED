@@ -16,6 +16,8 @@ use App\Models\PartenaireHeader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class WebPublicController extends Controller
@@ -470,6 +472,24 @@ class WebPublicController extends Controller
        ADMIN — Pages internes du site
        ═══════════════════════════════════════════════════════════════════════════ */
 
+    public function adminUploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|file|mimes:jpeg,png,jpg,webp,svg,gif|max:4096',
+        ]);
+
+        $ext      = $request->file('image')->getClientOriginalExtension();
+        $filename = Str::uuid() . '.' . $ext;
+        $path     = 'web/features/' . $filename;
+
+        Storage::disk('public')->put($path, file_get_contents($request->file('image')->getRealPath()));
+
+        return response()->json([
+            'success' => true,
+            'url'     => 'storage/' . $path,
+        ]);
+    }
+
     public function adminPagesList(): JsonResponse
     {
         return response()->json(WebPage::orderBy('sort_order')->get());
@@ -480,11 +500,32 @@ class WebPublicController extends Controller
         return response()->json(WebPage::findOrFail($id));
     }
 
+    public function adminPagesStore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'title'       => 'required|string|max:200',
+            'path'        => 'required|string|max:200|unique:web_pages,path',
+            'tag'         => 'nullable|string|max:100',
+            'icon'        => 'nullable|string|max:20',
+            'subtitle'    => 'nullable|string',
+            'description' => 'nullable|string',
+            'features'    => 'nullable|array',
+            'steps'       => 'nullable|array',
+            'details'     => 'nullable|array',
+            'info'        => 'nullable|array',
+            'is_active'   => 'nullable|boolean',
+            'sort_order'  => 'nullable|integer',
+        ]);
+        $page = WebPage::create($data);
+        return response()->json($page, 201);
+    }
+
     public function adminPagesUpdate(Request $request, int $id): JsonResponse
     {
         $page = WebPage::findOrFail($id);
         $data = $request->validate([
             'title'       => 'sometimes|required|string|max:200',
+            'path'        => 'sometimes|required|string|max:200|unique:web_pages,path,' . $id,
             'tag'         => 'nullable|string|max:100',
             'icon'        => 'nullable|string|max:20',
             'subtitle'    => 'nullable|string',
@@ -497,6 +538,19 @@ class WebPublicController extends Controller
             'sort_order'  => 'nullable|integer',
         ]);
         $page->update($data);
+        return response()->json($page->fresh());
+    }
+
+    public function adminPagesDestroy(int $id): JsonResponse
+    {
+        WebPage::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function adminPagesToggle(int $id): JsonResponse
+    {
+        $page = WebPage::findOrFail($id);
+        $page->update(['is_active' => !$page->is_active]);
         return response()->json($page->fresh());
     }
 

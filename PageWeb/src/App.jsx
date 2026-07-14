@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import {
   fallbackAbout, fallbackPartenaires, fallbackServices,
   fallbackSlides, fallbackSpecialistes, fallbackTheme,
   fallbackTestimonials, fallbackFAQ,
 } from './data/fallbackData'
-import { publicApi, storageUrl } from './api/publicApi'
+import { publicApi, storageUrl, getCachedPrefs } from './api/publicApi'
 
 /* ─── helpers ──────────────────────────────────────────── */
 function normalizeList(res, fb) {
@@ -16,6 +16,35 @@ function normalizeList(res, fb) {
   return fb
 }
 const initials = (n = '') => n.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'
+
+/* ─── hook theme : localStorage instantané + refresh API ────────────────── */
+function useThemePrefs() {
+  const cached = getCachedPrefs()
+  const [theme, setTheme] = useState(cached ? { ...fallbackTheme, ...cached } : fallbackTheme)
+  useEffect(() => {
+    publicApi.preferences()
+      .then(res => setTheme({ ...fallbackTheme, ...(res?.data || res) }))
+      .catch(() => {})
+  }, [])
+  return theme
+}
+
+/* ─── cache pages actives (chargées une seule fois) ─────── */
+let _pagesCache = null
+let _pagesFetching = null
+function useActivePages() {
+  const [pages, setPages] = useState(_pagesCache || [])
+  useEffect(() => {
+    if (_pagesCache) { setPages(_pagesCache); return }
+    if (!_pagesFetching) {
+      _pagesFetching = publicApi.pages()
+        .then(res => { _pagesCache = normalizeList(res, []); return _pagesCache })
+        .catch(() => { _pagesCache = []; return [] })
+    }
+    _pagesFetching.then(p => setPages(p))
+  }, [])
+  return pages
+}
 
 /* ─── nav links ─────────────────────────────────────────── */
 const NAV = [
@@ -725,6 +754,26 @@ function Header({ theme, onRdv }) {
   const [activeNested, setActiveNested] = useState(null)
   const [mobileNested, setMobileNested] = useState(null)
 
+  const activePages = useActivePages()
+  const activePathSet = useMemo(() => new Set(activePages.map(p => p.path)), [activePages])
+
+  // Filtre récursif : retire les liens de pages inactives
+  const filterNavItems = useCallback((items) =>
+    items.reduce((acc, item) => {
+      if (!item.children) {
+        // Lien direct : toujours montrer les ancres (#) et les liens non-pages
+        const isPageLink = item.href && item.href.length > 1 && item.href.startsWith('/') && !item.href.startsWith('/#')
+        if (!isPageLink || activePathSet.size === 0 || activePathSet.has(item.href)) acc.push(item)
+      } else {
+        const filtered = filterNavItems(item.children)
+        if (filtered.length > 0) acc.push({ ...item, children: filtered })
+      }
+      return acc
+    }, [])
+  , [activePathSet])
+
+  const filteredNav = useMemo(() => filterNavItems(NAV), [filterNavItems])
+
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 80)
     window.addEventListener('scroll', fn, { passive: true })
@@ -779,7 +828,7 @@ function Header({ theme, onRdv }) {
       </a>
 
       <nav className={open ? 'main-nav open' : 'main-nav'}>
-        {NAV.map(({ href, label, children }) =>
+        {filteredNav.map(({ href, label, children }) =>
           children ? (
             <div key={label} className="nav-dd-wrap"
               onMouseEnter={() => setActiveDD(label)}
@@ -1233,8 +1282,30 @@ const SYNTHESIS_CATS = [
   },
 ]
 
+const TAG_ICONS = {
+  'Services médicaux': '⚕️',
+  'Ma Santé':          '🛡️',
+  'Patient / Usager':  '👤',
+  'Formations':        '🎓',
+  'Payer en ligne':    '💳',
+  'Pages':             '📄',
+}
+
 function SynthesisSection() {
-  const navigate = useNavigate()
+  const navigate   = useNavigate()
+  const activePages = useActivePages()
+
+  const cats = useMemo(() => {
+    if (!activePages.length) return SYNTHESIS_CATS
+    const groups = {}
+    activePages.forEach(p => {
+      const key = p.tag || 'Autres'
+      if (!groups[key]) groups[key] = { label: key, icon: TAG_ICONS[key] || '📄', items: [] }
+      groups[key].items.push({ href: p.path, label: p.title, icon: p.icon || '📄' })
+    })
+    return Object.values(groups).map(g => ({ ...g, count: g.items.length }))
+  }, [activePages])
+
   return (
     <section id="explorer" className="synthesis-section animate-on-scroll">
       <div className="synthesis-deco-1" />
@@ -1248,7 +1319,7 @@ function SynthesisSection() {
           </p>
         </div>
         <div className="synthesis-grid">
-          {SYNTHESIS_CATS.map((cat, ci) => (
+          {cats.map((cat, ci) => (
             <div className={`synthesis-cat stagger-${ci + 1}`} key={ci}>
               <div className="synthesis-cat-header">
                 <span className="synthesis-cat-icon">{cat.icon}</span>
@@ -1518,18 +1589,12 @@ function SubPage() {
   const path = window.location.pathname
   const staticConfig = PAGES_CONFIG[path]
 
-  const [theme,   setTheme]   = useState(fallbackTheme)
+  const theme = useThemePrefs()
   const [config,  setConfig]  = useState(staticConfig || null)
   const [pageLoading, setPageLoading] = useState(!staticConfig)
   const [rdvOpen, setRdvOpen] = useState(false)
   const [rdvDoctor, setRdvDoctor] = useState(null)
   const openRdv = (doc = null) => { setRdvDoctor(doc); setRdvOpen(true) }
-
-  useEffect(() => {
-    publicApi.preferences()
-      .then(res => setTheme({ ...fallbackTheme, ...(res?.data || res) }))
-      .catch(() => {})
-  }, [])
 
   useEffect(() => {
     setPageLoading(true)
@@ -1725,7 +1790,7 @@ function SubPage() {
    HOME PAGE
 ══════════════════════════════════════════════════════════ */
 function HomePage() {
-  const [theme,        setTheme]        = useState(fallbackTheme)
+  const theme = useThemePrefs()
   const [slides,       setSlides]       = useState(fallbackSlides)
   const [about,        setAbout]        = useState(fallbackAbout)
   const [services,     setServices]     = useState(fallbackServices)
@@ -1740,7 +1805,6 @@ function HomePage() {
 
   useEffect(() => {
     Promise.allSettled([
-      publicApi.preferences(),
       publicApi.slides(),
       publicApi.about(),
       publicApi.services(),
@@ -1748,8 +1812,7 @@ function HomePage() {
       publicApi.partenaires(),
       publicApi.testimonials(),
       publicApi.faq(),
-    ]).then(([p, s, a, sv, sp, par, testi, faqRes]) => {
-      if (p.status     === 'fulfilled') setTheme({ ...fallbackTheme,        ...(p.value?.data     || p.value) })
+    ]).then(([s, a, sv, sp, par, testi, faqRes]) => {
       if (s.status     === 'fulfilled') setSlides(normalizeList(s.value,      fallbackSlides))
       if (a.status     === 'fulfilled') setAbout({ ...fallbackAbout,          ...(a.value?.data     || a.value) })
       if (sv.status    === 'fulfilled') setServices(normalizeList(sv.value,    fallbackServices))

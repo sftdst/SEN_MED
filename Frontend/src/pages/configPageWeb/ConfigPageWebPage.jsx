@@ -808,6 +808,102 @@ function MessagesPage() {
   )
 }
 
+/* ─── Champ upload image pour icône feature ────────────────────────────────── */
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://127.0.0.1:8000/storage'
+
+function toAbsoluteUrl(val) {
+  if (!val) return ''
+  if (/^https?:\/\//i.test(val)) return val
+  if (val.startsWith('storage/')) return `${STORAGE_URL.replace(/\/storage$/, '')}/${val}`
+  return val
+}
+
+function IconUploadField({ value, onChange }) {
+  const [uploading, setUploading] = useState(false)
+  const [mode, setMode]           = useState(() => {
+    // Si la valeur ressemble à une URL/chemin d'image → mode image, sinon texte
+    if (value && (value.startsWith('storage/') || /^https?:\/\//.test(value) || /\.(png|jpg|jpeg|webp|svg)$/i.test(value))) return 'image'
+    return 'text'
+  })
+  const inputRef = useCallback(node => { if (node) node.value = '' }, [])
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const res = await webAdminApi.uploadFeatureImage(fd)
+      onChange(res.data?.url || res.data)
+      setMode('image')
+    } catch (err) {
+      const msg = err?.response?.data?.message
+        || (err?.response?.data?.errors ? JSON.stringify(err.response.data.errors) : null)
+        || err?.message
+        || "Erreur lors de l'upload de l'image"
+      alert(msg)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleClear = () => { onChange(''); setMode('text') }
+
+  const absUrl = toAbsoluteUrl(value)
+  const isImage = mode === 'image' && absUrl
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {/* Aperçu image ou champ texte */}
+      {isImage ? (
+        <div style={{ position: 'relative', width: 56, height: 56 }}>
+          <img
+            src={absUrl}
+            alt="icône"
+            style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: radius.sm, border: `1.5px solid ${colors.gray200}` }}
+            onError={() => setMode('text')}
+          />
+          <button
+            type="button"
+            onClick={handleClear}
+            title="Supprimer l'image"
+            style={{
+              position: 'absolute', top: -6, right: -6,
+              width: 18, height: 18, borderRadius: '50%',
+              background: '#ef4444', border: '2px solid #fff',
+              color: '#fff', fontSize: 10, lineHeight: '14px',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >✕</button>
+        </div>
+      ) : (
+        <input
+          value={value || ''} onChange={e => onChange(e.target.value)}
+          placeholder="🏥 ou URL"
+          style={{
+            width: '100%', border: `1.5px solid ${colors.gray300}`,
+            borderRadius: radius.sm, padding: '6px 8px', fontSize: 13,
+            fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center',
+          }}
+        />
+      )}
+
+      {/* Bouton upload */}
+      <label style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+        padding: '4px 8px', borderRadius: radius.sm, cursor: uploading ? 'wait' : 'pointer',
+        border: `1.5px dashed ${colors.bleu}`, color: colors.bleu,
+        fontSize: 11, fontWeight: 600, background: '#eff6ff',
+        opacity: uploading ? 0.6 : 1,
+      }}>
+        <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} disabled={uploading} />
+        {uploading ? '⏳' : '📤'} {uploading ? 'Upload…' : 'Image'}
+      </label>
+    </div>
+  )
+}
+
 /* ─── Sub-items editor (features / steps / details) ───────────────────────── */
 function ItemsEditor({ label, value = [], onChange, fields }) {
   const items = Array.isArray(value) ? value : []
@@ -843,7 +939,9 @@ function ItemsEditor({ label, value = [], onChange, fields }) {
                 {fields.map(f => (
                   <div key={f.key} style={{ flex: f.flex || '1 1 120px', minWidth: f.min || 80 }}>
                     <label style={{ fontSize: 11, fontWeight: 600, color: colors.gray600, display: 'block', marginBottom: 4 }}>{f.label}</label>
-                    {f.rows ? (
+                    {f.uploadImage ? (
+                      <IconUploadField value={item[f.key] || ''} onChange={v => update(i, f.key, v)} />
+                    ) : f.rows ? (
                       <textarea value={item[f.key] || ''} onChange={e => update(i, f.key, e.target.value)}
                         rows={f.rows} style={{
                           width: '100%', border: `1.5px solid ${colors.gray300}`,
@@ -871,8 +969,11 @@ function ItemsEditor({ label, value = [], onChange, fields }) {
 }
 
 /* ─── Page Editor Modal ─────────────────────────────────────────────────────── */
+const EMPTY_PAGE = { title: '', path: '', tag: '', icon: '', subtitle: '', description: '', features: [], steps: [], details: [], info: {}, is_active: true, sort_order: 0 }
+
 function PageEditorModal({ page, onClose, onSaved }) {
-  const [form, setForm] = useState({ ...page })
+  const isNew = !page?.id
+  const [form, setForm] = useState(isNew ? { ...EMPTY_PAGE } : { ...page })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [tab, setTab] = useState('base')
@@ -881,11 +982,19 @@ function PageEditorModal({ page, onClose, onSaved }) {
 
   const handleSave = async () => {
     if (!form.title?.trim()) { setError('Le titre est requis'); return }
+    if (!form.path?.trim())  { setError('Le chemin URL est requis (ex: /sante/prevention)'); return }
     setSaving(true); setError(null)
     try {
-      await webAdminApi.updatePage(form.id, form)
+      if (isNew) {
+        await webAdminApi.createPage(form)
+      } else {
+        await webAdminApi.updatePage(form.id, form)
+      }
       onSaved()
-    } catch { setError("Erreur lors de l'enregistrement") }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.errors?.path?.[0] || "Erreur lors de l'enregistrement"
+      setError(msg)
+    }
     finally { setSaving(false) }
   }
 
@@ -914,9 +1023,11 @@ function PageEditorModal({ page, onClose, onSaved }) {
         }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: colors.gray900 }}>
-              {form.icon} {form.title}
+              {isNew ? '➕ Nouvelle page' : `${form.icon} ${form.title}`}
             </div>
-            <div style={{ fontSize: 11, color: colors.gray500, marginTop: 2 }}>{form.path}</div>
+            <div style={{ fontSize: 11, color: colors.gray500, marginTop: 2 }}>
+              {isNew ? 'Remplissez les informations de la nouvelle page' : form.path}
+            </div>
           </div>
           <button onClick={onClose} style={{
             background: 'none', border: 'none', cursor: 'pointer',
@@ -948,6 +1059,15 @@ function PageEditorModal({ page, onClose, onSaved }) {
                 <InputField label="Titre *" value={form.title || ''} onChange={set('title')} placeholder="Titre de la page" />
                 <InputField label="Tag / Catégorie" value={form.tag || ''} onChange={set('tag')} placeholder="Services médicaux" />
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'end' }}>
+                <InputField label="Chemin URL *" value={form.path || ''} onChange={set('path')} placeholder="/sante/prevention" />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8 }}>
+                  <input type="checkbox" checked={!!form.is_active}
+                    onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
+                    style={{ width: 15, height: 15, accentColor: colors.bleu }} />
+                  <span style={{ fontSize: 13, color: colors.gray700, whiteSpace: 'nowrap' }}>Visible sur le site</span>
+                </label>
+              </div>
               <InputField label="Sous-titre" value={form.subtitle || ''} onChange={set('subtitle')} placeholder="Une courte accroche descriptive…" />
               <InputField label="Description" value={form.description || ''} onChange={set('description')} placeholder="Paragraphe de présentation de la page…" rows={5} />
               {(form.path || '').startsWith('/payer/') && (
@@ -975,7 +1095,7 @@ function PageEditorModal({ page, onClose, onSaved }) {
               value={form.features}
               onChange={v => setForm(f => ({ ...f, features: v }))}
               fields={[
-                { key: 'icon',  label: 'Icône', flex: '0 0 60px', min: 50 },
+                { key: 'icon',  label: 'Icône / Image', flex: '0 0 80px', min: 70, uploadImage: true },
                 { key: 'title', label: 'Titre', flex: '1 1 120px', min: 100 },
                 { key: 'desc',  label: 'Description', flex: '2 1 200px', min: 150, rows: 2 },
               ]}
@@ -1016,7 +1136,7 @@ function PageEditorModal({ page, onClose, onSaved }) {
         }}>
           <Btn variant="ghost" onClick={onClose}>Annuler</Btn>
           <Btn onClick={handleSave} disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer la page'}
+            {saving ? 'Enregistrement…' : isNew ? 'Créer la page' : 'Enregistrer les modifications'}
           </Btn>
         </div>
       </div>
@@ -1036,11 +1156,16 @@ const TAG_COLORS = {
 }
 
 function PagesTab() {
-  const [pages, setPages]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState(null)
-  const [alert, setAlert]   = useState(null)
-  const [search, setSearch] = useState('')
+  const [pages, setPages]       = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [editing, setEditing]   = useState(null)  // page obj ou null
+  const [creating, setCreating] = useState(false) // true = modal nouvelle page
+  const [alert, setAlert]       = useState(null)
+  const [search, setSearch]     = useState('')
+  const [filterTag, setFilterTag]       = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [togglingId, setTogglingId]     = useState(null)
+  const [deletingId, setDeletingId]     = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1053,18 +1178,45 @@ function PagesTab() {
 
   useEffect(() => { load() }, [load])
 
-  const filtered = pages.filter(p =>
-    !search || p.title?.toLowerCase().includes(search.toLowerCase()) ||
-    p.tag?.toLowerCase().includes(search.toLowerCase()) ||
-    p.path?.toLowerCase().includes(search.toLowerCase())
-  )
+  // Tags distincts pour le filtre
+  const allTags = [...new Set(pages.map(p => p.tag || 'Autres'))].sort()
 
-  const groups = filtered.reduce((acc, p) => {
-    const k = p.tag || 'Autres'
-    if (!acc[k]) acc[k] = []
-    acc[k].push(p)
-    return acc
-  }, {})
+  const filtered = pages.filter(p => {
+    const tag = p.tag || 'Autres'
+    const matchSearch = !search ||
+      p.title?.toLowerCase().includes(search.toLowerCase()) ||
+      tag.toLowerCase().includes(search.toLowerCase()) ||
+      p.path?.toLowerCase().includes(search.toLowerCase())
+    const matchTag    = filterTag === 'all' || tag === filterTag
+    const matchStatus = filterStatus === 'all' || (filterStatus === 'active' ? p.is_active : !p.is_active)
+    return matchSearch && matchTag && matchStatus
+  })
+
+  const handleToggle = async (page) => {
+    setTogglingId(page.id)
+    try {
+      const { data } = await webAdminApi.togglePage(page.id)
+      setPages(prev => prev.map(p => p.id === page.id ? data : p))
+    } catch { setAlert({ type: 'error', text: 'Erreur lors du changement de statut' }) }
+    finally { setTogglingId(null) }
+  }
+
+  const handleDelete = async (page) => {
+    if (!window.confirm(`Supprimer la page "${page.title}" ? Cette action est irréversible.`)) return
+    setDeletingId(page.id)
+    try {
+      await webAdminApi.deletePage(page.id)
+      setPages(prev => prev.filter(p => p.id !== page.id))
+      setAlert({ type: 'success', text: `Page "${page.title}" supprimée.` })
+    } catch { setAlert({ type: 'error', text: 'Erreur lors de la suppression' }) }
+    finally { setDeletingId(null) }
+  }
+
+  const inputStyle = {
+    padding: '7px 11px', border: `1.5px solid ${colors.gray300}`,
+    borderRadius: radius.sm, fontSize: 12, fontFamily: 'inherit',
+    background: colors.white, color: colors.gray800, outline: 'none',
+  }
 
   return (
     <div>
@@ -1072,68 +1224,139 @@ function PagesTab() {
       <SectionCard
         title={`Pages internes du site (${pages.length})`}
         action={
-          <input
-            value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher…"
-            style={{
-              padding: '6px 12px', border: `1.5px solid ${colors.gray300}`,
-              borderRadius: radius.sm, fontSize: 12, fontFamily: 'inherit', width: 200,
-            }}
-          />
+          <Btn size="sm" onClick={() => setCreating(true)}>
+            + Nouvelle page
+          </Btn>
         }
       >
+        {/* ── Barre de filtres ── */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="🔍 Rechercher…"
+            style={{ ...inputStyle, width: 200 }}
+          />
+          <select value={filterTag} onChange={e => setFilterTag(e.target.value)} style={{ ...inputStyle, width: 180 }}>
+            <option value="all">Toutes les catégories</option>
+            {allTags.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ ...inputStyle, width: 150 }}>
+            <option value="all">Tous les statuts</option>
+            <option value="active">Actives</option>
+            <option value="inactive">Inactives</option>
+          </select>
+          {(search || filterTag !== 'all' || filterStatus !== 'all') && (
+            <button onClick={() => { setSearch(''); setFilterTag('all'); setFilterStatus('all') }} style={{
+              ...inputStyle, cursor: 'pointer', color: colors.gray500, background: colors.gray50,
+            }}>✕ Réinitialiser</button>
+          )}
+        </div>
+
+        {/* ── Tableau ── */}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Spinner /></div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: colors.gray400, fontSize: 13 }}>
+            Aucune page ne correspond aux filtres.
+          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {Object.entries(groups).map(([tag, items]) => (
-              <div key={tag}>
-                <div style={{
-                  fontSize: 11, fontWeight: 800, letterSpacing: 1,
-                  color: colors.gray500, textTransform: 'uppercase', marginBottom: 8,
-                  display: 'flex', alignItems: 'center', gap: 8,
-                }}>
-                  <span style={{
-                    display: 'inline-block', padding: '2px 10px', borderRadius: 100,
-                    background: TAG_COLORS[tag] || colors.gray100,
-                    color: colors.gray700, textTransform: 'none', fontWeight: 700, fontSize: 12,
-                  }}>{tag}</span>
-                  <span style={{ color: colors.gray300 }}>({items.length})</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {items.map(page => (
-                    <div key={page.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '10px 14px', borderRadius: radius.sm,
-                      border: `1px solid ${colors.gray200}`, background: colors.white,
-                      transition: 'box-shadow 0.15s',
-                    }}>
-                      <span style={{ fontSize: 20, flexShrink: 0 }}>{page.icon}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: colors.gray900 }}>
-                          {page.title}
-                        </div>
-                        <div style={{ fontSize: 11, color: colors.gray400, marginTop: 1 }}>
-                          {page.path}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 11, color: colors.gray500, flexShrink: 0 }}>
-                        {[page.features?.length, page.steps?.length, page.details?.length]
-                          .filter(Boolean).join(' / ')} éléments
-                      </div>
-                      <Badge active={page.is_active} />
-                      <Btn size="sm" variant="ghost" onClick={() => setEditing(page)}>
-                        <IcoEdit /> Modifier
-                      </Btn>
-                    </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: colors.gray50 }}>
+                  {['', 'Titre', 'Catégorie', 'Chemin URL', 'Contenu', 'Statut', 'Actions'].map(h => (
+                    <th key={h} style={{
+                      padding: '9px 12px', textAlign: 'left', fontWeight: 700,
+                      fontSize: 11, color: colors.gray500, textTransform: 'uppercase',
+                      letterSpacing: '.04em', borderBottom: `2px solid ${colors.gray200}`,
+                      whiteSpace: 'nowrap',
+                    }}>{h}</th>
                   ))}
-                </div>
-              </div>
-            ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((page, idx) => (
+                  <tr key={page.id} style={{
+                    background: idx % 2 === 0 ? colors.white : colors.gray50,
+                    borderBottom: `1px solid ${colors.gray100}`,
+                  }}>
+                    {/* Icône */}
+                    <td style={{ padding: '10px 12px', fontSize: 20, textAlign: 'center', width: 44 }}>
+                      {page.icon || '📄'}
+                    </td>
+                    {/* Titre */}
+                    <td style={{ padding: '10px 12px', fontWeight: 700, color: colors.gray900, minWidth: 160 }}>
+                      {page.title}
+                    </td>
+                    {/* Tag */}
+                    <td style={{ padding: '10px 12px', minWidth: 140 }}>
+                      <span style={{
+                        display: 'inline-block', padding: '2px 10px', borderRadius: 100,
+                        background: TAG_COLORS[page.tag] || colors.gray100,
+                        color: colors.gray700, fontWeight: 600, fontSize: 11,
+                      }}>{page.tag || 'Autres'}</span>
+                    </td>
+                    {/* Path */}
+                    <td style={{ padding: '10px 12px', color: colors.gray500, fontFamily: 'monospace', fontSize: 11, minWidth: 180 }}>
+                      {page.path}
+                    </td>
+                    {/* Contenu */}
+                    <td style={{ padding: '10px 12px', color: colors.gray500, fontSize: 11, whiteSpace: 'nowrap' }}>
+                      {[
+                        page.features?.length ? `${page.features.length} points forts` : null,
+                        page.steps?.length    ? `${page.steps.length} étapes`           : null,
+                        page.details?.length  ? `${page.details.length} infos`          : null,
+                      ].filter(Boolean).join(' · ') || '—'}
+                    </td>
+                    {/* Statut toggle */}
+                    <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                      <button
+                        onClick={() => handleToggle(page)}
+                        disabled={togglingId === page.id}
+                        title={page.is_active ? 'Cliquer pour désactiver' : 'Cliquer pour activer'}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          padding: '4px 10px', borderRadius: 100, border: 'none',
+                          cursor: togglingId === page.id ? 'wait' : 'pointer',
+                          fontWeight: 700, fontSize: 11,
+                          background: page.is_active ? '#dcfce7' : '#fee2e2',
+                          color:      page.is_active ? '#166534' : '#991b1b',
+                          transition: 'opacity .2s',
+                          opacity: togglingId === page.id ? .6 : 1,
+                        }}
+                      >
+                        <span style={{
+                          width: 7, height: 7, borderRadius: '50%',
+                          background: page.is_active ? '#22c55e' : '#ef4444',
+                          display: 'inline-block', flexShrink: 0,
+                        }}/>
+                        {togglingId === page.id ? '…' : page.is_active ? 'Active' : 'Inactive'}
+                      </button>
+                    </td>
+                    {/* Actions */}
+                    <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <Btn size="sm" variant="ghost" onClick={() => setEditing(page)}>
+                          <IcoEdit /> Modifier
+                        </Btn>
+                        <Btn
+                          size="sm" variant="danger"
+                          disabled={deletingId === page.id}
+                          onClick={() => handleDelete(page)}
+                        >
+                          <IcoTrash />
+                        </Btn>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </SectionCard>
 
+      {/* Modal édition */}
       {editing && (
         <PageEditorModal
           page={editing}
@@ -1142,6 +1365,19 @@ function PagesTab() {
             setEditing(null)
             load()
             setAlert({ type: 'success', text: 'Page mise à jour avec succès.' })
+          }}
+        />
+      )}
+
+      {/* Modal création */}
+      {creating && (
+        <PageEditorModal
+          page={null}
+          onClose={() => setCreating(false)}
+          onSaved={() => {
+            setCreating(false)
+            load()
+            setAlert({ type: 'success', text: 'Nouvelle page créée avec succès.' })
           }}
         />
       )}

@@ -458,10 +458,15 @@ export const webAdminApi = {
   createFaq:         (data)      => api.post('/web/admin/faq', data),
   updateFaq:         (id, data)  => api.put(`/web/admin/faq/${id}`, data),
   deleteFaq:         (id)        => api.delete(`/web/admin/faq/${id}`),
+  // Upload image feature
+  uploadFeatureImage: (formData) => api.post('/web/admin/upload-image', formData),
   // Pages internes du site
   adminPages:        ()          => api.get('/web/admin/pages'),
   adminPage:         (id)        => api.get(`/web/admin/pages/${id}`),
+  createPage:        (data)      => api.post('/web/admin/pages', data),
   updatePage:        (id, data)  => api.put(`/web/admin/pages/${id}`, data),
+  deletePage:        (id)        => api.delete(`/web/admin/pages/${id}`),
+  togglePage:        (id)        => api.patch(`/web/admin/pages/${id}/toggle`),
 }
  
  

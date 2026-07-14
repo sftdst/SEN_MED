@@ -38,6 +38,7 @@ import DPEPage from './pages/patients/DPEPage'
 import MatMedPage from './pages/materielMedical/MatMedPage'
 import UsersPage from './pages/configUtilisateurs/UsersPage'
 import LoginPage from './pages/auth/LoginPage'
+import PwaToast from './components/PwaToast'
 
 function AppRoutes() {
   return (
@@ -133,6 +134,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <AppRoutes />
+          <PwaToast />
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

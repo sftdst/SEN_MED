@@ -13,8 +13,23 @@ export const storageUrl = (path) => {
   return `${STORAGE_URL}/${String(path).replace(/^\/+/, '')}`
 }
 
+/* ── Cache localStorage pour les préférences ─────────────────────────────── */
+const PREFS_LS_KEY = 'senmed_prefs_v1'
+
+export const getCachedPrefs = () => {
+  try { return JSON.parse(localStorage.getItem(PREFS_LS_KEY)) } catch { return null }
+}
+
+const savePrefsToCache = (data) => {
+  try { localStorage.setItem(PREFS_LS_KEY, JSON.stringify(data)) } catch {}
+}
+
 export const publicApi = {
-  preferences:  () => getJson('/public/preferences'),
+  preferences: async () => {
+    const data = await getJson('/public/preferences')
+    savePrefsToCache(data)
+    return data
+  },
   slides:       () => getJson('/public/slides'),
   about:        () => getJson('/public/about'),
   services:     () => getJson('/public/services'),

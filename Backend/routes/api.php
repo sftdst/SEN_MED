@@ -569,10 +569,15 @@ Route::prefix('v1')->group(function () {
         Route::post('faq',                      [WebPublicController::class, 'adminFaqStore']);
         Route::put('faq/{id}',                  [WebPublicController::class, 'adminFaqUpdate']);
         Route::delete('faq/{id}',               [WebPublicController::class, 'adminFaqDestroy']);
+        // Upload image (features / icônes)
+        Route::post('upload-image',      [WebPublicController::class, 'adminUploadImage']);
         // Pages internes
-        Route::get('pages',          [WebPublicController::class, 'adminPagesList']);
-        Route::get('pages/{id}',     [WebPublicController::class, 'adminPagesShow']);
-        Route::put('pages/{id}',     [WebPublicController::class, 'adminPagesUpdate']);
+        Route::get('pages',              [WebPublicController::class, 'adminPagesList']);
+        Route::post('pages',             [WebPublicController::class, 'adminPagesStore']);
+        Route::get('pages/{id}',         [WebPublicController::class, 'adminPagesShow']);
+        Route::put('pages/{id}',         [WebPublicController::class, 'adminPagesUpdate']);
+        Route::delete('pages/{id}',      [WebPublicController::class, 'adminPagesDestroy']);
+        Route::patch('pages/{id}/toggle',[WebPublicController::class, 'adminPagesToggle']);
     });
 
     /*
