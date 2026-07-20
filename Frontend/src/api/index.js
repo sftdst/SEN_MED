@@ -1,12 +1,29 @@
 import api from './axios'
 
 // ── Hôpitaux ──────────────────────────────────────────────
+const toFormData = (data, file, fileKey = 'logo') => {
+  const fd = new FormData()
+  Object.entries(data).forEach(([k, v]) => {
+    if (v !== null && v !== undefined) fd.append(k, v)
+  })
+  if (file) fd.append(fileKey, file)
+  return fd
+}
+
 export const hospitalApi = {
-  liste:      (params) => api.get('/hospitals', { params }),
-  detail:     (id)     => api.get(`/hospitals/${id}`),
-  creer:      (data)   => api.post('/hospitals', data),
-  modifier:   (id, data) => api.put(`/hospitals/${id}`, data),
-  supprimer:  (id)     => api.delete(`/hospitals/${id}`),
+  liste:        (params) => api.get('/hospitals', { params }),
+  detail:       (id)     => api.get(`/hospitals/${id}`),
+  creer:        (data, logoFile) => api.post('/hospitals', toFormData(data, logoFile), { headers: { 'Content-Type': 'multipart/form-data' } }),
+  modifier:     (id, data, logoFile) => {
+    if (logoFile) {
+      const fd = toFormData(data, logoFile)
+      fd.append('_method', 'PUT')
+      return api.post(`/hospitals/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    }
+    return api.put(`/hospitals/${id}`, data)
+  },
+  supprimer:    (id)     => api.delete(`/hospitals/${id}`),
+  supprimerLogo:(id)     => api.delete(`/hospitals/${id}/logo`),
 }
 
 // ── Départements ──────────────────────────────────────────

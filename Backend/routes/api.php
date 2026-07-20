@@ -68,6 +68,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // Hôpitaux / Organisations
+    Route::delete('hospitals/{hospital}/logo', [HospitalController::class, 'deleteLogo']);
     Route::apiResource('hospitals', HospitalController::class)
         ->parameters(['hospitals' => 'hospital']);
 

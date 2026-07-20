@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Hospital extends Model
 {
@@ -32,12 +33,13 @@ class Hospital extends Model
         'status_id'   => 'integer',
     ];
 
-    // logo est un bytea PostgreSQL — le convertir en base64 pour l'API
-    public function getLogoAttribute($value): ?string
+    protected $appends = ['logo_url'];
+
+    public function getLogoUrlAttribute(): ?string
     {
-        if ($value === null) return null;
-        if (is_resource($value)) return base64_encode(stream_get_contents($value));
-        return base64_encode($value);
+        if (!$this->logo) return null;
+        if (str_starts_with($this->logo, 'http')) return $this->logo;
+        return Storage::disk('public')->url($this->logo);
     }
 
     public function departements(): HasMany

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Hospital;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class HospitalController extends Controller
 {
@@ -44,11 +44,15 @@ class HospitalController extends Controller
             'website'        => 'nullable|string|max:50',
             'status_id'      => 'nullable|integer',
             'type_cabinet'   => 'nullable|string|max:50',
+            'logo'           => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
+
+        if ($request->hasFile('logo')) {
+            $validated['logo'] = $request->file('logo')->store('hospitals/logos', 'public');
+        }
 
         $hospital = Hospital::create($validated);
 
-        // Auto-assigner Hospital_id = id_Rep si non fourni
         if (empty($hospital->Hospital_id)) {
             $hospital->update(['Hospital_id' => $hospital->id_Rep]);
         }
@@ -86,24 +90,49 @@ class HospitalController extends Controller
             'website'        => 'nullable|string|max:50',
             'status_id'      => 'nullable|integer',
             'type_cabinet'   => 'nullable|string|max:50',
+            'logo'           => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
+
+        if ($request->hasFile('logo')) {
+            if ($hospital->logo) {
+                Storage::disk('public')->delete($hospital->logo);
+            }
+            $validated['logo'] = $request->file('logo')->store('hospitals/logos', 'public');
+        }
 
         $hospital->update($validated);
 
         return response()->json([
             'success' => true,
             'message' => 'Hôpital mis à jour avec succès.',
-            'data'    => $hospital,
+            'data'    => $hospital->fresh(),
         ]);
     }
 
     public function destroy(Hospital $hospital): JsonResponse
     {
+        if ($hospital->logo) {
+            Storage::disk('public')->delete($hospital->logo);
+        }
         $hospital->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Hôpital supprimé avec succès.',
+        ]);
+    }
+
+    public function deleteLogo(Hospital $hospital): JsonResponse
+    {
+        if ($hospital->logo) {
+            Storage::disk('public')->delete($hospital->logo);
+            $hospital->update(['logo' => null]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logo supprimé.',
+            'data'    => $hospital->fresh(),
         ]);
     }
 }
