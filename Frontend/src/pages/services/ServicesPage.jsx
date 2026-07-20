@@ -48,8 +48,7 @@ export default function ServicesPage() {
       const result = s.data.data
       setData(result?.data || [])
       setPaginationMeta(result?.last_page ? result : null)
-      const toArr = v => (v?.data?.data && Array.isArray(v.data.data)) ? v.data.data : (Array.isArray(v) ? v : [])
-      setTypes(toArr(t))
+      setTypes(t?.data?.data?.data || [])
     }).finally(() => setLoading(false))
   }
 
