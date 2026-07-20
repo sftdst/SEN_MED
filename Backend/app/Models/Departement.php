@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Departement extends Model
 {
-    protected $table = 'gen_mst_Departement';
+    protected $table = 'gen_mst_departement';
     protected $primaryKey = 'IDgen_mst_Departement';
 
     protected $fillable = [

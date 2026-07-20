@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TypeService extends Model
 {
-    protected $table = 'gen_mst_Type_Service';
+    protected $table = 'gen_mst_type_service';
     protected $primaryKey = 'IDgen_mst_Type_Service';
 
     protected $fillable = [
