@@ -3,25 +3,27 @@
 namespace Database\Seeders;
 
 use App\Models\Service;
-use App\Models\TypeService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class AddDentistServices extends Seeder
 {
     public function run(): void
     {
-        // Récupérer les types de service dentaires (priorité aux plus récents en cas de doublons)
-        $typeIds = TypeService::whereIn('NomType', [
-            'Consultations',
-            'Soins Conservateurs',
-            'Soins Chirurgicaux',
-            'Soins Parodontaux',
-            'Radiographie',
-            'Prothèses Dentaires',
-        ])->orderBy('IDgen_mst_Type_Service', 'desc')
-          ->get()
-          ->unique('NomType')
-          ->keyBy('NomType');
+        // Utilise DB::table avec le nom exact (case-sensitive sur Linux)
+        $typeIds = DB::table('gen_mst_type_service')
+            ->whereIn('NomType', [
+                'Consultations',
+                'Soins Conservateurs',
+                'Soins Chirurgicaux',
+                'Soins Parodontaux',
+                'Radiographie',
+                'Prothèses Dentaires',
+            ])
+            ->orderBy('IDgen_mst_Type_Service', 'desc')
+            ->get()
+            ->unique('NomType')
+            ->keyBy('NomType');
 
         $cons   = $typeIds['Consultations']->IDgen_mst_Type_Service        ?? 8;
         $soinsC = $typeIds['Soins Conservateurs']->IDgen_mst_Type_Service  ?? 9;
