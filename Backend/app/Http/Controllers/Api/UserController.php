@@ -98,8 +98,8 @@ class UserController extends Controller
 
     public function destroy(Request $request, User $user)
     {
-        // Interdit de supprimer son propre compte
-        if ($user->id === $request->user()->id) {
+        $authUser = $request->user();
+        if ($authUser && $user->id === $authUser->id) {
             return response()->json(['success' => false, 'message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 403);
         }
 
@@ -112,7 +112,8 @@ class UserController extends Controller
 
     public function toggleActive(Request $request, User $user)
     {
-        if ($user->id === $request->user()->id) {
+        $authUser = $request->user();
+        if ($authUser && $user->id === $authUser->id) {
             return response()->json(['success' => false, 'message' => 'Vous ne pouvez pas désactiver votre propre compte.'], 403);
         }
 
