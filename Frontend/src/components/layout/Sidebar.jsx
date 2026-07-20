@@ -123,9 +123,11 @@ const navItemsDef = [
   {
     group: 'ADMINISTRATION', groupIcon: 'building',
     items: [
-      { to: '/departements', label: 'Départements', permission: 'departements', icon: 'building' },
-      { to: '/hopitaux',     label: 'Hôpitaux',     permission: 'hopitaux',     icon: 'hospital' },
-      { to: '/partenaires',  label: 'Partenaires',  permission: 'partenaires',  icon: 'handshake' },
+      { to: '/hopitaux',      label: 'Hôpitaux',          permission: 'hopitaux',      icon: 'hospital'  },
+      { to: '/departements',  label: 'Départements',       permission: 'departements',  icon: 'building'  },
+      { to: '/type-services', label: 'Types de service',   permission: 'departements',  icon: 'tag'       },
+      { to: '/services',      label: 'Services',           permission: 'departements',  icon: 'crossMed'  },
+      { to: '/partenaires',   label: 'Partenaires',        permission: 'partenaires',   icon: 'handshake' },
     ],
   },
 ]
