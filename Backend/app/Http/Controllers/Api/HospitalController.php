@@ -48,10 +48,15 @@ class HospitalController extends Controller
 
         $hospital = Hospital::create($validated);
 
+        // Auto-assigner Hospital_id = id_Rep si non fourni
+        if (empty($hospital->Hospital_id)) {
+            $hospital->update(['Hospital_id' => $hospital->id_Rep]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Hôpital créé avec succès.',
-            'data'    => $hospital,
+            'data'    => $hospital->fresh(),
         ], 201);
     }
 
