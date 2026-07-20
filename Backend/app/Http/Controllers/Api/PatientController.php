@@ -71,7 +71,7 @@ class PatientController extends Controller
         ]);
 
         // Vérifier que le type de couverture existe pour ce partenaire (si fourni)
-        if ($validated['company_id'] && $validated['type_couverture']) {
+        if (($validated['company_id'] ?? null) && ($validated['type_couverture'] ?? null)) {
             $partenaire = PartenaireHeader::find($validated['company_id']);
             if (!$partenaire) {
                 return response()->json([
@@ -156,7 +156,7 @@ class PatientController extends Controller
         ]);
 
         // Vérifier la cohérence couverture si partenaire spécifié
-        if ($validated['company_id'] && $validated['type_couverture']) {
+        if (($validated['company_id'] ?? null) && ($validated['type_couverture'] ?? null)) {
             $partenaire = PartenaireHeader::find($validated['company_id']);
             $couvertureExists = $partenaire->typesCouverture()
                 ->where('Nom', $validated['type_couverture'])
