@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { colors, radius, shadows } from '../../theme'
+import { dashboardApi, comptabiliteApi } from '../../api'
 import FacturesTab from './FacturesTab'
 import HistoriqueTab from './HistoriqueTab'
 import CreditPatientTab from './CreditPatientTab'
@@ -35,16 +36,50 @@ function PlaceholderTab({ item }) {
   )
 }
 
+const fmtF = (n) => Number(n ?? 0).toLocaleString('fr-FR') + ' F'
+
 function AccueilTab() {
+  const [data,    setData]    = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(null)
+
+  useEffect(() => {
+    Promise.all([
+      dashboardApi.stats(),
+      comptabiliteApi.facturesEnAttente({ per_page: 1 }),
+      comptabiliteApi.creditsPatients({ per_page: 1 }),
+    ])
+      .then(([dashRes, factRes, creditRes]) => {
+        const dash   = dashRes.data?.data     ?? {}
+        const fact   = factRes.data?.totaux   ?? {}
+        const credit = creditRes.data?.totaux ?? {}
+        setData({
+          nbFactures:   fact.nb_factures    ?? 0,
+          montantPaye:  dash.montant_paye   ?? 0,
+          enAttente:    dash.montant_en_attente ?? 0,
+          creditsTotal: credit.total_restant ?? 0,
+        })
+      })
+      .catch(() => setError('Impossible de charger les données.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const val = (v) => loading ? '…' : (data ? v : '—')
+
   const cards = [
-    { label: 'Total factures',    val: '124',    icon: '📄', color: colors.bleu,    bg: colors.infoBg    },
-    { label: 'Montant payé',     val: '2.5M F', icon: '✅', color: colors.success, bg: colors.successBg },
-    { label: 'En attente',       val: '450K F',  icon: '⏳', color: colors.warning, bg: colors.warningBg },
-    { label: 'Crédits patients', val: '180K F',  icon: '💳', color: colors.danger,  bg: colors.dangerBg  },
+    { label: 'Factures en attente', val: val(data?.nbFactures),            icon: '📄', color: colors.bleu,    bg: colors.infoBg    },
+    { label: 'Montant payé',        val: val(fmtF(data?.montantPaye)),      icon: '✅', color: colors.success, bg: colors.successBg },
+    { label: 'Montant en attente',  val: val(fmtF(data?.enAttente)),        icon: '⏳', color: colors.warning, bg: colors.warningBg },
+    { label: 'Crédits patients',    val: val(fmtF(data?.creditsTotal)),     icon: '💳', color: colors.danger,  bg: colors.dangerBg  },
   ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {error && (
+        <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: radius.sm, padding: '10px 14px', fontSize: 13, color: '#856404' }}>
+          {error}
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 16 }}>
         {cards.map(c => (
           <div key={c.label} style={{
@@ -61,7 +96,7 @@ function AccueilTab() {
             }}>{c.icon}</div>
             <div>
               <div style={{ fontSize: 11, color: colors.gray500, fontWeight: 600, textTransform: 'uppercase' }}>{c.label}</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: c.color, lineHeight: 1.2 }}>{c.val}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: c.color, lineHeight: 1.2 }}>{c.val}</div>
             </div>
           </div>
         ))}

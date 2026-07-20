@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\WebPublicController;
 use App\Http\Controllers\Api\MatMedEquipementController;
 use App\Http\Controllers\Api\MatMedLocationController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\DashboardController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -67,6 +68,9 @@ Route::prefix('v1')->group(function () {
         Route::post('keep-password',  [AuthController::class, 'keepPassword'])->middleware('auth:sanctum');
     });
 
+    // Dashboard
+    Route::get('dashboard/stats', [DashboardController::class, 'stats']);
+
     // Hôpitaux / Organisations
     Route::delete('hospitals/{hospital}/logo', [HospitalController::class, 'deleteLogo']);
     Route::apiResource('hospitals', HospitalController::class)
@@ -77,10 +81,12 @@ Route::prefix('v1')->group(function () {
         ->parameters(['departements' => 'departement']);
 
     // Types de service
+    Route::post('type-services/import', [TypeServiceController::class, 'import']);
     Route::apiResource('type-services', TypeServiceController::class)
         ->parameters(['type-services' => 'typeService']);
 
     // Services
+    Route::post('services/import', [ServiceController::class, 'import']);
     Route::apiResource('services', ServiceController::class)
         ->parameters(['services' => 'service']);
 

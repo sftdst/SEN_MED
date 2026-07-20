@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { colors, radius, shadows } from '../../theme'
-import { comptabiliteApi, paiementApi } from '../../api'
+import { comptabiliteApi, paiementApi, hospitalApi } from '../../api'
 import { useTheme } from '../../contexts/ThemeContext'
 import { printFactures } from './printUtils'
 import PaiementModal from './PaiementModal'
@@ -198,6 +198,7 @@ export default function FacturesTab() {
         billNo={detailModal.billNo}
         patientName={detailModal.patientName}
         detail={detailsMap[detailModal.billId]}
+        prefs={prefs}
         onClose={() => setDetailModal(null)}
         onPay={() => {
           setDetailModal(null)
@@ -689,16 +690,25 @@ export default function FacturesTab() {
 }
 
 // ── Génération HTML pour impression facture ──────────────────────────────────
-function buildFacturePrintHtml({ billNo, patientName, services, totDetail, billDate, partenaireNom }) {
+function buildFacturePrintHtml({ billNo, patientName, services, totDetail, billDate, partenaireNom, prefs = {}, hospital = null }) {
   const fmtF = (n) => Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const fmtD = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
   const num = (v) => parseFloat(v) || 0
+  const primary = prefs?.primary_color || '#002f59'
+  const accent  = prefs?.accent_color  || '#ff7631'
+  const clinicName    = hospital?.hospital_name || prefs?.app_name    || 'SenMed'
+  const clinicSlogan  = hospital?.type_cabinet  || prefs?.app_slogan  || ''
+  const clinicPhone   = hospital?.contact_number || hospital?.mobile_number || prefs?.phone   || ''
+  const clinicEmail   = hospital?.email_address  || prefs?.email   || ''
+  const clinicAddress = hospital?.adress         || prefs?.address || ''
+  const storageBase   = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage'
+  const logoUrl       = hospital?.logo ? `${storageBase}/${hospital.logo}` : null
 
   const serviceRows = services.length > 0
     ? services.map((svc, i) => `
       <tr>
         <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top">${i + 1}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top">${svc.NomDescription || svc.IDService || '—'}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top">${svc.NomService || svc.NomDescription || svc.IDService || '—'}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top;text-align:right">${fmtF(svc.MontantTotalFacture)} F</td>
         <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top;text-align:right">${fmtF(svc.patient_payable)} F</td>
         <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;vertical-align:top;text-align:right">${fmtF(svc.MontantPartenaire || 0)} F</td>
@@ -714,15 +724,22 @@ function buildFacturePrintHtml({ billNo, patientName, services, totDetail, billD
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1e293b; padding: 24px; max-width: 900px; margin: 0 auto; }
-  h1 { font-size: 18px; color: #0f172a; margin-bottom: 4px; letter-spacing: 0.3px; }
-  .subtitle { font-size: 12px; color: #64748b; margin-bottom: 24px; }
+  .doc-header { background: linear-gradient(135deg, ${primary} 0%, ${primary}e0 100%); border-radius: 10px; padding: 18px 24px; display: flex; align-items: center; gap: 18px; margin-bottom: 20px; }
+  .hosp-logo { max-height: 72px; max-width: 140px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.12); padding: 4px; flex-shrink: 0; }
+  .hosp-text { flex: 1; }
+  .hosp-name { color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; }
+  .hosp-sub  { color: rgba(255,255,255,0.7); font-size: 11px; font-style: italic; margin-top: 2px; }
+  .hosp-info { color: rgba(255,255,255,0.75); font-size: 10.5px; margin-top: 6px; line-height: 1.7; }
+  .doc-badge { text-align: right; }
+  .doc-badge-title { color: #fff; font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+  .doc-badge-sub   { color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 4px; }
   .header-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; }
   .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; }
   .info-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
   .info-label { color: #64748b; }
   .info-value { font-weight: 600; color: #0f172a; }
   table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
-  thead th { background: #1e40af; color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  thead th { background: ${primary}; color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
   tbody td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
   tbody tr:nth-child(even) { background: #f8fafc; }
   .totaux-box { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin-top: 20px; }
@@ -737,15 +754,29 @@ function buildFacturePrintHtml({ billNo, patientName, services, totDetail, billD
   .badge-paid { background: #dcfce7; color: #166534; }
   .badge-partial { background: #fef3c7; color: #92400e; }
   .badge-pending { background: #fef2f2; color: #991b1b; }
+  .top-bar { height: 4px; background: linear-gradient(90deg, ${accent} 0%, ${primary} 100%); border-radius: 4px 4px 0 0; margin-bottom: 0; }
   @media print { body { padding: 12px; } @page { margin: 12mm; } }
 </style>
 </head>
 <body>
-<h1>📄 Détails de la Facture</h1>
-<p class="subtitle">Plateforme Médicale SENMED - Document de facturation</p>
+<div class="top-bar"></div>
+<div class="doc-header">
+  ${logoUrl ? `<img class="hosp-logo" src="${logoUrl}" alt="Logo ${clinicName}" />` : ''}
+  <div class="hosp-text">
+    <div class="hosp-name">${clinicName}</div>
+    ${clinicSlogan ? `<div class="hosp-sub">${clinicSlogan}</div>` : ''}
+    <div class="hosp-info">
+      ${clinicAddress ? `📍 ${clinicAddress}<br>` : ''}${clinicPhone ? `📞 ${clinicPhone}` : ''}${clinicEmail ? `${clinicPhone ? '&nbsp;&nbsp;·&nbsp;&nbsp;' : ''}✉ ${clinicEmail}` : ''}
+    </div>
+  </div>
+  <div class="doc-badge">
+    <div class="doc-badge-title">📄 FACTURE</div>
+    <div class="doc-badge-sub">Document de facturation</div>
+  </div>
+</div>
 
 <div class="header-row">
-  <div><strong>Facture N°</strong><br><span style="font-size:14px;font-weight:700;color:#1e40af">${billNo || '—'}</span></div>
+  <div><strong>Facture N°</strong><br><span style="font-size:14px;font-weight:700;color:${primary}">${billNo || '—'}</span></div>
   <div style="text-align:right"><strong>Date</strong><br>${fmtD(billDate)}</div>
 </div>
 
@@ -779,7 +810,7 @@ function buildFacturePrintHtml({ billNo, patientName, services, totDetail, billD
 </div>
 
 <div class="footer">
-  <div>✦ Merci de votre confiance ✦</div>
+  <div>✦ ${clinicName} — Merci de votre confiance ✦</div>
   <div>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</div>
   <div>Conservez ce document à titre de preuve de paiement et de facturation</div>
 </div>
@@ -788,7 +819,7 @@ function buildFacturePrintHtml({ billNo, patientName, services, totDetail, billD
 }
 
 // ── Modal Détail Facture ───────────────────────────────────────────────────────
-function FactureDetailModal({ billNo, patientName, detail, onClose, onPay }) {
+function FactureDetailModal({ billNo, patientName, detail, onClose, onPay, prefs = {} }) {
   const services  = detail?.data?.services ?? []
   const totDetail = detail?.data?.totaux   ?? null
 
@@ -932,7 +963,7 @@ function FactureDetailModal({ billNo, patientName, detail, onClose, onPay }) {
                     {/* Description */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, color: colors.gray800, fontSize: 13 }}>
-                        {svc.NomDescription || svc.IDService || '—'}
+                        {svc.NomService || svc.NomDescription || svc.IDService || '—'}
                       </div>
                       <div style={{ fontSize: 11, color: colors.gray400, marginTop: 2 }}>
                         Service facturable
@@ -1017,14 +1048,23 @@ function FactureDetailModal({ billNo, patientName, detail, onClose, onPay }) {
               💳 Enregistrer un paiement
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
+                let hospital = null
+                try {
+                  const res = await hospitalApi.liste({ per_page: 1 })
+                  const d = res.data?.data
+                  const list = Array.isArray(d) ? d : (d?.data ?? [])
+                  hospital = list[0] ?? null
+                } catch {}
                 const printData = {
                   billNo,
                   patientName,
                   services: services || [],
                   totDetail: totDetail || null,
                   billDate: detail?.data?.bill?.bill_date,
-                  partenaireNom: detail?.data?.bill?.partenaire_nom
+                  partenaireNom: detail?.data?.bill?.partenaire_nom,
+                  prefs,
+                  hospital,
                 }
                 const html = buildFacturePrintHtml(printData)
                 const win = window.open('', '_blank', 'width=950,height=700,scrollbars=yes')

@@ -261,7 +261,7 @@ function TarifsHopital({ services, search, setSearch, onRefresh }) {
     if (!search.trim()) return services
     const q = search.toLowerCase()
     return services.filter(s =>
-      (s.short_name     || '').toLowerCase().includes(q) ||
+      (s.tri_name       || s.short_name || '').toLowerCase().includes(q) ||
       (s.type_categorie || '').toLowerCase().includes(q) ||
       (s.code_local     || '').toLowerCase().includes(q)
     )
@@ -296,7 +296,7 @@ function TarifsHopital({ services, search, setSearch, onRefresh }) {
       <Modal
         open={!!editing}
         onClose={() => setEditing(null)}
-        title={`✏️ Modifier le tarif — ${editing?.short_name}`}
+        title={`✏️ Modifier le tarif — ${editing?.tri_name || editing?.short_name}`}
         subtitle="Ce tarif s'applique par défaut pour tous les médecins sans tarif personnalisé."
         accentColor={colors.bleu}
         footer={<>
@@ -427,7 +427,7 @@ function TarifsHopital({ services, search, setSearch, onRefresh }) {
                   }}
                 >
                   <td style={{ padding: '11px 14px', fontSize: 11, color: colors.gray500 }}>{svc.id_service}</td>
-                  <td style={{ padding: '11px 14px', fontSize: 12, fontWeight: 700, color: colors.bleu }}>{svc.short_name || '—'}</td>
+                  <td style={{ padding: '11px 14px', fontSize: 12, fontWeight: 700, color: colors.bleu }}>{svc.tri_name || svc.short_name || '—'}</td>
                   <td style={{ padding: '11px 14px', fontSize: 11, color: colors.gray600 }}>{svc.type_categorie || '—'}</td>
                   <td style={{ padding: '11px 14px', fontSize: 11, color: colors.gray500, fontFamily: 'monospace' }}>{svc.code_local || '—'}</td>
                   <td style={{ padding: '11px 14px', fontSize: 12, fontWeight: 700, color: colors.orange, textAlign: 'right' }}>
@@ -488,7 +488,10 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
       .filter(t => String(t.medecin_id) === String(medecinId))
       .map(t => ({
         ...t,
-        serviceNom:  t.service?.short_name || services.find(s => String(s.id_service) === String(t.service_id))?.short_name || '—',
+        serviceNom:  t.service?.tri_name || t.service?.short_name
+          || services.find(s => String(s.id_service) === String(t.service_id))?.tri_name
+          || services.find(s => String(s.id_service) === String(t.service_id))?.short_name
+          || '—',
         tarifHopital: services.find(s => String(s.id_service) === String(t.service_id))?.valeur_cts,
       }))
   }, [medecinId, tarifs, services])
@@ -658,7 +661,7 @@ function TarifsMedecins({ services, medecins, tarifs, onRefresh }) {
                     <option value="">— Sélectionner un service —</option>
                     {servicesSansTarif.map(s => (
                       <option key={s.id_service} value={s.id_service}>
-                        {s.short_name}{s.valeur_cts ? ` (Hôpital: ${Number(s.valeur_cts).toLocaleString('fr-FR')} F)` : ''}
+                        {s.tri_name || s.short_name}{s.valeur_cts ? ` (Hôpital: ${Number(s.valeur_cts).toLocaleString('fr-FR')} F)` : ''}
                       </option>
                     ))}
                   </select>

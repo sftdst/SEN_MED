@@ -17,12 +17,6 @@ const MENU_ITEMS = [
   { key: 'inventaire',        label: 'Inventaire',         icon: '📊' },
 ]
 
-const mockFournisseurs = [
-  { id: 1, nom: 'Pharma Senegal',      telephone: '+221 33 123 45 67', email: 'contact@pharmasen.sn' },
-  { id: 2, nom: 'West Africa Pharma',  telephone: '+221 33 987 65 43', email: 'info@wap.sn' },
-  { id: 3, nom: 'Senegal Medicaments', telephone: '+221 33 456 78 90', email: 'contact@senmed.sn' },
-]
-
 // ── Formulaire vide ──────────────────────────────────────────────────────────
 const EMPTY = {
   item_id: '', description: '', days: '', default_qty: '', duration: '',

@@ -36,13 +36,15 @@ class PaiementController extends Controller
             return response()->json(['success' => false, 'message' => 'Facture introuvable'], 404);
         }
 
-        $services = DB::table('gen_mst_facture')
-            ->where('bill_id', $billId)
+        $services = DB::table('gen_mst_facture as f')
+            ->leftJoin('gen_mst_service as s', 'f.IDService', '=', 's.id_service')
+            ->where('f.bill_id', $billId)
             ->select([
-                'IDgen_mst_facture', 'NomDescription', 'IDService',
-                'PrixService', 'MontantTotalFacture', 'patient_payable',
-                'MontantPartenaire', 'MontantPayer', 'MontantRestant',
-                'StatutPaiement', 'DateCreation', 'MontantpayerPartenaire',
+                'f.IDgen_mst_facture', 'f.NomDescription', 'f.IDService',
+                DB::raw("COALESCE(NULLIF(TRIM(s.tri_name),''), NULLIF(TRIM(s.short_name),''), CONCAT('Service #', f.IDService)) as NomService"),
+                'f.PrixService', 'f.MontantTotalFacture', 'f.patient_payable',
+                'f.MontantPartenaire', 'f.MontantPayer', 'f.MontantRestant',
+                'f.StatutPaiement', 'f.DateCreation', 'f.MontantpayerPartenaire',
             ])
             ->get();
 

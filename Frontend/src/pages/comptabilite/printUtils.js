@@ -7,14 +7,10 @@ const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').
 const fmtF = (n) => Number(n ?? 0).toLocaleString('fr-FR') + ' F'
 const fmtD = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
 
-// Détecte le MIME type depuis les premiers octets du base64
-function detectMime(b64) {
-  if (!b64) return 'image/png'
-  if (b64.startsWith('/9j/'))  return 'image/jpeg'
-  if (b64.startsWith('iVBOR')) return 'image/png'
-  if (b64.startsWith('R0lGO')) return 'image/gif'
-  if (b64.startsWith('UklGR')) return 'image/webp'
-  return 'image/png'
+const STORAGE_BASE = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage'
+
+function logoSrc(path) {
+  return path ? `${STORAGE_BASE}/${path}` : null
 }
 
 // Récupère le premier hôpital actif (silencieux si échec)
@@ -49,12 +45,12 @@ function buildDoc({ prefs, hospital, title, filtersHtml, statsHtml, tableHtml, r
   const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
   // ── Bloc logo / identité de l'hôpital ──────────────────────────────────────
-  // Logo : image si disponible, sinon croix médicale SVG en fallback
-  const logoBlock = hospital?.logo
-    ? `<img src="data:${detectMime(hospital.logo)};base64,${hospital.logo}"
+  const src = logoSrc(hospital?.logo)
+  const logoBlock = src
+    ? `<img src="${src}"
           style="max-height:68px;max-width:130px;object-fit:contain;
                  border-radius:8px;background:rgba(255,255,255,.1);padding:4px;flex-shrink:0"
-          alt="Logo ${esc(hospital.hospital_name || '')}" />`
+          alt="Logo ${esc(hospital?.hospital_name || '')}" />`
     : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="52" height="52"
            style="flex-shrink:0;opacity:.92">
          <rect width="32" height="32" rx="7" fill="${accent}"/>

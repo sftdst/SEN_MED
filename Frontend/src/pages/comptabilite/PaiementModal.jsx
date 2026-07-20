@@ -562,7 +562,7 @@ export default function PaiementModal({ billId, patientName, onClose, onSuccess,
                         <tr key={svc.IDgen_mst_facture ?? idx} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#fff' : '#f8fafc' }}>
                           <td style={{ padding: '8px 10px', textAlign: 'center', color: '#64748b' }}>{fmtD(svc.DateCreation)}</td>
                           <td style={{ padding: '8px 10px', textAlign: 'center' }}><input type="checkbox" style={{ cursor: 'pointer', accentColor: '#1565c0' }} /></td>
-                          <td style={{ padding: '8px 10px', fontWeight: 600, color: paye ? '#166534' : '#1e293b' }}>{svc.NomDescription || svc.IDService || '—'}</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 600, color: paye ? '#166534' : '#1e293b' }}>{svc.NomService || svc.NomDescription || svc.IDService || '—'}</td>
                           <td style={{ padding: '8px 10px', textAlign: 'right', color: '#334155' }}>{fmtF(svc.MontantTotalFacture)}</td>
                           <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: '#c62828' }}>{fmtF(svc.patient_payable)}</td>
                           <td style={{ padding: '8px 10px', textAlign: 'right', color: '#15803d' }}>{fmtF(svc.MontantPartenaire)}</td>

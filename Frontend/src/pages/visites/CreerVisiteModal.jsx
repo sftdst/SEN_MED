@@ -154,7 +154,7 @@ function TableServices({ lignes, onLignes, couverturePct, selectedTypeId, medeci
       if (field === 'service_id' && val) {
         const found = catalog.find(s => String(s.id_service) === String(val))
         if (found) {
-          next.description = found.short_name ?? ''
+          next.description = found.tri_name || found.short_name || ''
           // Chercher d'abord le tarif médecin configuré (actif)
           const medecinTarif = medecinTarifs.find(
             t => String(t.service_id) === String(val) && t.actif !== false
@@ -259,7 +259,7 @@ function TableServices({ lignes, onLignes, couverturePct, selectedTypeId, medeci
                       <option value="">-- Choisir --</option>
                       {catalog.map(s => (
                         <option key={s.id_service} value={s.id_service}>
-                          {s.short_name}
+                          {s.tri_name || s.short_name || s.id_gen_mst_service || `#${s.id_service}`}
                         </option>
                       ))}
                     </select>
@@ -355,10 +355,10 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
   const [saving, setSaving] = useState(false)
   const [visiteCreee, setVisiteCreee] = useState(null)  // stocke la visite après sauvegarde
 
-  const [medecins, setMedecins]         = useState([])
-  const [depts, setDepts]               = useState([])
-  const [typesSvc, setTypesSvc]         = useState([])
-  const [metadata, setMetadata]         = useState({ visit_places: [], liens_parente: [] })
+  const [medecins, setMedecins]           = useState([])
+  const [depts, setDepts]                 = useState([])
+  const [allTypesSvc, setAllTypesSvc]     = useState([])   // tous les types, non filtrés
+  const [metadata, setMetadata]           = useState({ visit_places: [], liens_parente: [] })
   const [medecinTarifs, setMedecinTarifs] = useState([])
 
   // Couverture du partenaire (en %)
@@ -371,7 +371,7 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
 
     departementApi.liste({ per_page: 100 }).then(r => setDepts(r.data?.data?.data ?? [])).catch(() => {})
 
-    typeServiceApi.liste({ per_page: 100 }).then(r => setTypesSvc(r.data?.data?.data ?? [])).catch(() => {})
+    typeServiceApi.liste({ per_page: 200 }).then(r => setAllTypesSvc(r.data?.data?.data ?? [])).catch(() => {})
 
     visiteApi.metadata().then(r => setMetadata(r.data?.data ?? metadata)).catch(() => {})
   }, [])
@@ -397,7 +397,12 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
 
   const handleChange = useCallback(e => {
     const { name, value, type, checked } = e.target
-    setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
+    setForm(f => {
+      const next = { ...f, [name]: type === 'checkbox' ? checked : value }
+      // Quand le département change, on reset le type de service
+      if (name === 'IDgen_mst_Departement') next.IDgen_mst_Type_Service = ''
+      return next
+    })
     setErrors(ev => ({ ...ev, [name]: null }))
   }, [])
 
@@ -468,8 +473,13 @@ export default function CreerVisiteModal({ patient, onClose, onSaved, onPaiement
     value: String(d.IDgen_mst_Departement),
     label: d.NomDepartement ?? d.departement_name ?? d.nom,
   }))
-  const liensOpts   = (metadata.liens_parente ?? []).map(l => ({ value: l.value, label: l.label }))
-  const placesOpts  = (metadata.visit_places ?? []).map(l => ({ value: l.value, label: l.label }))
+  const liensOpts  = (metadata.liens_parente ?? []).map(l => ({ value: l.value, label: l.label }))
+  const placesOpts = (metadata.visit_places  ?? []).map(l => ({ value: l.value, label: l.label }))
+
+  // Types de service filtrés par département sélectionné
+  const typesSvc = form.IDgen_mst_Departement
+    ? allTypesSvc.filter(t => String(t.IDgen_mst_Departement) === String(form.IDgen_mst_Departement))
+    : allTypesSvc
   const typesSvcOpts = typesSvc.map(t => ({
     value: String(t.IDgen_mst_Type_Service),
     label: t.NomType ?? t.nom,

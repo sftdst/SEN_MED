@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\TypeService;
+use App\Models\Departement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -80,6 +81,52 @@ class TypeServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Type de service supprimé avec succès.',
+        ]);
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'rows'   => 'required|array|min:1',
+            'rows.*' => 'array',
+        ]);
+
+        // Charger les IDs de départements valides
+        $deptIds = Departement::pluck('IDgen_mst_Departement')->map(fn($v) => (int)$v)->toArray();
+
+        $created = 0;
+        $errors  = [];
+
+        foreach ($request->input('rows') as $index => $row) {
+            $ligne   = $index + 2; // numéro de ligne fichier (1 = header)
+            $nomType = trim($row['NomType'] ?? $row['nomtype'] ?? '');
+            $desc    = trim($row['description'] ?? $row['Description'] ?? '');
+            $deptId  = (int)($row['IDgen_mst_Departement'] ?? $row['idgen_mst_departement'] ?? 0);
+            $status  = isset($row['status']) ? (int)$row['status'] : 1;
+
+            if (empty($nomType)) {
+                $errors[] = "Ligne {$ligne} : NomType vide.";
+                continue;
+            }
+            if (!in_array($deptId, $deptIds, true)) {
+                $errors[] = "Ligne {$ligne} : département ID {$deptId} introuvable.";
+                continue;
+            }
+
+            TypeService::create([
+                'NomType'               => $nomType,
+                'description'           => $desc,
+                'IDgen_mst_Departement' => $deptId,
+                'status'                => $status,
+            ]);
+            $created++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$created} type(s) de service importé(s).",
+            'created' => $created,
+            'errors'  => $errors,
         ]);
     }
 }

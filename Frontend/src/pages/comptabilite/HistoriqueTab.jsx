@@ -205,7 +205,7 @@ function DetailModal({ billId, patientName, onClose }) {
                           : { c: '#92400e', bg: '#fef3c7', l: '⏳ Attente' }
                         return (
                           <tr key={i} style={{ borderBottom: `1px solid ${colors.gray100}`, background: i % 2 ? colors.gray50 : '#fff' }}>
-                            <td style={{ padding: '7px 10px', fontWeight: 600, color: colors.gray800 }}>{s.NomDescription || s.IDService || '—'}</td>
+                            <td style={{ padding: '7px 10px', fontWeight: 600, color: colors.gray800 }}>{s.NomService || s.NomDescription || s.IDService || '—'}</td>
                             <td style={{ padding: '7px 10px', textAlign: 'right', color: colors.gray700 }}>{fmtN(s.MontantTotalFacture)}</td>
                             <td style={{ padding: '7px 10px', textAlign: 'right', color: '#c62828', fontWeight: 600 }}>{fmtN(s.patient_payable)}</td>
                             <td style={{ padding: '7px 10px', textAlign: 'right', color: colors.bleu, fontWeight: 700 }}>{fmtN(s.MontantPayer)}</td>

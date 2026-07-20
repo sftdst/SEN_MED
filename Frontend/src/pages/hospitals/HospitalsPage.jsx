@@ -109,6 +109,100 @@ function LogoUploader({ currentUrl, onFile, onDelete, canDelete }) {
   )
 }
 
+// ── Modal de protection par code ─────────────────────────────────────────────
+function CodeGateModal({ onValidate, onClose }) {
+  const [code, setCode]     = useState('')
+  const [error, setError]   = useState(false)
+  const [shake, setShake]   = useState(false)
+  const inputRef            = useRef(null)
+
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 80) }, [])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (code === 'Sata@2025') {
+      onValidate()
+    } else {
+      setError(true)
+      setShake(true)
+      setCode('')
+      setTimeout(() => setShake(false), 500)
+    }
+  }
+
+  return (
+    <div onClick={e => e.target === e.currentTarget && onClose()} style={{
+      position: 'fixed', inset: 0, zIndex: 2000,
+      background: 'rgba(15,23,42,0.72)', backdropFilter: 'blur(6px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 16,
+        boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+        width: 360, padding: '36px 32px',
+        textAlign: 'center',
+        animation: shake ? 'shake 0.4s ease' : undefined,
+      }}>
+        <style>{`
+          @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-8px)}
+            40%{transform:translateX(8px)}
+            60%{transform:translateX(-6px)}
+            80%{transform:translateX(6px)}
+          }
+        `}</style>
+        <div style={{
+          width: 56, height: 56, borderRadius: '50%', margin: '0 auto 16px',
+          background: 'linear-gradient(135deg,#002f59 0%,#1e5fa0 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 26,
+        }}>🔐</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>
+          Accès protégé
+        </div>
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>
+          Saisissez le code d'accès pour créer un nouvel hôpital.
+        </div>
+        <form onSubmit={handleSubmit}>
+          <input
+            ref={inputRef}
+            type="password"
+            value={code}
+            onChange={e => { setCode(e.target.value); setError(false) }}
+            placeholder="Code d'accès"
+            style={{
+              width: '100%', padding: '10px 14px', fontSize: 15,
+              border: `2px solid ${error ? '#ef4444' : '#e2e8f0'}`,
+              borderRadius: 8, outline: 'none', boxSizing: 'border-box',
+              fontFamily: 'monospace', letterSpacing: 3,
+              background: error ? '#fef2f2' : '#f8fafc',
+              transition: 'border-color 0.15s',
+            }}
+            autoComplete="off"
+          />
+          {error && (
+            <div style={{ color: '#ef4444', fontSize: 12, marginTop: 6, fontWeight: 600 }}>
+              Code incorrect. Réessayez.
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+            <button type="button" onClick={onClose} style={{
+              flex: 1, padding: '10px', borderRadius: 8, border: '1.5px solid #e2e8f0',
+              background: '#f8fafc', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            }}>Annuler</button>
+            <button type="submit" style={{
+              flex: 1, padding: '10px', borderRadius: 8, border: 'none',
+              background: 'linear-gradient(135deg,#002f59 0%,#1e5fa0 100%)',
+              color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+            }}>Confirmer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function HospitalsPage() {
   const [data, setData]                       = useState([])
@@ -123,6 +217,7 @@ export default function HospitalsPage() {
   const [logoFile, setLogoFile]               = useState(null)
   const [saving, setSaving]                   = useState(false)
   const [confirm, setConfirm]                 = useState(null)
+  const [codeGate, setCodeGate]               = useState(false)
 
   const load = (p = page, pp = perPage) => {
     setLoading(true)
@@ -139,6 +234,10 @@ export default function HospitalsPage() {
   useEffect(() => { load() }, [])
 
   const openCreate = () => {
+    setCodeGate(true)
+  }
+  const onCodeValidated = () => {
+    setCodeGate(false)
     setEditing(null); setForm(emptyForm); setLogoFile(null); setModal(true)
   }
   const openEdit = (row) => {
@@ -250,6 +349,8 @@ export default function HospitalsPage() {
           </>
         )}
       </div>
+
+      {codeGate && <CodeGateModal onValidate={onCodeValidated} onClose={() => setCodeGate(false)} />}
 
       <Modal
         open={modal}

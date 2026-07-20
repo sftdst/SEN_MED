@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\TypeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -111,6 +112,63 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Service supprimé avec succès.',
+        ]);
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'rows'   => 'required|array|min:1',
+            'rows.*' => 'array',
+        ]);
+
+        // IDs de types de service valides
+        $typeIds = TypeService::pluck('IDgen_mst_Type_Service')->map(fn($v) => (int)$v)->toArray();
+
+        $created = 0;
+        $errors  = [];
+
+        foreach ($request->input('rows') as $index => $row) {
+            $ligne   = $index + 2;
+            $libelle = trim($row['tri_name'] ?? $row['NomService'] ?? $row['Libellé'] ?? $row['libelle'] ?? '');
+            $typeId  = (int)($row['IDgen_mst_Type_Service'] ?? $row['type_service_id'] ?? 0);
+            $code    = trim($row['id_gen_mst_service'] ?? $row['code'] ?? '');
+            $valeur  = trim($row['valeur_cts'] ?? $row['prix'] ?? '');
+            $status  = isset($row['status']) ? (int)$row['status'] : 1;
+
+            if (empty($libelle)) {
+                $errors[] = "Ligne {$ligne} : libellé (tri_name) vide.";
+                continue;
+            }
+            if (!in_array($typeId, $typeIds, true)) {
+                $errors[] = "Ligne {$ligne} : type de service ID {$typeId} introuvable.";
+                continue;
+            }
+            // Vérifier l'unicité du code si fourni
+            if ($code && Service::where('id_gen_mst_service', $code)->exists()) {
+                $errors[] = "Ligne {$ligne} : code \"{$code}\" déjà utilisé — ligne ignorée.";
+                continue;
+            }
+
+            Service::create([
+                'tri_name'               => $libelle,
+                'short_name'             => trim($row['short_name'] ?? ''),
+                'id_gen_mst_service'     => $code ?: null,
+                'valeur_cts'             => $valeur ?: null,
+                'code_local'             => trim($row['code_local'] ?? '') ?: null,
+                'type_categorie'         => trim($row['type_categorie'] ?? '') ?: null,
+                'cle_tarif_service'      => trim($row['cle_tarif_service'] ?? '') ?: null,
+                'IDgen_mst_Type_Service' => $typeId,
+                'status'                 => $status,
+            ]);
+            $created++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$created} service(s) importé(s).",
+            'created' => $created,
+            'errors'  => $errors,
         ]);
     }
 }

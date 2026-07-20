@@ -27,6 +27,11 @@ export const hospitalApi = {
 }
 
 // ── Départements ──────────────────────────────────────────
+// ── Dashboard ─────────────────────────────────────────────
+export const dashboardApi = {
+  stats: () => api.get('/dashboard/stats'),
+}
+
 export const departementApi = {
   liste:      (params) => api.get('/departements', { params }),
   detail:     (id)     => api.get(`/departements/${id}`),
@@ -42,6 +47,7 @@ export const typeServiceApi = {
   creer:      (data)   => api.post('/type-services', data),
   modifier:   (id, data) => api.put(`/type-services/${id}`, data),
   supprimer:  (id)     => api.delete(`/type-services/${id}`),
+  importer:   (rows) => api.post('/type-services/import', { rows }),
 }
 
 // ── Services ──────────────────────────────────────────────
@@ -51,6 +57,7 @@ export const serviceApi = {
   creer:      (data)   => api.post('/services', data),
   modifier:   (id, data) => api.put(`/services/${id}`, data),
   supprimer:  (id)     => api.delete(`/services/${id}`),
+  importer:   (rows)   => api.post('/services/import', { rows }),
 }
 
 // ── Partenaires ───────────────────────────────────────────

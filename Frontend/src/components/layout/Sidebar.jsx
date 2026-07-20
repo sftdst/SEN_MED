@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
+import { hospitalApi } from '../../api'
 
 // ─── SVG Icon registry ────────────────────────────────────────────────────────
 function Ico({ name, size = 15 }) {
@@ -264,9 +265,24 @@ function NavGroup({ group, collapsed }) {
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
+
 export default function Sidebar({ collapsed = false, isMobile = false, isOpen = false, onClose }) {
   const { hasPermission, user, logout } = useAuth()
   const { prefs } = useTheme()
+  const [hospitalLogo, setHospitalLogo] = useState(null)
+
+  useEffect(() => {
+    const base = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage'
+    hospitalApi.liste({ per_page: 1 })
+      .then(res => {
+        const d = res.data?.data
+        const list = Array.isArray(d) ? d : (d?.data ?? [])
+        const h = list[0]
+        if (h?.logo) setHospitalLogo(`${base}/${h.logo}`)
+      })
+      .catch(() => {})
+  }, [])
+
   // Scrollbar fine injectée une fois
   useEffect(() => {
     const id = 'sb-scroll-css'
@@ -350,32 +366,50 @@ export default function Sidebar({ collapsed = false, isMobile = false, isOpen = 
       {/* Logo ─────────────────────────────────────────────────────── */}
       <div style={{
         padding: collapsed ? '15px 0' : '17px 16px 15px',
-        display: 'flex', alignItems: 'center',
+        display: 'flex', alignItems: 'flex-start',
         justifyContent: collapsed ? 'center' : 'flex-start',
         gap: 12, flexShrink: 0,
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         minHeight: 68,
       }}>
-        {/* Badge médical */}
-        <div style={{
-          width: 38, height: 38, flexShrink: 0, borderRadius: 11, color: '#fff',
-          background: 'linear-gradient(135deg, var(--app-accent, #ff7631) 0%, #c94f1a 100%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 16px rgba(255,118,49,0.5), 0 0 0 1px rgba(255,255,255,0.1)',
-        }}>
-          <Ico name="crossMed" size={18} />
-        </div>
+        {/* Logo hôpital */}
+        {hospitalLogo ? (
+          <img
+            src={hospitalLogo}
+            alt="Logo"
+            style={{
+              height: 44, maxWidth: collapsed ? 44 : 64,
+              width: 'auto',
+              objectFit: 'contain', flexShrink: 0,
+              borderRadius: 6,
+              filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
+              marginTop: collapsed ? 0 : 2,
+            }}
+          />
+        ) : (
+          <div style={{
+            width: 42, height: 42, flexShrink: 0, borderRadius: 11,
+            background: 'linear-gradient(135deg, var(--app-accent, #ff7631) 0%, #c94f1a 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 16px rgba(255,118,49,0.5), 0 0 0 1px rgba(255,255,255,0.1)',
+            marginTop: collapsed ? 0 : 2,
+          }}>
+            <Ico name="crossMed" size={18} />
+          </div>
+        )}
         {!collapsed && (
-          <div style={{ overflow: 'hidden' }}>
+          <div style={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
             <div style={{
-              color: '#fff', fontWeight: 800, fontSize: 18,
-              lineHeight: 1.1, letterSpacing: '-0.4px', whiteSpace: 'nowrap',
+              color: '#fff', fontWeight: 800, fontSize: 14,
+              lineHeight: 1.2, letterSpacing: '-0.3px',
+              wordBreak: 'break-word',
             }}>
               {prefs.app_name}
             </div>
             <div style={{
-              color: 'rgba(255,255,255,0.62)', fontSize: 11,
-              marginTop: 3, whiteSpace: 'nowrap', letterSpacing: '0.2px',
+              color: 'rgba(255,255,255,0.62)', fontSize: 10,
+              marginTop: 3, letterSpacing: '0.2px',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
               {prefs.app_slogan}
             </div>

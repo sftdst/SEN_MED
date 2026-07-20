@@ -1,12 +1,16 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import { useTheme } from '../../contexts/ThemeContext'
+import { hospitalApi } from '../../api'
 
 const fmtF = (n) => Number(n ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtD = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
 const num  = (v) => parseFloat(v) || 0
 
+
 // Génère le HTML du ticket pour impression
-function buildPrintHtml(data) {
+function buildPrintHtml(data, clinic = {}) {
   const { patientName, billNo, billDate, services, bills, especes, carte, cheque, mobile, totalPaye, remise, totalPartenaire, dateHeure } = data
+  const { name = 'SenMed', slogan = '', phone = '', email = '', address = '', logoUrl = null } = clinic
 
   const row = (label, value, bold = false) =>
     `<div class="row${bold ? ' bold' : ''}"><span>${label}</span><span>${value}</span></div>`
@@ -16,7 +20,7 @@ function buildPrintHtml(data) {
     servicesHtml = `<div class="section-title">SERVICES :</div>`
     services.forEach(s => {
       servicesHtml += row(
-        `<span class="truncate">${s.NomDescription || 'Service'}</span>`,
+        `<span class="truncate">${s.NomService || s.NomDescription || 'Service'}</span>`,
         `${fmtF(s.MontantTotalFacture)} F`
       )
     })
@@ -50,8 +54,10 @@ function buildPrintHtml(data) {
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'Courier New',monospace; font-size:12px; color:#000; width:80mm; margin:0 auto; padding:10px; }
     .header { text-align:center; border-bottom:2px dashed #000; padding-bottom:10px; margin-bottom:10px; }
-    .hosp-name { font-size:20px; font-weight:bold; letter-spacing:2px; }
+    .hosp-logo { max-height:64px; max-width:130px; object-fit:contain; margin-bottom:6px; border-radius:6px; }
+    .hosp-name { font-size:16px; font-weight:bold; letter-spacing:1px; line-height:1.2; }
     .hosp-sub  { font-size:10px; color:#555; margin-top:2px; }
+    .hosp-contact { font-size:9px; color:#888; margin-top:3px; line-height:1.6; }
     .recu-title { font-size:16px; font-weight:bold; margin-top:8px; letter-spacing:3px; }
     .info-block { margin-bottom:8px; }
     .row { display:flex; justify-content:space-between; margin-bottom:3px; font-size:11px; }
@@ -68,8 +74,10 @@ function buildPrintHtml(data) {
 </head>
 <body>
   <div class="header">
-    <div class="hosp-name">SENMED</div>
-    <div class="hosp-sub">Plateforme Médicale de Santé</div>
+    ${logoUrl ? `<img class="hosp-logo" src="${logoUrl}" alt="Logo" />` : ''}
+    <div class="hosp-name">${name}</div>
+    ${slogan ? `<div class="hosp-sub">${slogan}</div>` : ''}
+    ${address || phone || email ? `<div class="hosp-contact">${[address, phone, email].filter(Boolean).join('<br>')}</div>` : ''}
     <div class="recu-title">REÇU DE PAIEMENT</div>
   </div>
 
@@ -102,10 +110,32 @@ function buildPrintHtml(data) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function RecuPaiement({ data, onClose }) {
   const previewRef = useRef(null)
+  const { prefs } = useTheme()
+  const [hospital, setHospital] = useState(null)
+
+  useEffect(() => {
+    hospitalApi.liste({ per_page: 1 })
+      .then(res => {
+        const d = res.data?.data
+        const list = Array.isArray(d) ? d : (d?.data ?? [])
+        setHospital(list[0] ?? null)
+      })
+      .catch(() => {})
+  }, [])
+
+  const storageBase = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage'
+  const clinicInfo = {
+    name:    hospital?.hospital_name || prefs.app_name,
+    slogan:  hospital?.type_cabinet  || prefs.app_slogan,
+    phone:   hospital?.contact_number || hospital?.mobile_number || prefs.phone || '',
+    email:   hospital?.email_address  || prefs.email   || '',
+    address: hospital?.adress         || prefs.address || '',
+    logoUrl: hospital?.logo ? `${storageBase}/${hospital.logo}` : null,
+  }
 
   const handlePrint = () => {
     const win = window.open('', '_blank', 'width=520,height=700,scrollbars=yes')
-    win.document.write(buildPrintHtml(data))
+    win.document.write(buildPrintHtml(data, clinicInfo))
     win.document.close()
     win.focus()
     setTimeout(() => { win.print() }, 400)
@@ -144,8 +174,19 @@ export default function RecuPaiement({ data, onClose }) {
           }}>
             {/* ── En-tête ── */}
             <div style={{ textAlign: 'center', borderBottom: '2px dashed #000', paddingBottom: 10, marginBottom: 10 }}>
-              <div style={{ fontSize: 20, fontWeight: 'bold', letterSpacing: 2 }}>SENMED</div>
-              <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>Plateforme Médicale de Santé</div>
+              {clinicInfo.logoUrl && (
+                <img src={clinicInfo.logoUrl}
+                  alt="Logo" style={{ maxHeight: 60, maxWidth: 120, objectFit: 'contain', marginBottom: 6 }} />
+              )}
+              <div style={{ fontSize: 15, fontWeight: 'bold', letterSpacing: 1, lineHeight: 1.2 }}>{clinicInfo.name}</div>
+              {clinicInfo.slogan && <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>{clinicInfo.slogan}</div>}
+              {(clinicInfo.address || clinicInfo.phone) && (
+                <div style={{ fontSize: 9, color: '#999', marginTop: 3, lineHeight: 1.6 }}>
+                  {[clinicInfo.address, clinicInfo.phone, clinicInfo.email].filter(Boolean).map((l, i) => (
+                    <div key={i}>{l}</div>
+                  ))}
+                </div>
+              )}
               <div style={{ fontSize: 14, fontWeight: 'bold', marginTop: 8, letterSpacing: 3 }}>REÇU DE PAIEMENT</div>
             </div>
 
@@ -165,7 +206,7 @@ export default function RecuPaiement({ data, onClose }) {
                 <div style={{ fontWeight: 'bold', fontSize: 10, textDecoration: 'underline', marginBottom: 4 }}>SERVICES :</div>
                 {services.map((s, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 2 }}>
-                    <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.NomDescription || `Service ${i + 1}`}</span>
+                    <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.NomService || s.NomDescription || `Service ${i + 1}`}</span>
                     <span style={{ flexShrink: 0, marginLeft: 8 }}>{fmtF(s.MontantTotalFacture)} F</span>
                   </div>
                 ))}
