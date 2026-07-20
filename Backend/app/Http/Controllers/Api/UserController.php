@@ -104,6 +104,7 @@ class UserController extends Controller
         }
 
         if ($user->photo) Storage::disk('public')->delete($user->photo);
+        $user->tokens()->delete();
         $user->delete();
 
         return response()->json(['success' => true, 'message' => 'Utilisateur supprimé.']);
